@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -23,13 +24,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const body = (
+    <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      {children}
+    </body>
+  );
+
   return (
     <html lang="en-NZ">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      {clerkKey ? <ClerkProvider>{body}</ClerkProvider> : body}
     </html>
   );
 }

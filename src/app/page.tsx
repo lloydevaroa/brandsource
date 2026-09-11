@@ -1,21 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
 import { catalog } from "@/data/catalog";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-sm font-semibold tracking-wide">BRANDSource</span>
-          <nav className="flex gap-4 text-sm text-zinc-600">
-            <a href="#products" className="hover:text-zinc-900">
-              Trade Show products
-            </a>
-            <span className="text-zinc-400">NZ suppliers</span>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         <section className="mx-auto max-w-5xl px-6 py-16 sm:py-24">

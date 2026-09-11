@@ -34,6 +34,13 @@ Apply in Supabase SQL editor (or CLI):
 
 App currently seeds the UI from `src/data/catalog.ts` so the homepage/configurators work before Supabase/Clerk/Stripe are wired.
 
+## Auth & data (slice 1)
+
+1. Create a [Clerk](https://dashboard.clerk.com) application (Next.js).
+2. Create a [Supabase](https://supabase.com/dashboard) project; run `supabase/schema.sql` then `supabase/seed.sql`.
+3. Copy `.env.example` → `.env.local` and fill keys (also add the same to Vercel → Settings → Environment Variables).
+4. `npm run dev` — homepage stays public; `/account` requires sign-in.
+
 ## Next slices
 
 1. Supabase project + env · Clerk roles (customer / admin / manager)
