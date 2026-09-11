@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { catalog } from "@/data/catalog";
@@ -21,7 +22,28 @@ export default async function ProductPage({
         <Link href="/#products" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Trade Show products
         </Link>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">
+        {product.example_image_urls[0] ? (
+          <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-xl bg-zinc-100">
+            <Image
+              src={product.example_image_urls[0]}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
+              priority
+            />
+          </div>
+        ) : null}
+        {product.example_image_urls.length > 1 ? (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {product.example_image_urls.slice(1).map((src) => (
+              <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-zinc-100">
+                <Image src={src} alt="" fill className="object-cover" sizes="50vw" />
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">
           {product.name}
         </h1>
         <p className="mt-2 text-zinc-600">{product.short_description}</p>

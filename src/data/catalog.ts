@@ -4,6 +4,7 @@ export type CatalogProduct = {
   short_description: string;
   unit_price: number | null;
   min_order_qty: number;
+  example_image_urls: string[];
   option_groups: {
     key: string; label: string; selection: "single" | "multi"; required: boolean;
     choices: { key: string; label: string; price_delta: number }[];
@@ -17,6 +18,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Fitted, throw or stretch for 6ft / 8ft tables.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/table-covers/mockups-design-tablecloth-hero.jpg"],
     "option_groups": [
       {
         "key": "style",
@@ -98,6 +100,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Matte or gloss, single or double-sided.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/vinyl-banners/mockups-design-hanging-banner-hero.jpg"],
     "option_groups": [
       {
         "key": "size",
@@ -189,6 +192,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "With cross base or ground spike.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/feather-teardrop-flags/mockups-design-feather-flag-hero.jpg", "/products/feather-teardrop-flags/mockups-design-teardrop-flag-hero.jpg"],
     "option_groups": [
       {
         "key": "style",
@@ -293,6 +297,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Roll-up or X-stand, graphic included.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/banner-stands/mockups-design-rollup-hero.jpg", "/products/banner-stands/mockups-design-xstand-hero.jpg"],
     "option_groups": [
       {
         "key": "style",
@@ -369,6 +374,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Full-colour or screen print, safety breakaway options.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/lanyards/mockups-design-lanyard-hero.jpg"],
     "option_groups": [
       {
         "key": "style",
@@ -473,6 +479,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Round or square, pin or magnet.",
     "unit_price": null,
     "min_order_qty": 50,
+    "example_image_urls": ["/products/custom-buttons/mockups-design-pin-button-round-hero.jpg"],
     "option_groups": [
       {
         "key": "shape",
@@ -546,6 +553,7 @@ export const catalog: CatalogProduct[] = [
     "short_description": "Horizontal or vertical, pack-and-go displays.",
     "unit_price": null,
     "min_order_qty": 1,
+    "example_image_urls": ["/products/popup-banners/mockups-design-straight-popup-hero.jpg", "/products/popup-banners/mockups-design-curved-popup-hero.jpg"],
     "option_groups": [
       {
         "key": "orientation",

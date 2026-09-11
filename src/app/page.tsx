@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { catalog } from "@/data/catalog";
 
@@ -53,24 +54,37 @@ export default function Home() {
               {catalog.map((p) => (
                 <li
                   key={p.slug}
-                  className="rounded-xl border border-zinc-200 p-5 hover:border-zinc-400"
+                  className="overflow-hidden rounded-xl border border-zinc-200 hover:border-zinc-400"
                 >
-                  <h3 className="font-medium">{p.name}</h3>
-                  <p className="mt-2 text-sm text-zinc-600">
-                    {p.short_description}
-                  </p>
-                  <p className="mt-4 text-xs uppercase tracking-wide text-zinc-400">
-                    {p.min_order_qty > 1
-                      ? `MOQ ${p.min_order_qty} · `
-                      : ""}
-                    Price TBD
-                  </p>
-                  <Link
-                    href={`/products/${p.slug}`}
-                    className="mt-3 inline-block text-sm font-medium text-zinc-900 underline-offset-2 hover:underline"
-                  >
-                    Configure
-                  </Link>
+                  {p.example_image_urls[0] ? (
+                    <div className="relative aspect-[4/3] bg-zinc-100">
+                      <Image
+                        src={p.example_image_urls[0]}
+                        alt={p.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="p-5">
+                    <h3 className="font-medium">{p.name}</h3>
+                    <p className="mt-2 text-sm text-zinc-600">
+                      {p.short_description}
+                    </p>
+                    <p className="mt-4 text-xs uppercase tracking-wide text-zinc-400">
+                      {p.min_order_qty > 1
+                        ? `MOQ ${p.min_order_qty} · `
+                        : ""}
+                      Price TBD
+                    </p>
+                    <Link
+                      href={`/products/${p.slug}`}
+                      className="mt-3 inline-block text-sm font-medium text-zinc-900 underline-offset-2 hover:underline"
+                    >
+                      Configure
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>
