@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BRANDSource
 
-## Getting Started
+NZ branded merchandise platform (working name for Brand Spanking) — Trade Show & Events pilot competing with ImprintNow on **local suppliers + human proofing**, not feature parity.
 
-First, run the development server:
+**Repo:** https://github.com/lloydevaroa/brandsource
+
+## V1 scope (locked)
+
+- Catalog: 7 Trade Show SKUs (configurator, flat pricing, static example imagery)
+- Fulfilment: order shell → **sub-orders** per supplier; supplier abstraction (`api` / `email_po` / `manual_portal`)
+- Ops: admin Kanban against 9-stage sub-order lifecycle
+- Proofing: human upload → proof → approve (no live artwork render)
+- Stack: Next.js · Vercel · Supabase · Clerk · Stripe · Resend · shadcn/ui · dnd-kit
+- **Xero deferred** until Project Owner briefs requirements
+- Supplier commercial outreach owned by Brand Source Project Owner
+
+## Local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Apply in Supabase SQL editor (or CLI):
 
-## Learn More
+1. `supabase/schema.sql`
+2. `supabase/seed.sql`
 
-To learn more about Next.js, take a look at the following resources:
+App currently seeds the UI from `src/data/catalog.ts` so the homepage/configurators work before Supabase/Clerk/Stripe are wired.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Next slices
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Supabase project + env · Clerk roles (customer / admin / manager)
+2. Stripe checkout (SAQ-A) · artwork upload to Supabase storage
+3. Admin Kanban (dnd-kit) for sub-orders
+4. Resend transactional emails
+5. PO unit prices into catalog
 
-## Deploy on Vercel
+## SKUs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Slug | Product |
+| --- | --- |
+| `table-covers` | Custom rectangle table covers |
+| `vinyl-banners` | Custom vinyl banners |
+| `feather-teardrop-flags` | Feather & teardrop flags |
+| `banner-stands` | Banner stands |
+| `lanyards` | Full-colour sublimation lanyards |
+| `custom-buttons` | Custom buttons (MOQ 50) |
+| `popup-banners` | Pop-up banners |
