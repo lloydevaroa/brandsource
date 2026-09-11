@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 export default async function AccountPage() {
-  const clerkEnabled = Boolean(process.env.CLERK_SECRET_KEY);
+  const hasClerk =
+    Boolean(process.env.CLERK_SECRET_KEY) &&
+    Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-  if (!clerkEnabled) {
+  if (!hasClerk) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
@@ -11,7 +13,8 @@ export default async function AccountPage() {
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Your account</h1>
         <p className="mt-2 text-zinc-600">
-          Clerk keys not configured yet — sign-in lands once env vars are set.
+          Clerk is not fully configured on this deployment yet (missing
+          CLERK_SECRET_KEY and/or publishable key in Vercel env).
         </p>
       </div>
     );

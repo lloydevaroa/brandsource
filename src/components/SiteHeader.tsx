@@ -9,8 +9,6 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
-const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-
 export function SiteHeader() {
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -23,31 +21,27 @@ export function SiteHeader() {
             Trade Show products
           </Link>
           <span className="text-zinc-400">NZ suppliers</span>
-          {clerkEnabled ? (
-            <>
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button type="button" className="hover:text-zinc-900">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button
-                    type="button"
-                    className="rounded-full bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-800"
-                  >
-                    Create account
-                  </button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <Link href="/account" className="hover:text-zinc-900">
-                  Account
-                </Link>
-                <UserButton />
-              </SignedIn>
-            </>
-          ) : null}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button type="button" className="hover:text-zinc-900">
+                Sign in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button
+                type="button"
+                className="rounded-full bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-800"
+              >
+                Create account
+              </button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/account" className="hover:text-zinc-900">
+              Account
+            </Link>
+            <UserButton />
+          </SignedIn>
         </nav>
       </div>
     </header>
