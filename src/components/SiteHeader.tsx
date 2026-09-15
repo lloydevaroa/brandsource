@@ -8,8 +8,12 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import { useCart } from "@/lib/cart";
 
 export function SiteHeader() {
+  const { items } = useCart();
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+
   return (
     <header className="border-b border-zinc-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
@@ -21,6 +25,9 @@ export function SiteHeader() {
             Trade Show products
           </Link>
           <span className="text-zinc-400">NZ suppliers</span>
+          <Link href="/cart" className="hover:text-zinc-900">
+            Cart{itemCount > 0 ? ` (${itemCount})` : ""}
+          </Link>
           <SignedOut>
             <SignInButton mode="modal">
               <button type="button" className="hover:text-zinc-900">

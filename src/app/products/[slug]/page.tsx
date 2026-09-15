@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { catalog } from "@/data/catalog";
+import { ProductConfigurator } from "@/components/ProductConfigurator";
+import { SiteHeader } from "@/components/SiteHeader";
 
 export function generateStaticParams() {
   return catalog.map((p) => ({ slug: p.slug }));
@@ -18,6 +20,7 @@ export default async function ProductPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link href="/#products" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Trade Show products
@@ -53,49 +56,7 @@ export default async function ProductPage({
           {product.min_order_qty > 1 ? ` · MOQ ${product.min_order_qty}` : ""}
         </p>
 
-        <form className="mt-10 space-y-8">
-          {product.option_groups.map((g) => (
-            <fieldset key={g.key} className="rounded-xl border border-zinc-200 bg-white p-5">
-              <legend className="px-1 text-sm font-medium">
-                {g.label}
-                {g.required ? "" : " (optional)"}
-                {g.selection === "multi" ? " — choose any" : ""}
-              </legend>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {g.choices.map((c) => (
-                  <label
-                    key={c.key}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-zinc-300 px-3 py-1.5 text-sm hover:border-zinc-500"
-                  >
-                    <input
-                      type={g.selection === "multi" ? "checkbox" : "radio"}
-                      name={g.key}
-                      value={c.key}
-                      className="accent-zinc-900"
-                      required={g.required && g.selection === "single"}
-                    />
-                    {c.label}
-                    {c.price_delta ? (
-                      <span className="text-xs text-zinc-400">
-                        +${c.price_delta}
-                      </span>
-                    ) : null}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-          <p className="text-sm text-zinc-500">
-            Artwork upload &amp; checkout land in the next build slice (Clerk + Stripe + Supabase).
-          </p>
-          <button
-            type="button"
-            className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white opacity-60"
-            disabled
-          >
-            Continue (coming soon)
-          </button>
-        </form>
+        <ProductConfigurator product={product} />
       </div>
     </div>
   );
