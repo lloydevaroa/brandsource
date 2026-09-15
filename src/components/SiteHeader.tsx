@@ -47,6 +47,9 @@ export function SiteHeader() {
             <Link href="/account" className="hover:text-zinc-900">
               Account
             </Link>
+            <Link href="/admin" className="hover:text-zinc-900">
+              Staff
+            </Link>
             <UserButton />
           </SignedIn>
         </nav>

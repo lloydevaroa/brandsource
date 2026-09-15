@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/SiteHeader";
 import { catalog } from "@/data/catalog";
 import { useCart, type CartItem } from "@/lib/cart";
@@ -124,7 +126,40 @@ function CartLine({ item }: { item: CartItem }) {
 }
 
 export default function CartPage() {
-  const { items } = useCart();
+  const { items, clear } = useCart();
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/orders/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            productSlug: i.productSlug,
+            configuration: i.configuration,
+            quantity: i.quantity,
+            artwork: i.artwork,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error ?? "Could not submit your quote request.");
+        return;
+      }
+      clear();
+      router.push(`/account?submitted=${data.orderId}`);
+    } catch {
+      setSubmitError("Could not submit your quote request — check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -156,17 +191,34 @@ export default function CartPage() {
             </ul>
 
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
-              <button
-                type="button"
-                className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white opacity-60"
-                disabled
-              >
-                Submit quote request (coming soon)
-              </button>
-              <p className="mt-2 text-sm text-zinc-500">
-                Checkout lands in the next build slice — Stripe payment and sub-order creation.
-                Your items and uploaded artwork stay saved in this browser until then.
-              </p>
+              <SignedIn>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                >
+                  {submitting ? "Submitting…" : "Submit quote request"}
+                </button>
+                <p className="mt-2 text-sm text-zinc-500">
+                  We&apos;ll confirm pricing and proof your artwork before anything goes to
+                  production. Payment is collected once pricing is confirmed.
+                </p>
+                {submitError ? <p className="mt-2 text-sm text-red-600">{submitError}</p> : null}
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
+                  >
+                    Sign in to submit quote request
+                  </button>
+                </SignInButton>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Sign in so we can track your quote request and order status.
+                </p>
+              </SignedOut>
             </div>
           </>
         )}
