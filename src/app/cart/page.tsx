@@ -1,12 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/SiteHeader";
 import { catalog } from "@/data/catalog";
 import { useCart, type CartItem } from "@/lib/cart";
+
+function unitPrice(item: CartItem) {
+  const product = catalog.find((p) => p.slug === item.productSlug);
+  if (!product) return null;
+  const base = product.unit_price ?? null;
+  if (base === null) return null;
+  const delta = product.option_groups.reduce((sum, g) => {
+    const selected = item.configuration[g.key];
+    if (!selected) return sum;
+    const keys = Array.isArray(selected) ? selected : [selected];
+    return (
+      sum +
+      keys.reduce((s, k) => s + (g.choices.find((c) => c.key === k)?.price_delta ?? 0), 0)
+    );
+  }, 0);
+  return base + delta;
+}
+
+function formatNZD(amount: number) {
+  return new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD" }).format(amount);
+}
 
 function configurationSummary(item: CartItem) {
   const product = catalog.find((p) => p.slug === item.productSlug);
@@ -29,6 +50,7 @@ function CartLine({ item }: { item: CartItem }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const summary = configurationSummary(item);
+  const price = unitPrice(item);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -64,6 +86,11 @@ function CartLine({ item }: { item: CartItem }) {
           {summary.length > 0 ? (
             <p className="mt-1 text-sm text-zinc-500">
               {summary.map((s) => `${s.label}: ${s.value}`).join(" · ")}
+            </p>
+          ) : null}
+          {price !== null ? (
+            <p className="mt-1 text-sm font-medium text-zinc-700">
+              {formatNZD(price)} each · {formatNZD(price * item.quantity)} total
             </p>
           ) : null}
         </div>
@@ -126,16 +153,31 @@ function CartLine({ item }: { item: CartItem }) {
 }
 
 export default function CartPage() {
+  return (
+    <Suspense fallback={null}>
+      <CartPageInner />
+    </Suspense>
+  );
+}
+
+function CartPageInner() {
   const { items, clear } = useCart();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const canceled = searchParams.get("canceled");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  async function handleSubmit() {
+  const subtotal = items.reduce((sum, item) => {
+    const price = unitPrice(item);
+    return price === null ? sum : sum + price * item.quantity;
+  }, 0);
+  const hasUnpriced = items.some((item) => unitPrice(item) === null);
+
+  async function handleCheckout() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch("/api/orders/submit", {
+      const res = await fetch("/api/checkout/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,13 +191,13 @@ export default function CartPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitError(data.error ?? "Could not submit your quote request.");
+        setSubmitError(data.error ?? "Could not start checkout.");
         return;
       }
       clear();
-      router.push(`/account?submitted=${data.orderId}`);
+      window.location.href = data.url;
     } catch {
-      setSubmitError("Could not submit your quote request — check your connection and try again.");
+      setSubmitError("Could not start checkout — check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -168,11 +210,15 @@ export default function CartPage() {
         <Link href="/#products" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Trade Show products
         </Link>
-        <h1 className="mt-4 text-2xl font-semibold">Your quote request</h1>
+        <h1 className="mt-4 text-2xl font-semibold">Your cart</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Flat pricing · Price TBD until PO quotes land. Upload artwork below — we&apos;ll proof
-          each item before production.
+          Flat pricing. Upload artwork below — we&apos;ll proof each item before production.
         </p>
+        {canceled ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            Checkout was canceled. Your cart is still here whenever you&apos;re ready.
+          </div>
+        ) : null}
 
         {items.length === 0 ? (
           <p className="mt-10 text-zinc-600">
@@ -191,18 +237,22 @@ export default function CartPage() {
             </ul>
 
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
+              <div className="mb-4 flex items-center justify-between text-sm">
+                <span className="text-zinc-500">Subtotal</span>
+                <span className="font-semibold">{formatNZD(subtotal)}</span>
+              </div>
               <SignedIn>
                 <button
                   type="button"
-                  onClick={handleSubmit}
-                  disabled={submitting}
+                  onClick={handleCheckout}
+                  disabled={submitting || hasUnpriced}
                   className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
-                  {submitting ? "Submitting…" : "Submit quote request"}
+                  {submitting ? "Redirecting to payment…" : "Proceed to payment"}
                 </button>
                 <p className="mt-2 text-sm text-zinc-500">
-                  We&apos;ll confirm pricing and proof your artwork before anything goes to
-                  production. Payment is collected once pricing is confirmed.
+                  You&apos;ll pay securely via Stripe, then we&apos;ll proof your artwork before
+                  anything goes to production.
                 </p>
                 {submitError ? <p className="mt-2 text-sm text-red-600">{submitError}</p> : null}
               </SignedIn>
@@ -212,11 +262,11 @@ export default function CartPage() {
                     type="button"
                     className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
                   >
-                    Sign in to submit quote request
+                    Sign in to check out
                   </button>
                 </SignInButton>
                 <p className="mt-2 text-sm text-zinc-500">
-                  Sign in so we can track your quote request and order status.
+                  Sign in so we can track your order and payment.
                 </p>
               </SignedOut>
             </div>

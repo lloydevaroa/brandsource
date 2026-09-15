@@ -16,7 +16,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "table-covers",
     "name": "Custom rectangle table covers",
     "short_description": "Fitted, throw or stretch for 6ft / 8ft tables.",
-    "unit_price": null,
+    "unit_price": 597.53,
     "min_order_qty": 1,
     "example_image_urls": ["/products/table-covers/mockups-design-tablecloth-hero.jpg"],
     "option_groups": [
@@ -98,7 +98,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "led-lightbox-bannerstand",
     "name": "LED lightbox bannerstand",
     "short_description": "Backlit portable stand, single or double-sided.",
-    "unit_price": null,
+    "unit_price": 1087.20,
     "min_order_qty": 1,
     "example_image_urls": ["/products/led-lightbox-bannerstand/mockups-design-lightbox-bannerstand-hero.jpg"],
     "option_groups": [
@@ -139,7 +139,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "feather-teardrop-flags",
     "name": "Feather & teardrop flags",
     "short_description": "With cross base or ground spike.",
-    "unit_price": null,
+    "unit_price": 319.18,
     "min_order_qty": 1,
     "example_image_urls": ["/products/feather-teardrop-flags/mockups-design-feather-flag-hero.jpg", "/products/feather-teardrop-flags/mockups-design-teardrop-flag-hero.jpg"],
     "option_groups": [
@@ -244,7 +244,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "banner-stands",
     "name": "Banner stands",
     "short_description": "Roll-up or X-stand, graphic included.",
-    "unit_price": null,
+    "unit_price": 596.63,
     "min_order_qty": 1,
     "example_image_urls": ["/products/banner-stands/mockups-design-rollup-hero.jpg", "/products/banner-stands/mockups-design-xstand-hero.jpg"],
     "option_groups": [
@@ -321,7 +321,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "lanyards",
     "name": "Full-colour sublimation lanyards",
     "short_description": "Full-colour or screen print, safety breakaway options.",
-    "unit_price": null,
+    "unit_price": 2.00,
     "min_order_qty": 1,
     "example_image_urls": ["/products/lanyards/mockups-design-lanyard-hero.jpg"],
     "option_groups": [
@@ -426,7 +426,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "custom-buttons",
     "name": "Custom buttons",
     "short_description": "Round or square, pin or magnet.",
-    "unit_price": null,
+    "unit_price": 1.55,
     "min_order_qty": 50,
     "example_image_urls": ["/products/custom-buttons/mockups-design-pin-button-round-hero.jpg"],
     "option_groups": [
@@ -500,7 +500,7 @@ export const catalog: CatalogProduct[] = [
     "slug": "led-lightbox-counter",
     "name": "LED lightbox counter",
     "short_description": "Backlit portable counter for product demos and sampling.",
-    "unit_price": null,
+    "unit_price": 1279.71,
     "min_order_qty": 1,
     "example_image_urls": ["/products/led-lightbox-counter/mockups-design-lightbox-counter-hero.jpg"],
     "option_groups": [

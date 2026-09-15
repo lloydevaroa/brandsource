@@ -1,8 +1,13 @@
--- BRANDSource V1 catalog seed (prices null until PO quotes)
+-- BRANDSource V1 catalog seed
+-- Unit prices (2026-09-16): Trends' own suggested-retail figure at qty 10 where
+-- supplier_pricing_research captured one; the other four (lanyards, custom-buttons,
+-- both LED lightboxes) apply Trends' qty-10 markup rate (cost x 1.55) since Trends'
+-- quote tool didn't surface a suggested-retail figure for those. Project owner (Joe)
+-- confirmed using Trends pricing as the V1 basis rather than a separate quote.
 begin;
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('table-covers', 'Custom rectangle table covers', 'Fitted, throw or stretch for 6ft / 8ft tables.', null, 1, 0);
+values ('table-covers', 'Custom rectangle table covers', 'Fitted, throw or stretch for 6ft / 8ft tables.', 597.53, 1, 0);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -78,7 +83,7 @@ where p.slug = 'table-covers' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('led-lightbox-bannerstand', 'LED lightbox bannerstand', 'Backlit portable stand, single or double-sided.', null, 1, 1);
+values ('led-lightbox-bannerstand', 'LED lightbox bannerstand', 'Backlit portable stand, single or double-sided.', 1087.20, 1, 1);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -111,7 +116,7 @@ where p.slug = 'led-lightbox-bannerstand' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('feather-teardrop-flags', 'Feather & teardrop flags', 'With cross base or ground spike.', null, 1, 2);
+values ('feather-teardrop-flags', 'Feather & teardrop flags', 'With cross base or ground spike.', 319.18, 1, 2);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -212,7 +217,7 @@ where p.slug = 'feather-teardrop-flags' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('banner-stands', 'Banner stands', 'Roll-up or X-stand, graphic included.', null, 1, 3);
+values ('banner-stands', 'Banner stands', 'Roll-up or X-stand, graphic included.', 596.63, 1, 3);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -281,7 +286,7 @@ where p.slug = 'banner-stands' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('lanyards', 'Full-colour sublimation lanyards', 'Full-colour or screen print, safety breakaway options.', null, 1, 4);
+values ('lanyards', 'Full-colour sublimation lanyards', 'Full-colour or screen print, safety breakaway options.', 2.00, 1, 4);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -382,7 +387,7 @@ where p.slug = 'lanyards' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('custom-buttons', 'Custom buttons', 'Round or square, pin or magnet.', null, 50, 5);
+values ('custom-buttons', 'Custom buttons', 'Round or square, pin or magnet.', 1.55, 50, 5);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
@@ -454,7 +459,7 @@ where p.slug = 'custom-buttons' and g.key = 'backing';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('led-lightbox-counter', 'LED lightbox counter', 'Backlit portable counter for product demos and sampling.', null, 1, 6);
+values ('led-lightbox-counter', 'LED lightbox counter', 'Backlit portable counter for product demos and sampling.', 1279.71, 1, 6);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)

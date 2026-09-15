@@ -39,7 +39,7 @@ export default function Home() {
               Trade Show &amp; Events
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              Pricing from PO quotes — shown as TBD until supplier rates land.
+              Flat pricing per item, no quote required.
             </p>
             <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {catalog.map((p) => (
@@ -67,10 +67,8 @@ export default function Home() {
                       {p.short_description}
                     </p>
                     <p className="mt-4 text-xs uppercase tracking-wide text-zinc-400">
-                      {p.min_order_qty > 1
-                        ? `MOQ ${p.min_order_qty} · `
-                        : ""}
-                      Price TBD
+                      {p.min_order_qty > 1 ? `MOQ ${p.min_order_qty} · ` : ""}
+                      {p.unit_price != null ? `From $${p.unit_price.toFixed(2)} NZD` : "Price TBD"}
                     </p>
                     <Link
                       href={`/products/${p.slug}`}

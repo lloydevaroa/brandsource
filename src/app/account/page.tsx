@@ -17,9 +17,9 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ paid?: string }>;
 }) {
-  const { submitted } = await searchParams;
+  const { paid } = await searchParams;
   const hasClerk =
     Boolean(process.env.CLERK_SECRET_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
@@ -51,6 +51,7 @@ export default async function AccountPage({
           "id, status, created_at, order_lines(id, quantity, product_id, sub_orders(status))"
         )
         .eq("customer_id", profile.id)
+        .neq("status", "draft")
         .order("created_at", { ascending: false })
     : { data: null };
 
@@ -64,13 +65,14 @@ export default async function AccountPage({
         Signed in as {user?.primaryEmailAddress?.emailAddress ?? profile?.clerk_user_id}.
       </p>
 
-      {submitted ? (
+      {paid ? (
         <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-          Quote request submitted. We&apos;ll be in touch to confirm pricing and next steps.
+          Payment received — thanks! We&apos;ll proof your artwork and be in touch before
+          production starts.
         </div>
       ) : null}
 
-      <h2 className="mt-8 text-lg font-semibold">Your quote requests</h2>
+      <h2 className="mt-8 text-lg font-semibold">Your orders</h2>
       {!orders || orders.length === 0 ? (
         <p className="mt-2 text-sm text-zinc-500">
           Nothing here yet.{" "}
@@ -89,9 +91,11 @@ export default async function AccountPage({
               ) ?? []
             );
             const statusLabel =
-              statuses.size === 1
-                ? STATUS_LABEL[[...statuses][0]] ?? [...statuses][0]
-                : "In progress";
+              statuses.size === 0
+                ? "Processing payment"
+                : statuses.size === 1
+                  ? STATUS_LABEL[[...statuses][0]] ?? [...statuses][0]
+                  : "In progress";
             return (
               <li
                 key={order.id}

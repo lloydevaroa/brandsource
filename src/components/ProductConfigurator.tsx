@@ -136,7 +136,7 @@ export function ProductConfigurator({ product }: { product: CatalogProduct }) {
           type="submit"
           className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
         >
-          Add to quote request
+          Add to cart
         </button>
         {justAdded ? (
           <Link href="/cart" className="text-sm font-medium underline underline-offset-2">

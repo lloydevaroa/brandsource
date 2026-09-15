@@ -20,7 +20,7 @@ export interface Product {
   slug: string;
   name: string;
   short_description: string;
-  unit_price: number | null; // TBD until PO quotes
+  unit_price: number | null;
   min_order_qty: number;
   example_image_urls: string[];
   active: boolean;

@@ -52,7 +52,7 @@ export default async function ProductPage({
         <p className="mt-2 text-zinc-600">{product.short_description}</p>
         <p className="mt-2 text-sm text-zinc-500">
           Flat pricing ·{" "}
-          {product.unit_price == null ? "Price TBD (awaiting PO quotes)" : `$${product.unit_price} NZD`}
+          {product.unit_price == null ? "Price TBD" : `$${product.unit_price.toFixed(2)} NZD`}
           {product.min_order_qty > 1 ? ` · MOQ ${product.min_order_qty}` : ""}
         </p>
 

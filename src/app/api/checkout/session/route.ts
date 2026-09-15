@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
+import { getStripe } from "@/lib/stripe";
 import { catalog } from "@/data/catalog";
 
 export const runtime = "nodejs";
@@ -29,10 +30,27 @@ function priceForItem(productSlug: string, configuration: Record<string, string 
   return base + delta;
 }
 
+function configurationSummary(productSlug: string, configuration: Record<string, string | string[]>) {
+  const product = catalog.find((p) => p.slug === productSlug);
+  if (!product) return "";
+  return product.option_groups
+    .flatMap((g) => {
+      const selected = configuration[g.key];
+      if (!selected || (Array.isArray(selected) && selected.length === 0)) return [];
+      const keys = Array.isArray(selected) ? selected : [selected];
+      const labels = keys
+        .map((k) => g.choices.find((c) => c.key === k)?.label)
+        .filter(Boolean)
+        .join(", ");
+      return labels ? [`${g.label}: ${labels}`] : [];
+    })
+    .join(" · ");
+}
+
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Sign in to submit a quote request." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to check out." }, { status: 401 });
   }
 
   let body: { items?: SubmittedItem[] };
@@ -54,6 +72,15 @@ export async function POST(req: Request) {
       typeof item.configuration !== "object"
     ) {
       return NextResponse.json({ error: "Malformed cart item" }, { status: 400 });
+    }
+  }
+  for (const item of items) {
+    const product = catalog.find((p) => p.slug === item.productSlug);
+    if (product && item.quantity < product.min_order_qty) {
+      return NextResponse.json(
+        { error: `${product.name} has a minimum order quantity of ${product.min_order_qty}.` },
+        { status: 400 }
+      );
     }
   }
 
@@ -86,15 +113,30 @@ export async function POST(req: Request) {
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({ customer_id: profile.id, status: "submitted" })
+    .insert({ customer_id: profile.id, status: "draft" })
     .select("id")
     .single();
   if (orderError) {
     return NextResponse.json({ error: orderError.message }, { status: 500 });
   }
 
+  const lineItems: {
+    price_data: {
+      currency: string;
+      unit_amount: number;
+      product_data: { name: string; description?: string };
+    };
+    quantity: number;
+  }[] = [];
+
   for (const item of items) {
-    const unitPrice = priceForItem(item.productSlug, item.configuration) ?? 0;
+    const unitPrice = priceForItem(item.productSlug, item.configuration);
+    if (unitPrice === null || unitPrice <= 0) {
+      return NextResponse.json(
+        { error: `No price available for ${item.productSlug}` },
+        { status: 400 }
+      );
+    }
     const { data: line, error: lineError } = await supabase
       .from("order_lines")
       .insert({
@@ -110,15 +152,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: lineError.message }, { status: 500 });
     }
 
-    const { error: subOrderError } = await supabase.from("sub_orders").insert({
-      order_id: order.id,
-      order_line_id: line.id,
-      status: "new_order",
-    });
-    if (subOrderError) {
-      return NextResponse.json({ error: subOrderError.message }, { status: 500 });
-    }
-
     if (item.artwork.length > 0) {
       const { error: artworkError } = await supabase.from("artwork_files").insert(
         item.artwork.map((a) => ({
@@ -131,7 +164,46 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: artworkError.message }, { status: 500 });
       }
     }
+
+    const product = catalog.find((p) => p.slug === item.productSlug)!;
+    const summary = configurationSummary(item.productSlug, item.configuration);
+    lineItems.push({
+      price_data: {
+        currency: "nzd",
+        unit_amount: Math.round(unitPrice * 100),
+        product_data: {
+          name: product.name,
+          ...(summary ? { description: summary } : {}),
+        },
+      },
+      quantity: item.quantity,
+    });
   }
 
-  return NextResponse.json({ orderId: order.id });
+  const origin = req.headers.get("origin") ?? new URL(req.url).origin;
+
+  let session;
+  try {
+    const stripe = getStripe();
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: lineItems,
+      customer_email: profile.email ?? undefined,
+      success_url: `${origin}/account?paid=${order.id}`,
+      cancel_url: `${origin}/cart?canceled=${order.id}`,
+      metadata: { order_id: order.id },
+      payment_intent_data: { metadata: { order_id: order.id } },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Could not start checkout." },
+      { status: 500 }
+    );
+  }
+
+  if (!session.url) {
+    return NextResponse.json({ error: "Stripe did not return a checkout URL." }, { status: 500 });
+  }
+
+  return NextResponse.json({ url: session.url });
 }
