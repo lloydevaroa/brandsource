@@ -78,93 +78,36 @@ where p.slug = 'table-covers' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('vinyl-banners', 'Custom vinyl banners', 'Matte or gloss, single or double-sided.', null, 1, 1);
+values ('led-lightbox-bannerstand', 'LED lightbox bannerstand', 'Backlit portable stand, single or double-sided.', null, 1, 1);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'size', 'Size', 'single', true, 0 from public.products where slug = 'vinyl-banners';
+select id, 'sides', 'Sides', 'single', true, 0 from public.products where slug = 'led-lightbox-bannerstand';
 
 
 insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, '600x900', '600×900 mm', 0, 0
+select g.id, 'single', 'Single-sided', 0, 0
 from public.option_groups g
 join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'size';
+where p.slug = 'led-lightbox-bannerstand' and g.key = 'sides';
 
 
 insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, '900x1200', '900×1200 mm', 0, 1
+select g.id, 'double', 'Double-sided', 0, 1
 from public.option_groups g
 join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'size';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, '1200x1800', '1200×1800 mm', 0, 2
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'size';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, '1500x3000', '1500×3000 mm', 0, 3
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'size';
+where p.slug = 'led-lightbox-bannerstand' and g.key = 'sides';
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'print_sides', 'Print sides', 'single', true, 1 from public.products where slug = 'vinyl-banners';
+select id, 'add_ons', 'Add-ons', 'multi', false, 1 from public.products where slug = 'led-lightbox-bannerstand';
 
 
 insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'single', 'Single', 0, 0
+select g.id, 'spare-graphic', 'Spare graphic', 0, 0
 from public.option_groups g
 join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'print_sides';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'double', 'Double', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'print_sides';
-
-
-insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'finish', 'Finish', 'single', true, 2 from public.products where slug = 'vinyl-banners';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'matte', 'Matte', 0, 0
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'finish';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'gloss', 'Gloss', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'finish';
-
-
-insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'add_ons', 'Add-ons', 'multi', false, 3 from public.products where slug = 'vinyl-banners';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'grommets', 'Grommets', 0, 0
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'add_ons';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'pole-pockets', 'Pole pockets', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'vinyl-banners' and g.key = 'add_ons';
+where p.slug = 'led-lightbox-bannerstand' and g.key = 'add_ons';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
@@ -511,78 +454,17 @@ where p.slug = 'custom-buttons' and g.key = 'backing';
 
 
 insert into public.products (slug, name, short_description, unit_price, min_order_qty, sort_order)
-values ('popup-banners', 'Pop-up banners', 'Horizontal or vertical, pack-and-go displays.', null, 1, 6);
+values ('led-lightbox-counter', 'LED lightbox counter', 'Backlit portable counter for product demos and sampling.', null, 1, 6);
 
 
 insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'orientation', 'Orientation', 'single', true, 0 from public.products where slug = 'popup-banners';
+select id, 'add_ons', 'Add-ons', 'multi', false, 0 from public.products where slug = 'led-lightbox-counter';
 
 
 insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'horizontal', 'Horizontal', 0, 0
+select g.id, 'spare-graphic', 'Spare graphic', 0, 0
 from public.option_groups g
 join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'orientation';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'vertical', 'Vertical', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'orientation';
-
-
-insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'size', 'Size', 'single', true, 1 from public.products where slug = 'popup-banners';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'standard', 'Standard', 0, 0
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'size';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'large', 'Large', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'size';
-
-
-insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'print_sides', 'Print sides', 'single', true, 2 from public.products where slug = 'popup-banners';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'single', 'Single', 0, 0
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'print_sides';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'double', 'Double', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'print_sides';
-
-
-insert into public.option_groups (product_id, key, label, selection, required, sort_order)
-select id, 'add_ons', 'Add-ons', 'multi', false, 3 from public.products where slug = 'popup-banners';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'carry-bag', 'Carry bag', 0, 0
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'add_ons';
-
-
-insert into public.option_choices (option_group_id, key, label, price_delta, sort_order)
-select g.id, 'lights', 'Lights', 0, 1
-from public.option_groups g
-join public.products p on p.id = g.product_id
-where p.slug = 'popup-banners' and g.key = 'add_ons';
+where p.slug = 'led-lightbox-counter' and g.key = 'add_ons';
 
 commit;

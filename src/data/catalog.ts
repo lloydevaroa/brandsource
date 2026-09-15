@@ -95,73 +95,27 @@ export const catalog: CatalogProduct[] = [
     ]
   },
   {
-    "slug": "vinyl-banners",
-    "name": "Custom vinyl banners",
-    "short_description": "Matte or gloss, single or double-sided.",
+    "slug": "led-lightbox-bannerstand",
+    "name": "LED lightbox bannerstand",
+    "short_description": "Backlit portable stand, single or double-sided.",
     "unit_price": null,
     "min_order_qty": 1,
-    "example_image_urls": ["/products/vinyl-banners/mockups-design-hanging-banner-hero.jpg"],
+    "example_image_urls": ["/products/led-lightbox-bannerstand/mockups-design-lightbox-bannerstand-hero.jpg"],
     "option_groups": [
       {
-        "key": "size",
-        "label": "Size",
-        "selection": "single",
-        "required": true,
-        "choices": [
-          {
-            "key": "600x900",
-            "label": "600\u00d7900 mm",
-            "price_delta": 0
-          },
-          {
-            "key": "900x1200",
-            "label": "900\u00d71200 mm",
-            "price_delta": 0
-          },
-          {
-            "key": "1200x1800",
-            "label": "1200\u00d71800 mm",
-            "price_delta": 0
-          },
-          {
-            "key": "1500x3000",
-            "label": "1500\u00d73000 mm",
-            "price_delta": 0
-          }
-        ]
-      },
-      {
-        "key": "print_sides",
-        "label": "Print sides",
+        "key": "sides",
+        "label": "Sides",
         "selection": "single",
         "required": true,
         "choices": [
           {
             "key": "single",
-            "label": "Single",
+            "label": "Single-sided",
             "price_delta": 0
           },
           {
             "key": "double",
-            "label": "Double",
-            "price_delta": 0
-          }
-        ]
-      },
-      {
-        "key": "finish",
-        "label": "Finish",
-        "selection": "single",
-        "required": true,
-        "choices": [
-          {
-            "key": "matte",
-            "label": "Matte",
-            "price_delta": 0
-          },
-          {
-            "key": "gloss",
-            "label": "Gloss",
+            "label": "Double-sided",
             "price_delta": 0
           }
         ]
@@ -173,13 +127,8 @@ export const catalog: CatalogProduct[] = [
         "required": false,
         "choices": [
           {
-            "key": "grommets",
-            "label": "Grommets",
-            "price_delta": 0
-          },
-          {
-            "key": "pole-pockets",
-            "label": "Pole pockets",
+            "key": "spare-graphic",
+            "label": "Spare graphic",
             "price_delta": 0
           }
         ]
@@ -548,67 +497,13 @@ export const catalog: CatalogProduct[] = [
     ]
   },
   {
-    "slug": "popup-banners",
-    "name": "Pop-up banners",
-    "short_description": "Horizontal or vertical, pack-and-go displays.",
+    "slug": "led-lightbox-counter",
+    "name": "LED lightbox counter",
+    "short_description": "Backlit portable counter for product demos and sampling.",
     "unit_price": null,
     "min_order_qty": 1,
-    "example_image_urls": ["/products/popup-banners/mockups-design-straight-popup-hero.jpg", "/products/popup-banners/mockups-design-curved-popup-hero.jpg"],
+    "example_image_urls": ["/products/led-lightbox-counter/mockups-design-lightbox-counter-hero.jpg"],
     "option_groups": [
-      {
-        "key": "orientation",
-        "label": "Orientation",
-        "selection": "single",
-        "required": true,
-        "choices": [
-          {
-            "key": "horizontal",
-            "label": "Horizontal",
-            "price_delta": 0
-          },
-          {
-            "key": "vertical",
-            "label": "Vertical",
-            "price_delta": 0
-          }
-        ]
-      },
-      {
-        "key": "size",
-        "label": "Size",
-        "selection": "single",
-        "required": true,
-        "choices": [
-          {
-            "key": "standard",
-            "label": "Standard",
-            "price_delta": 0
-          },
-          {
-            "key": "large",
-            "label": "Large",
-            "price_delta": 0
-          }
-        ]
-      },
-      {
-        "key": "print_sides",
-        "label": "Print sides",
-        "selection": "single",
-        "required": true,
-        "choices": [
-          {
-            "key": "single",
-            "label": "Single",
-            "price_delta": 0
-          },
-          {
-            "key": "double",
-            "label": "Double",
-            "price_delta": 0
-          }
-        ]
-      },
       {
         "key": "add_ons",
         "label": "Add-ons",
@@ -616,13 +511,8 @@ export const catalog: CatalogProduct[] = [
         "required": false,
         "choices": [
           {
-            "key": "carry-bag",
-            "label": "Carry bag",
-            "price_delta": 0
-          },
-          {
-            "key": "lights",
-            "label": "Lights",
+            "key": "spare-graphic",
+            "label": "Spare graphic",
             "price_delta": 0
           }
         ]

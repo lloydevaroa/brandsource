@@ -54,9 +54,9 @@ App currently seeds the UI from `src/data/catalog.ts` so the homepage/configurat
 | Slug | Product |
 | --- | --- |
 | `table-covers` | Custom rectangle table covers |
-| `vinyl-banners` | Custom vinyl banners |
+| `led-lightbox-bannerstand` | LED lightbox bannerstand |
 | `feather-teardrop-flags` | Feather & teardrop flags |
 | `banner-stands` | Banner stands |
 | `lanyards` | Full-colour sublimation lanyards |
 | `custom-buttons` | Custom buttons (MOQ 50) |
-| `popup-banners` | Pop-up banners |
+| `led-lightbox-counter` | LED lightbox counter |
