@@ -48,7 +48,10 @@ export default function Home() {
                   className="overflow-hidden rounded-xl border border-zinc-200 hover:border-zinc-400"
                 >
                   {p.example_image_urls[0] ? (
-                    <div className="relative aspect-[4/3] bg-zinc-100">
+                    <Link
+                      href={`/products/${p.slug}`}
+                      className="relative block aspect-[4/3] bg-zinc-100"
+                    >
                       <Image
                         src={p.example_image_urls[0]}
                         alt={p.name}
@@ -56,7 +59,7 @@ export default function Home() {
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
-                    </div>
+                    </Link>
                   ) : null}
                   <div className="p-5">
                     <h3 className="font-medium">{p.name}</h3>
@@ -71,7 +74,7 @@ export default function Home() {
                     </p>
                     <Link
                       href={`/products/${p.slug}`}
-                      className="mt-3 inline-block text-sm font-medium text-zinc-900 underline-offset-2 hover:underline"
+                      className="mt-4 inline-block rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
                     >
                       Configure
                     </Link>
