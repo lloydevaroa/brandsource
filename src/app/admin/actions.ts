@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
+import { notifyManufacturingBegun, notifyManufacturingFinished, notifyDeliveryCompleted } from "@/lib/notifications";
 import type { SubOrderStatus } from "@/lib/types";
 
 async function requireStaffProfile() {
@@ -22,22 +23,43 @@ const IN_PROGRESS_STATUSES: SubOrderStatus[] = ["sent_to_supplier", "in_producti
  * independent flag set by the future Xero push (item 5), not something
  * sub-order progress should downgrade.
  */
+const DISPATCHED_OR_BEYOND: SubOrderStatus[] = ["dispatched", "completed"];
+
 async function recomputeOrderStatus(
   supabase: ReturnType<typeof createServiceSupabase>,
   orderId: string
 ) {
-  const { data: order } = await supabase.from("orders").select("status").eq("id", orderId).single();
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status, payment_method, manufacturing_finished_notified_at")
+    .eq("id", orderId)
+    .single();
   if (!order || order.status === "invoiced") return;
 
   const { data: subOrders } = await supabase.from("sub_orders").select("status").eq("order_id", orderId);
   if (!subOrders || subOrders.length === 0) return;
 
+  const isManagedClient = order.payment_method === "po";
   const allCompleted = subOrders.every((s) => s.status === "completed");
   const anyInProgress = subOrders.some((s) => IN_PROGRESS_STATUSES.includes(s.status as SubOrderStatus));
+  const allDispatchedOrBeyond = subOrders.every((s) => DISPATCHED_OR_BEYOND.includes(s.status as SubOrderStatus));
   const nextStatus = allCompleted ? "completed" : anyInProgress ? "in_production" : "new_order";
 
   if (nextStatus !== order.status) {
     await supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
+    if (isManagedClient && nextStatus === "in_production") await notifyManufacturingBegun(orderId);
+    if (isManagedClient && nextStatus === "completed") await notifyDeliveryCompleted(orderId);
+  }
+
+  // "Manufacturing finished" doesn't correspond to an order_status value of
+  // its own (order_status only distinguishes in_production/completed), so
+  // it needs its own once-only flag rather than a status-transition check.
+  if (isManagedClient && !order.manufacturing_finished_notified_at && allDispatchedOrBeyond) {
+    await supabase
+      .from("orders")
+      .update({ manufacturing_finished_notified_at: new Date().toISOString() })
+      .eq("id", orderId);
+    await notifyManufacturingFinished(orderId);
   }
 }
 

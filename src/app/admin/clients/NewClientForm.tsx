@@ -9,6 +9,7 @@ const CREDIT_TERMS = [7, 14, 30] as const;
 
 export function NewClientForm({ staff }: { staff: StaffOption[] }) {
   const [name, setName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [accountManagerId, setAccountManagerId] = useState(staff[0]?.id ?? "");
   const [creditTermDays, setCreditTermDays] = useState<number>(14);
   const [isPending, startTransition] = useTransition();
@@ -21,8 +22,9 @@ export function NewClientForm({ staff }: { staff: StaffOption[] }) {
     setJustAdded(false);
     startTransition(async () => {
       try {
-        await createManagedClient({ name, accountManagerId, creditTermDays });
+        await createManagedClient({ name, accountManagerId, creditTermDays, contactEmail });
         setName("");
+        setContactEmail("");
         setJustAdded(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not create client.");
@@ -42,7 +44,7 @@ export function NewClientForm({ staff }: { staff: StaffOption[] }) {
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-200 bg-white p-5">
       <h2 className="text-sm font-semibold">New managed client</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid gap-4 sm:grid-cols-4">
         <label className="text-sm">
           <span className="mb-1 block font-medium">Business name</span>
           <input
@@ -51,6 +53,16 @@ export function NewClientForm({ staff }: { staff: StaffOption[] }) {
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
             placeholder="e.g. Papatoetoe Glass"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block font-medium">Contact email</span>
+          <input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
+            placeholder="orders@client.co.nz"
           />
         </label>
         <label className="text-sm">

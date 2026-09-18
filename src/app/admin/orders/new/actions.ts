@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { priceForItem } from "@/lib/pricing";
+import { notifyOrderReceived } from "@/lib/notifications";
 
 async function requireStaffProfile() {
   const profile = await syncCurrentProfile();
@@ -98,6 +99,8 @@ export async function createManagedOrder(input: {
     });
     if (subOrderError) throw new Error(subOrderError.message);
   }
+
+  await notifyOrderReceived(order.id);
 
   revalidatePath("/admin");
   return { orderId: order.id as string };

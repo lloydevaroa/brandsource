@@ -16,6 +16,7 @@ export async function createManagedClient(input: {
   name: string;
   accountManagerId: string;
   creditTermDays: number;
+  contactEmail: string;
 }) {
   await requireStaffProfile();
 
@@ -32,6 +33,7 @@ export async function createManagedClient(input: {
     client_type: "managed",
     account_manager_id: input.accountManagerId,
     credit_term_days: input.creditTermDays,
+    contact_email: input.contactEmail.trim() || null,
   });
   if (error) throw new Error(error.message);
 

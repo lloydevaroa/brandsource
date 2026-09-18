@@ -13,7 +13,7 @@ export default async function ClientsPage() {
     supabase
       .from("clients")
       .select(
-        "id, name, credit_term_days, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
+        "id, name, contact_email, credit_term_days, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
       )
       .eq("client_type", "managed")
       .order("name", { ascending: true }),
@@ -37,6 +37,7 @@ export default async function ClientsPage() {
   type ClientRow = {
     id: string;
     name: string;
+    contact_email: string | null;
     credit_term_days: number | null;
     account_manager: { full_name: string | null } | null;
   };
@@ -63,7 +64,14 @@ export default async function ClientsPage() {
               key={c.id}
               className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-3 text-sm"
             >
-              <span className="font-medium">{c.name}</span>
+              <div>
+                <span className="font-medium">{c.name}</span>
+                {c.contact_email ? (
+                  <span className="ml-2 text-xs text-zinc-400">{c.contact_email}</span>
+                ) : (
+                  <span className="ml-2 text-xs text-amber-600">no contact email — notifications won&apos;t send</span>
+                )}
+              </div>
               <span className="text-zinc-500">
                 {c.account_manager?.full_name ?? "Unassigned"} · {c.credit_term_days ?? "—"} day terms
               </span>
