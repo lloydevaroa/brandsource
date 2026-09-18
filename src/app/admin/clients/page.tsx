@@ -12,7 +12,9 @@ export default async function ClientsPage() {
   const [{ data: clients, error }, { data: staff }] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name, credit_term_days, account_manager:profiles ( full_name )")
+      .select(
+        "id, name, credit_term_days, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
+      )
       .eq("client_type", "managed")
       .order("name", { ascending: true }),
     supabase
