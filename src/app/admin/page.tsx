@@ -1,51 +1,14 @@
 import Link from "next/link";
-import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffProfile } from "./staff-guard";
 import { updateSubOrderStatus, claimSubOrder } from "./actions";
 import { SubOrderCard, type SubOrderCardData } from "./SubOrderCard";
 import { STATUS_ORDER, STATUS_LABEL } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
 
 export default async function AdminPage() {
-  const hasClerk =
-    Boolean(process.env.CLERK_SECRET_KEY) &&
-    Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-
-  if (!hasClerk) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Staff dashboard</h1>
-        <p className="mt-2 text-zinc-600">
-          Clerk is not configured on this deployment yet.
-        </p>
-      </div>
-    );
-  }
-
-  const profile = await syncCurrentProfile();
-  if (!profile) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Staff dashboard</h1>
-        <p className="mt-2 text-zinc-600">
-          <Link href="/sign-in" className="underline">
-            Sign in
-          </Link>{" "}
-          to continue.
-        </p>
-      </div>
-    );
-  }
-  if (profile.role !== "admin" && profile.role !== "manager") {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Staff dashboard</h1>
-        <p className="mt-2 text-zinc-600">
-          Your account doesn&apos;t have staff access. Ask an admin to set your role in Clerk.
-        </p>
-      </div>
-    );
-  }
+  const staffResult = await requireStaffProfile("Staff dashboard");
+  if ("guard" in staffResult) return staffResult.guard;
 
   const supabase = createServiceSupabase();
 
@@ -67,7 +30,10 @@ export default async function AdminPage() {
         ),
         order:orders (
           id,
-          customer:profiles ( full_name, email )
+          payment_method,
+          po_number,
+          customer:profiles!orders_customer_id_fkey ( full_name, email ),
+          client:clients ( name )
         )
       `
       )
@@ -103,7 +69,10 @@ export default async function AdminPage() {
       artwork_files: { id: string }[];
     } | null;
     order: {
+      payment_method: "card" | "po";
+      po_number: string | null;
       customer: { full_name: string | null; email: string | null } | null;
+      client: { name: string } | null;
     } | null;
   };
   const rows = (subOrders ?? []) as unknown as Row[];
@@ -116,9 +85,10 @@ export default async function AdminPage() {
     productName: row.order_line?.product?.name ?? "Unknown product",
     quantity: row.order_line?.quantity ?? 0,
     configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
-    customerName: row.order?.customer?.full_name ?? null,
+    customerName: row.order?.customer?.full_name ?? row.order?.client?.name ?? null,
     customerEmail: row.order?.customer?.email ?? null,
     artworkCount: row.order_line?.artwork_files?.length ?? 0,
+    poNumber: row.order?.payment_method === "po" ? row.order?.po_number ?? "PO" : null,
   }));
 
   const columns = STATUS_ORDER.map((status) => ({
@@ -136,7 +106,18 @@ export default async function AdminPage() {
             </Link>
             <h1 className="mt-2 text-2xl font-semibold">Staff dashboard</h1>
           </div>
-          <p className="text-sm text-zinc-500">{cards.length} open order lines</p>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/clients" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Clients
+            </Link>
+            <Link
+              href="/admin/orders/new"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              + New PO order
+            </Link>
+            <p className="text-sm text-zinc-500">{cards.length} open order lines</p>
+          </div>
         </div>
 
         <div className="mt-8 flex gap-4 overflow-x-auto pb-4">

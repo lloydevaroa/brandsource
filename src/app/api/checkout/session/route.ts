@@ -4,6 +4,7 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { getStripe } from "@/lib/stripe";
 import { catalog } from "@/data/catalog";
+import { priceForItem, configurationSummary } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -13,39 +14,6 @@ type SubmittedItem = {
   quantity: number;
   artwork: { path: string; filename: string }[];
 };
-
-function priceForItem(productSlug: string, configuration: Record<string, string | string[]>) {
-  const product = catalog.find((p) => p.slug === productSlug);
-  if (!product) return null;
-  const base = product.unit_price ?? 0;
-  const delta = product.option_groups.reduce((sum, g) => {
-    const selected = configuration[g.key];
-    if (!selected) return sum;
-    const keys = Array.isArray(selected) ? selected : [selected];
-    return (
-      sum +
-      keys.reduce((s, k) => s + (g.choices.find((c) => c.key === k)?.price_delta ?? 0), 0)
-    );
-  }, 0);
-  return base + delta;
-}
-
-function configurationSummary(productSlug: string, configuration: Record<string, string | string[]>) {
-  const product = catalog.find((p) => p.slug === productSlug);
-  if (!product) return "";
-  return product.option_groups
-    .flatMap((g) => {
-      const selected = configuration[g.key];
-      if (!selected || (Array.isArray(selected) && selected.length === 0)) return [];
-      const keys = Array.isArray(selected) ? selected : [selected];
-      const labels = keys
-        .map((k) => g.choices.find((c) => c.key === k)?.label)
-        .filter(Boolean)
-        .join(", ");
-      return labels ? [`${g.label}: ${labels}`] : [];
-    })
-    .join(" · ");
-}
 
 export async function POST(req: Request) {
   const { userId } = await auth();
@@ -113,7 +81,7 @@ export async function POST(req: Request) {
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({ customer_id: profile.id, status: "draft" })
+    .insert({ customer_id: profile.id, status: "draft", payment_method: "card" })
     .select("id")
     .single();
   if (orderError) {

@@ -17,6 +17,8 @@ export type SubOrderCardData = {
   customerName: string | null;
   customerEmail: string | null;
   artworkCount: number;
+  /** Set (to the PO number, or "PO" if none given) for managed-client PO orders. */
+  poNumber: string | null;
 };
 
 export function SubOrderCard({
@@ -45,6 +47,11 @@ export function SubOrderCard({
       {configSummary ? <p className="mt-1 text-xs text-zinc-500">{configSummary}</p> : null}
       <p className="mt-2 text-xs text-zinc-600">
         {subOrder.customerName ?? subOrder.customerEmail ?? "Unknown customer"}
+        {subOrder.poNumber ? (
+          <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+            {subOrder.poNumber}
+          </span>
+        ) : null}
       </p>
       <p className="text-xs text-zinc-400">
         {new Date(subOrder.createdAt).toLocaleDateString("en-NZ")}
