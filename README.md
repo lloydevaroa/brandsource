@@ -16,7 +16,8 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 ## Shipped (as of 2026-09-18)
 
-- **Managed-client data model**: `clients` table (`client_type` managed/direct, `account_manager_id`, `credit_term_days` 7/14/30, enforced by a check constraint that managed clients must have both) and `profiles.client_id` linking a signed-in contact to their organisation. `orders` gained `client_id`, `payment_method` (`card`/`po`), `po_number`, `created_by_id` (the account manager, when staff create on a client's behalf), and `status` is now a proper `order_status` enum (`draft`/`new_order`/`in_production`/`completed`/`invoiced`) instead of free text. Nothing writes to the new columns yet — this is the foundation for the managed-client PO flow (item 2) and Xero push (item 5) below, not a working flow yet.
+- **Managed-client data model**: `clients` table (`client_type` managed/direct, `account_manager_id`, `credit_term_days` 7/14/30, enforced by a check constraint that managed clients must have both) and `profiles.client_id` linking a signed-in contact to their organisation. `orders` gained `client_id`, `payment_method` (`card`/`po`), `po_number`, `created_by_id` (the account manager, when staff create on a client's behalf), and `status` is now a proper `order_status` enum (`draft`/`new_order`/`in_production`/`completed`/`invoiced`) instead of free text.
+- **Managed-client PO flow**: `/admin/clients` (staff add a managed client: name, account manager, credit terms) and `/admin/orders/new` (staff pick a client and build an order line-by-line off the same catalog/configurator data as the storefront, optional PO number) — submitting creates the order at `new_order` with `payment_method: 'po'` and its `sub_orders` immediately, no payment step, so it shows up on the `/admin` Kanban straight away with a PO badge. This is the first end-to-end path that doesn't need Stripe keys.
 
 - **Catalog & configurator**: 7 products, each with option groups/choices, served from `src/data/catalog.ts` (mirrors `products`/`option_groups`/`option_choices` in Supabase). Product pages statically generated at `/products/[slug]`.
 - **Cart**: client-side (`localStorage`), quantity + per-item artwork upload to a private Supabase Storage bucket (`/api/artwork/upload`, staged under `staged/{cartItemId}/...` ahead of order creation).
@@ -64,8 +65,8 @@ The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts`
 Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead of Stripe — see `build-brief.md` "Immediate priority":
 
 1. ~~Data model: clients (type, account manager, credit terms), sub-orders, order lifecycle status~~ — `supabase/clients-and-po.sql`, `src/lib/types.ts`
-2. Managed client PO flow: account manager creates an order on behalf of a managed client, no payment integration required
-3. Admin / account-manager order visibility: status overview + Kanban board
+2. ~~Managed client PO flow: account manager creates an order on behalf of a managed client~~ — `/admin/clients`, `/admin/orders/new`
+3. Admin / account-manager order visibility: status overview + Kanban board (the existing `/admin` Kanban already shows PO orders; a dedicated status-overview/reporting view is still open)
 4. Notification milestones, scoped to managed clients first
 5. Xero push: order detail sent to Xero once a job is ready to invoice
 6. Admin CSV reporting: by customer, by item, by price
