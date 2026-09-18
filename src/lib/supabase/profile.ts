@@ -8,6 +8,7 @@ export type Profile = {
   email: string | null;
   full_name: string | null;
   role: Role;
+  client_id: string | null;
 };
 
 /**
@@ -38,7 +39,7 @@ export async function syncCurrentProfile(): Promise<Profile | null> {
       },
       { onConflict: "clerk_user_id" }
     )
-    .select("id, clerk_user_id, email, full_name, role")
+    .select("id, clerk_user_id, email, full_name, role, client_id")
     .single();
 
   if (error) throw error;

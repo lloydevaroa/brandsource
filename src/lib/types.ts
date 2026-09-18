@@ -15,6 +15,20 @@ export type SubOrderStatus =
 
 export type SupplierChannel = 'api' | 'email_po' | 'manual_portal';
 
+export type ClientType = 'managed' | 'direct';
+
+export type OrderStatus = 'draft' | 'new_order' | 'in_production' | 'completed' | 'invoiced';
+
+export type OrderPaymentMethod = 'card' | 'po';
+
+export interface Client {
+  id: string;
+  name: string;
+  client_type: ClientType;
+  account_manager_id: string | null;
+  credit_term_days: 7 | 14 | 30 | null;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -55,7 +69,11 @@ export interface Supplier {
 export interface Order {
   id: string;
   customer_id: string;
-  status: string;
+  client_id: string | null;
+  payment_method: OrderPaymentMethod;
+  po_number: string | null;
+  created_by_id: string | null;
+  status: OrderStatus;
   created_at: string;
 }
 

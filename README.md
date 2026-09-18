@@ -14,7 +14,9 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 - **Xero deferred** until Project Owner briefs requirements
 - Supplier commercial outreach owned by Brand Source Project Owner
 
-## Shipped (as of 2026-09-16)
+## Shipped (as of 2026-09-18)
+
+- **Managed-client data model**: `clients` table (`client_type` managed/direct, `account_manager_id`, `credit_term_days` 7/14/30, enforced by a check constraint that managed clients must have both) and `profiles.client_id` linking a signed-in contact to their organisation. `orders` gained `client_id`, `payment_method` (`card`/`po`), `po_number`, `created_by_id` (the account manager, when staff create on a client's behalf), and `status` is now a proper `order_status` enum (`draft`/`new_order`/`in_production`/`completed`/`invoiced`) instead of free text. Nothing writes to the new columns yet — this is the foundation for the managed-client PO flow (item 2) and Xero push (item 5) below, not a working flow yet.
 
 - **Catalog & configurator**: 7 products, each with option groups/choices, served from `src/data/catalog.ts` (mirrors `products`/`option_groups`/`option_choices` in Supabase). Product pages statically generated at `/products/[slug]`.
 - **Cart**: client-side (`localStorage`), quantity + per-item artwork upload to a private Supabase Storage bucket (`/api/artwork/upload`, staged under `staged/{cartItemId}/...` ahead of order creation).
@@ -45,6 +47,7 @@ Apply in the Supabase SQL editor, in order:
 1. `supabase/schema.sql`
 2. `supabase/seed.sql`
 3. `supabase/supplier-pricing-research.sql`
+4. `supabase/clients-and-po.sql` — managed-client/account-manager/credit-terms data model, and formalizes `orders.status` into a proper `order_status` enum (`draft` → `new_order` → `in_production` → `completed` → `invoiced`). Ahead of the managed-client PO flow, so `orders.payment_method`/`po_number`/`client_id` exist but nothing writes to them yet.
 
 The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts` directly, not Supabase — it's kept in sync with `seed.sql` by hand. Orders, sub-orders, profiles, artwork and pricing research all live in Supabase.
 
@@ -58,8 +61,16 @@ The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts`
 
 ## Next slices
 
-1. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (test mode first) so checkout can actually be exercised end-to-end
-2. Resend transactional emails (order confirmation, stage-change notifications)
+Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead of Stripe — see `build-brief.md` "Immediate priority":
+
+1. ~~Data model: clients (type, account manager, credit terms), sub-orders, order lifecycle status~~ — `supabase/clients-and-po.sql`, `src/lib/types.ts`
+2. Managed client PO flow: account manager creates an order on behalf of a managed client, no payment integration required
+3. Admin / account-manager order visibility: status overview + Kanban board
+4. Notification milestones, scoped to managed clients first
+5. Xero push: order detail sent to Xero once a job is ready to invoice
+6. Admin CSV reporting: by customer, by item, by price
+
+Stripe/direct-consumer checkout is built and paused (needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` to test end-to-end) — picked back up once the managed-client path is live. Resend transactional emails also still pending.
 
 ## SKUs
 

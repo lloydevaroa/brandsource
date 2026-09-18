@@ -50,14 +50,14 @@ export async function POST(req: Request) {
   }
 
   // Idempotent: Stripe retries webhooks, so skip if already processed.
-  if (order.status === "paid") {
+  if (order.status !== "draft") {
     return NextResponse.json({ received: true, alreadyProcessed: true });
   }
 
   const { error: updateError } = await supabase
     .from("orders")
     .update({
-      status: "paid",
+      status: "new_order",
       stripe_payment_intent_id:
         typeof session.payment_intent === "string" ? session.payment_intent : null,
       total_amount: (session.amount_total ?? 0) / 100,
