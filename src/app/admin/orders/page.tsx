@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import type { OrderStatus, OrderPaymentMethod, SubOrderStatus } from "@/lib/types";
+import { REPORTS, type ReportKey } from "@/lib/reports";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   draft: "Draft",
@@ -86,7 +87,20 @@ export default async function OrdersOverviewPage() {
           .
         </p>
 
-        <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+        <div className="mt-6 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-zinc-500">Export CSV:</span>
+          {(Object.keys(REPORTS) as ReportKey[]).map((key) => (
+            <a
+              key={key}
+              href={`/admin/orders/export?report=${key}`}
+              className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 hover:border-zinc-400"
+            >
+              {REPORTS[key]}
+            </a>
+          ))}
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
