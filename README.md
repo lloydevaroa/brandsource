@@ -73,7 +73,7 @@ Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead
 3. ~~Admin / account-manager order visibility: status overview + Kanban board~~ — `/admin/orders`
 4. ~~Notification milestones, scoped to managed clients first~~ — `src/lib/notifications.ts`, needs `RESEND_API_KEY` to test end-to-end
 5. Xero push: order detail sent to Xero once a job is ready to invoice
-6. Admin CSV reporting: by customer, by item, by price
+6. ~~Admin CSV reporting: by customer, by item, by price~~ — done 2026-09-23: `/admin/orders/export?report=transactions|customer|item|price`, linked from `/admin/orders` (staff-only, drafts excluded)
 
 Stripe/direct-consumer checkout is built and paused (needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` to test end-to-end) — picked back up once the managed-client path is live.
 
