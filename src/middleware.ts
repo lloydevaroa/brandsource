@@ -7,6 +7,9 @@ const isPublicRoute = createRouteMatcher([
   "/products(.*)",
   "/cart",
   "/api/artwork(.*)",
+  // Stripe calls this server-to-server with no Clerk session; the route
+  // verifies the Stripe signature itself.
+  "/api/checkout/webhook",
   "/sign-in(.*)",
   "/sign-up(.*)",
 ]);
