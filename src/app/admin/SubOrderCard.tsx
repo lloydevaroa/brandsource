@@ -117,8 +117,8 @@ export function SubOrderCard({
           ))}
         </select>
         {isPending ? (
-          <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-            <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-zinc-300 border-t-zinc-500" />
+          <p className="flex items-center gap-1.5 text-[11px] text-orange-500">
+            <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-orange-200 border-t-orange-500" />
             Saving…
           </p>
         ) : error ? (
