@@ -7,8 +7,10 @@ import { STATUS_ORDER, STATUS_LABEL } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
 
 export default async function AdminPage() {
-  const staffResult = await requireStaffProfile("Staff dashboard");
+  const staffResult = await requireStaffProfile("Team dashboard");
   if ("guard" in staffResult) return staffResult.guard;
+  const { profile } = staffResult;
+  const firstName = profile.full_name?.split(" ")[0] ?? null;
 
   const supabase = createServiceSupabase();
 
@@ -48,7 +50,7 @@ export default async function AdminPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Staff dashboard</h1>
+        <h1 className="text-2xl font-semibold">Team dashboard</h1>
         <p className="mt-2 text-red-600">Could not load orders: {error.message}</p>
       </div>
     );
@@ -104,7 +106,8 @@ export default async function AdminPage() {
             <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
               ← BRANDSource
             </Link>
-            <h1 className="mt-2 text-2xl font-semibold">Staff dashboard</h1>
+            <h1 className="mt-2 text-2xl font-semibold">Team dashboard</h1>
+            {firstName ? <p className="mt-1 text-sm text-zinc-500">Hi {firstName}</p> : null}
           </div>
           <div className="flex items-center gap-4">
             <Link href="/admin/clients" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">

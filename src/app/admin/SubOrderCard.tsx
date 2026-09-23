@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import type { SubOrderStatus } from "@/lib/types";
 import { STATUS_ORDER, STATUS_LABEL } from "./status";
 
@@ -34,6 +34,13 @@ export function SubOrderCard({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [optimistic, setOptimistic] = useOptimistic(
+    { status: subOrder.status, claimedBy: subOrder.claimedBy },
+    (state, update: Partial<{ status: SubOrderStatus; claimedBy: string | null }>) => ({
+      ...state,
+      ...update,
+    })
+  );
 
   const configSummary = Object.entries(subOrder.configuration)
     .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -62,13 +69,15 @@ export function SubOrderCard({
 
       <div className="mt-3 flex flex-col gap-2">
         <select
-          value={subOrder.status}
+          value={optimistic.status}
           disabled={isPending}
           onChange={(e) => {
+            const next = e.target.value as SubOrderStatus;
             setError(null);
             startTransition(async () => {
+              setOptimistic({ status: next });
               try {
-                await onUpdateStatus(subOrder.id, e.target.value as SubOrderStatus);
+                await onUpdateStatus(subOrder.id, next);
               } catch {
                 setError("Could not update status");
               }
@@ -84,13 +93,15 @@ export function SubOrderCard({
         </select>
 
         <select
-          value={subOrder.claimedBy ?? ""}
+          value={optimistic.claimedBy ?? ""}
           disabled={isPending}
           onChange={(e) => {
+            const next = e.target.value || null;
             setError(null);
             startTransition(async () => {
+              setOptimistic({ claimedBy: next });
               try {
-                await onClaim(subOrder.id, e.target.value || null);
+                await onClaim(subOrder.id, next);
               } catch {
                 setError("Could not update assignee");
               }
@@ -105,7 +116,14 @@ export function SubOrderCard({
             </option>
           ))}
         </select>
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {isPending ? (
+          <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+            <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-zinc-300 border-t-zinc-500" />
+            Saving…
+          </p>
+        ) : error ? (
+          <p className="text-xs text-red-600">{error}</p>
+        ) : null}
       </div>
     </li>
   );

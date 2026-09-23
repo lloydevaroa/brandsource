@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type KeyboardEvent } from "react";
 import { catalog } from "@/data/catalog";
 import { priceForItem, configurationSummary } from "@/lib/pricing";
 import { createManagedOrder, type ManagedOrderLineInput } from "./actions";
@@ -16,6 +16,9 @@ function formatNZD(amount: number) {
 
 export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
+  const [clientQuery, setClientQuery] = useState(clients[0]?.name ?? "");
+  const [clientMenuOpen, setClientMenuOpen] = useState(false);
+  const [clientHighlight, setClientHighlight] = useState(0);
   const [poNumber, setPoNumber] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
 
@@ -37,6 +40,52 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
   }, [product, selections]);
 
   const total = lines.reduce((sum, l) => sum + (priceForItem(l.productSlug, l.configuration) ?? 0) * l.quantity, 0);
+
+  const filteredClients = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((c) => c.name.toLowerCase().includes(q));
+  }, [clients, clientQuery]);
+  const clientActiveIndex = Math.min(clientHighlight, Math.max(filteredClients.length - 1, 0));
+
+  function selectClient(client: ClientOption) {
+    setClientId(client.id);
+    setClientQuery(client.name);
+    setClientMenuOpen(false);
+  }
+
+  function handleClientInputChange(value: string) {
+    setClientQuery(value);
+    setClientMenuOpen(true);
+    setClientHighlight(0);
+    const selected = clients.find((c) => c.id === clientId);
+    if (!selected || selected.name !== value) {
+      setClientId("");
+    }
+  }
+
+  function handleClientBlur() {
+    setClientMenuOpen(false);
+    const selected = clients.find((c) => c.id === clientId);
+    setClientQuery(selected?.name ?? "");
+  }
+
+  function handleClientKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (!clientMenuOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setClientHighlight((i) => Math.min(i + 1, filteredClients.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setClientHighlight((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const match = filteredClients[clientActiveIndex];
+      if (match) selectClient(match);
+    } else if (e.key === "Escape") {
+      setClientMenuOpen(false);
+    }
+  }
 
   function selectProduct(slug: string) {
     setProductSlug(slug);
@@ -116,19 +165,45 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
     <div className="space-y-6">
       <div className="rounded-xl border border-zinc-200 bg-white p-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="text-sm">
+          <label className="relative text-sm">
             <span className="mb-1 block font-medium">Client</span>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
+            <input
+              type="text"
+              role="combobox"
+              aria-expanded={clientMenuOpen}
+              aria-autocomplete="list"
+              autoComplete="off"
+              value={clientQuery}
+              placeholder="Search clients…"
+              onChange={(e) => handleClientInputChange(e.target.value)}
+              onFocus={() => setClientMenuOpen(true)}
+              onBlur={handleClientBlur}
+              onKeyDown={handleClientKeyDown}
               className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            />
+            {clientMenuOpen && filteredClients.length > 0 ? (
+              <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+                {filteredClients.map((c, i) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectClient(c)}
+                      className={`block w-full px-3 py-1.5 text-left text-sm ${
+                        i === clientActiveIndex ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {clientMenuOpen && filteredClients.length === 0 ? (
+              <p className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-400 shadow-lg">
+                No matching clients
+              </p>
+            ) : null}
           </label>
           <label className="text-sm">
             <span className="mb-1 block font-medium">PO number (optional)</span>
@@ -222,7 +297,7 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
               onClick={addLine}
               className="rounded-full border border-zinc-900 px-4 py-1.5 text-sm font-medium hover:bg-zinc-900 hover:text-white"
             >
-              Add line
+              Add item to order
             </button>
           </div>
         ) : null}
@@ -272,7 +347,7 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
           <p className="mt-3 text-sm text-emerald-600">
             Order created —{" "}
             <Link href="/admin" className="underline underline-offset-2">
-              view it on the staff dashboard
+              view it on the team dashboard
             </Link>
             .
           </p>

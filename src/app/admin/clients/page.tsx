@@ -47,7 +47,7 @@ export default async function ClientsPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">
-          ← Staff dashboard
+          ← Team dashboard
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">Managed clients</h1>
         <p className="mt-2 text-sm text-zinc-500">

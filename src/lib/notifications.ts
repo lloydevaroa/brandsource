@@ -78,7 +78,7 @@ export async function notifyOrderReceived(orderId: string) {
   await sendEmail(
     ctx.accountManagerEmail,
     "New order created",
-    `${ctx.clientName} has a new order on file${ref}. Track its progress on the staff dashboard.`
+    `${ctx.clientName} has a new order on file${ref}. Track its progress on the team dashboard.`
   );
 }
 
