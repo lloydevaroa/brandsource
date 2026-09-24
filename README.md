@@ -11,7 +11,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 - Ops: admin Kanban against 9-stage sub-order lifecycle
 - Proofing: human upload → proof → approve (no live artwork render)
 - Stack: Next.js · Vercel · Supabase · Clerk · Stripe · Resend
-- **Xero deferred** until Project Owner briefs requirements
+- **Xero push** built 2026-09-24 (see below); awaiting BrandSource's Xero connection
 - Supplier commercial outreach owned by Brand Source Project Owner
 
 ## Shipped (as of 2026-09-18)
@@ -72,7 +72,7 @@ Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead
 2. ~~Managed client PO flow: account manager creates an order on behalf of a managed client~~ — `/admin/clients`, `/admin/orders/new`
 3. ~~Admin / account-manager order visibility: status overview + Kanban board~~ — `/admin/orders`
 4. ~~Notification milestones, scoped to managed clients first~~ — `src/lib/notifications.ts`, needs `RESEND_API_KEY` to test end-to-end
-5. Xero push: order detail sent to Xero once a job is ready to invoice
+5. Xero push: order detail sent to Xero once a job is ready to invoice — built 2026-09-24, not yet connected. Run `supabase/xero.sql`, set `XERO_CLIENT_ID`/`XERO_CLIENT_SECRET` in Vercel (from a Xero "Web app" at developer.xero.com, redirect URI `https://<domain>/api/xero/callback`, free Starter tier is enough for one organisation), then an admin in BrandSource's Xero clicks **Connect to Xero** at `/admin/xero`. Completed PO orders get a **Send to Xero** button on `/admin/orders`: finds or creates the Xero contact by client name, creates a sales invoice (reference = PO number, due date = credit terms), marks the order `invoiced`. Optional env: `XERO_SALES_ACCOUNT_CODE` (default `200`), `XERO_LINE_AMOUNT_TYPES` (`Inclusive` default, i.e. catalog prices include GST; or `Exclusive`), `XERO_INVOICE_STATUS` (`DRAFT` default so staff review in Xero before it's sent; or `AUTHORISED`). Uses Xero's granular scopes (`accounting.invoices`, `accounting.contacts`), which apps created after 2 March 2026 require.
 6. ~~Admin CSV reporting: by customer, by item, by price~~ — done 2026-09-23: `/admin/orders/export?report=transactions|customer|item|price`, linked from `/admin/orders` (staff-only, drafts excluded)
 
 Stripe/direct-consumer checkout is built and paused (needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` to test end-to-end) — picked back up once the managed-client path is live.

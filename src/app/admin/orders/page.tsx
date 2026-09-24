@@ -3,6 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import type { OrderStatus, OrderPaymentMethod, SubOrderStatus } from "@/lib/types";
 import { REPORTS, type ReportKey } from "@/lib/reports";
+import { SendToXeroButton } from "./SendToXeroButton";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   draft: "Draft",
@@ -40,6 +41,7 @@ export default async function OrdersOverviewPage() {
       status,
       total_amount,
       created_at,
+      xero_invoice_number,
       customer:profiles!orders_customer_id_fkey ( full_name, email ),
       client:clients ( name ),
       sub_orders ( status )
@@ -65,6 +67,7 @@ export default async function OrdersOverviewPage() {
     status: OrderStatus;
     total_amount: number | null;
     created_at: string;
+    xero_invoice_number: string | null;
     customer: { full_name: string | null; email: string | null } | null;
     client: { name: string } | null;
     sub_orders: { status: SubOrderStatus }[];
@@ -110,6 +113,7 @@ export default async function OrdersOverviewPage() {
                 <th className="px-4 py-3 font-medium">Progress</th>
                 <th className="px-4 py-3 font-medium">Total</th>
                 <th className="px-4 py-3 font-medium">Created</th>
+                <th className="px-4 py-3 font-medium">Xero</th>
               </tr>
             </thead>
             <tbody>
@@ -137,12 +141,21 @@ export default async function OrdersOverviewPage() {
                     <td className="px-4 py-3 text-zinc-500">
                       {new Date(row.created_at).toLocaleDateString("en-NZ")}
                     </td>
+                    <td className="px-4 py-3 text-zinc-500">
+                      {row.xero_invoice_number ? (
+                        row.xero_invoice_number
+                      ) : row.payment_method === "po" && row.status === "completed" ? (
+                        <SendToXeroButton orderId={row.id} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-zinc-400">
+                  <td colSpan={7} className="px-4 py-6 text-center text-sm text-zinc-400">
                     No orders yet.
                   </td>
                 </tr>
