@@ -35,22 +35,22 @@ export default async function ProductPage({
           ← {category ? category.name : "Trade Show & Events"}
         </Link>
         {product.example_image_urls[0] ? (
-          <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-xl bg-zinc-100">
+          <div className="relative mx-auto mt-6 aspect-square max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-white">
             <Image
               src={product.example_image_urls[0]}
               alt={product.name}
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 576px"
               priority
             />
           </div>
         ) : null}
         {product.example_image_urls.length > 1 ? (
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mx-auto mt-3 grid max-w-xl grid-cols-4 gap-3">
             {product.example_image_urls.slice(1).map((src) => (
-              <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-zinc-100">
-                <Image src={src} alt="" fill className="object-cover" sizes="50vw" />
+              <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white">
+                <Image src={src} alt="" fill className="object-contain" sizes="144px" />
               </div>
             ))}
           </div>

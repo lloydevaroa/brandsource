@@ -56,13 +56,13 @@ export function CategoryTile({ category, productCount }: { category: Category; p
 export function ProductCard({ product }: { product: CategoryProduct }) {
   return (
     <li className="overflow-hidden rounded-xl border border-zinc-200 bg-white hover:border-zinc-400">
-      <Link href={`/products/${product.slug}`} className="relative block aspect-[4/3] bg-zinc-100">
+      <Link href={`/products/${product.slug}`} className="relative block aspect-square bg-white">
         {product.image ? (
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : null}
