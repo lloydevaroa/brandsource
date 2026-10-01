@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/catalog";
 import { categoryForProduct, getCategories } from "@/lib/categories";
+import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -34,27 +34,7 @@ export default async function ProductPage({
         >
           ← {category ? category.name : "Trade Show & Events"}
         </Link>
-        {product.example_image_urls[0] ? (
-          <div className="relative mx-auto mt-6 aspect-square max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-white">
-            <Image
-              src={product.example_image_urls[0]}
-              alt={product.name}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 576px"
-              priority
-            />
-          </div>
-        ) : null}
-        {product.example_image_urls.length > 1 ? (
-          <div className="mx-auto mt-3 grid max-w-xl grid-cols-4 gap-3">
-            {product.example_image_urls.slice(1).map((src) => (
-              <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-white">
-                <Image src={src} alt="" fill className="object-contain" sizes="144px" />
-              </div>
-            ))}
-          </div>
-        ) : null}
+        <ProductGallery images={product.example_image_urls} name={product.name} />
         <h1 className="mt-6 text-3xl font-semibold tracking-tight">
           {product.name}
         </h1>
