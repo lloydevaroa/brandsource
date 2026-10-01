@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition, type KeyboardEvent } from "react";
-import { catalog } from "@/data/catalog";
+import type { CatalogProduct } from "@/lib/catalog";
 import { priceForItem, configurationSummary } from "@/lib/pricing";
 import { createManagedOrder, type ManagedOrderLineInput } from "./actions";
 
@@ -14,7 +14,7 @@ function formatNZD(amount: number) {
   return new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD" }).format(amount);
 }
 
-export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
+export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; catalog: CatalogProduct[] }) {
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
   const [clientQuery, setClientQuery] = useState(clients[0]?.name ?? "");
   const [clientMenuOpen, setClientMenuOpen] = useState(false);
@@ -39,7 +39,7 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
       .filter((g) => (g.selection === "multi" ? false : !selections[g.key]));
   }, [product, selections]);
 
-  const total = lines.reduce((sum, l) => sum + (priceForItem(l.productSlug, l.configuration) ?? 0) * l.quantity, 0);
+  const total = lines.reduce((sum, l) => sum + (priceForItem(catalog, l.productSlug, l.configuration) ?? 0) * l.quantity, 0);
 
   const filteredClients = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
@@ -311,7 +311,7 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
           <ul className="mt-3 space-y-2">
             {lines.map((l) => {
               const product = catalog.find((p) => p.slug === l.productSlug);
-              const price = priceForItem(l.productSlug, l.configuration) ?? 0;
+              const price = priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
               return (
                 <li
                   key={l.id}
@@ -321,7 +321,7 @@ export function OrderBuilder({ clients }: { clients: ClientOption[] }) {
                     <p className="font-medium">
                       {product?.name ?? l.productSlug} × {l.quantity}
                     </p>
-                    <p className="text-xs text-zinc-500">{configurationSummary(l.productSlug, l.configuration)}</p>
+                    <p className="text-xs text-zinc-500">{configurationSummary(catalog, l.productSlug, l.configuration)}</p>
                     <p className="mt-1 text-xs text-zinc-600">{formatNZD(price * l.quantity)}</p>
                   </div>
                   <button

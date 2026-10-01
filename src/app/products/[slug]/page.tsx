@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { catalog } from "@/data/catalog";
+import { getCatalog } from "@/lib/catalog";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
 
-export function generateStaticParams() {
-  return catalog.map((p) => ({ slug: p.slug }));
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return (await getCatalog()).map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({
@@ -15,6 +17,7 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const catalog = await getCatalog();
   const product = catalog.find((p) => p.slug === slug);
   if (!product) notFound();
 

@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { getStripe } from "@/lib/stripe";
-import { catalog } from "@/data/catalog";
+import { getCatalog } from "@/lib/catalog";
 import { priceForItem, configurationSummary } from "@/lib/pricing";
 
 export const runtime = "nodejs";
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Malformed cart item" }, { status: 400 });
     }
   }
+  const catalog = await getCatalog();
   for (const item of items) {
     const product = catalog.find((p) => p.slug === item.productSlug);
     if (product && item.quantity < product.min_order_qty) {
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
   }[] = [];
 
   for (const item of items) {
-    const unitPrice = priceForItem(item.productSlug, item.configuration);
+    const unitPrice = priceForItem(catalog, item.productSlug, item.configuration);
     if (unitPrice === null || unitPrice <= 0) {
       return NextResponse.json(
         { error: `No price available for ${item.productSlug}` },
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
     }
 
     const product = catalog.find((p) => p.slug === item.productSlug)!;
-    const summary = configurationSummary(item.productSlug, item.configuration);
+    const summary = configurationSummary(catalog, item.productSlug, item.configuration);
     lineItems.push({
       price_data: {
         currency: "nzd",

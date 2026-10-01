@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { priceForItem } from "@/lib/pricing";
+import { getCatalog } from "@/lib/catalog";
 import { notifyOrderReceived } from "@/lib/notifications";
 
 async function requireStaffProfile() {
@@ -52,10 +53,11 @@ export async function createManagedOrder(input: {
   if (productsError) throw new Error(productsError.message);
   const productIdBySlug = new Map(products.map((p) => [p.slug, p.id as string]));
 
+  const catalog = await getCatalog();
   const pricedLines = input.lines.map((line) => {
     const productId = productIdBySlug.get(line.productSlug);
     if (!productId) throw new Error(`Unknown product: ${line.productSlug}`);
-    const unitPrice = priceForItem(line.productSlug, line.configuration);
+    const unitPrice = priceForItem(catalog, line.productSlug, line.configuration);
     if (unitPrice === null || unitPrice <= 0) {
       throw new Error(`No price available for ${line.productSlug}`);
     }

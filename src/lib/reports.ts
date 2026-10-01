@@ -1,5 +1,6 @@
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { configurationSummary } from "@/lib/pricing";
+import { getCatalog } from "@/lib/catalog";
 import type { OrderPaymentMethod, OrderStatus } from "@/lib/types";
 
 export const REPORTS = {
@@ -41,6 +42,7 @@ function nzDate(iso: string) {
  */
 async function loadLines(): Promise<Line[]> {
   const supabase = createServiceSupabase();
+  const catalog = await getCatalog(true);
   const { data, error } = await supabase
     .from("orders")
     .select(
@@ -93,7 +95,7 @@ async function loadLines(): Promise<Line[]> {
       poNumber: order.po_number,
       orderStatus: order.status,
       productName: line.product?.name ?? "Unknown product",
-      options: line.product ? configurationSummary(line.product.slug, line.configuration ?? {}) : "",
+      options: line.product ? configurationSummary(catalog, line.product.slug, line.configuration ?? {}) : "",
       quantity: line.quantity,
       unitPrice: Number(line.unit_price),
     }))

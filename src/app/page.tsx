@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { catalog } from "@/data/catalog";
+import { getCatalog } from "@/lib/catalog";
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function Home() {
+  const catalog = await getCatalog();
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />

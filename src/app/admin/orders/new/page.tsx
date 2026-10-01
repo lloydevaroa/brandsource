@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../../staff-guard";
+import { getCatalog } from "@/lib/catalog";
 import { OrderBuilder } from "./OrderBuilder";
 
 export default async function NewOrderPage() {
@@ -36,7 +37,7 @@ export default async function NewOrderPage() {
         </p>
 
         <div className="mt-8">
-          <OrderBuilder clients={clients ?? []} />
+          <OrderBuilder clients={clients ?? []} catalog={await getCatalog()} />
         </div>
       </div>
     </div>

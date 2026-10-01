@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { CatalogProduct } from "@/data/catalog";
+import type { CatalogProduct } from "@/lib/catalog";
 import { useCart } from "@/lib/cart";
 
 export function ProductConfigurator({ product }: { product: CatalogProduct }) {

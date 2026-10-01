@@ -38,6 +38,7 @@ function mapProduct(p) {
       active: p.active === "Active" && p.status === "Normal",
       supplier: "trends",
       supplier_code: String(p.code),
+      sort_order: 100,
       supplier_updated_at: p.last_updated ? new Date(p.last_updated.replace(" ", "T") + "Z").toISOString() : null,
       imported_at: new Date().toISOString(),
     },

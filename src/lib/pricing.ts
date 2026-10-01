@@ -1,7 +1,8 @@
-import { catalog } from "@/data/catalog";
+import type { CatalogProduct } from "@/lib/catalog";
 
 /** Flat unit price for a configured line: product base + any option price deltas. */
 export function priceForItem(
+  catalog: CatalogProduct[],
   productSlug: string,
   configuration: Record<string, string | string[]>
 ) {
@@ -21,6 +22,7 @@ export function priceForItem(
 
 /** Human-readable "Group: choice" summary of a line's selected options. */
 export function configurationSummary(
+  catalog: CatalogProduct[],
   productSlug: string,
   configuration: Record<string, string | string[]>
 ) {
