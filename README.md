@@ -52,6 +52,7 @@ Apply in the Supabase SQL editor, in order:
 3. `supabase/supplier-pricing-research.sql`
 4. `supabase/clients-and-po.sql` — managed-client/account-manager/credit-terms data model, and formalizes `orders.status` into a proper `order_status` enum (`draft` → `new_order` → `in_production` → `completed` → `invoiced`). Ahead of the managed-client PO flow, so `orders.payment_method`/`po_number`/`client_id` exist but nothing writes to them yet.
 5. `supabase/notification-fields.sql` — `clients.contact_email` and `orders.manufacturing_finished_notified_at`, for the notification milestones above.
+6. `supabase/categories.sql` — storefront categories (`categories`, `product_categories`), seeded with the 17 Trade Show & Events tiles and the 7 pilot products placed. Browse pages live at `/category/<slug>`; a category with no active products shows "Coming soon" until one is assigned. `scripts/trends-import.mjs` maps Trends category numbers to these slugs (`CATEGORY_MAP`) and only ever adds assignments, so ones made by hand survive a re-sync. Products with no price show "Get a quote".
 
 The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts` directly, not Supabase — it's kept in sync with `seed.sql` by hand. Orders, sub-orders, profiles, artwork and pricing research all live in Supabase.
 

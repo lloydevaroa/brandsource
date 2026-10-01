@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/catalog";
+import { categoryForProduct, getCategories } from "@/lib/categories";
 import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -21,13 +22,17 @@ export default async function ProductPage({
   const catalog = await getCatalog();
   const product = catalog.find((p) => p.slug === slug);
   if (!product) notFound();
+  const category = categoryForProduct(await getCategories(), slug);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <Link href="/#products" className="text-sm text-zinc-500 hover:text-zinc-900">
-          ← Trade Show products
+        <Link
+          href={category ? `/category/${category.slug}` : "/category/trade-show-and-events"}
+          className="text-sm text-zinc-500 hover:text-zinc-900"
+        >
+          ← {category ? category.name : "Trade Show & Events"}
         </Link>
         {product.example_image_urls[0] ? (
           <div className="relative mt-6 aspect-[16/10] overflow-hidden rounded-xl bg-zinc-100">
@@ -55,8 +60,7 @@ export default async function ProductPage({
         </h1>
         <p className="mt-2 text-zinc-600">{product.short_description}</p>
         <p className="mt-2 text-sm text-zinc-500">
-          Flat pricing ·{" "}
-          {product.unit_price == null ? "Price TBD" : `$${product.unit_price.toFixed(2)} NZD`}
+          {product.unit_price == null ? "Get a quote" : `Flat pricing · $${product.unit_price.toFixed(2)} NZD`}
           {product.min_order_qty > 1 ? ` · MOQ ${product.min_order_qty}` : ""}
         </p>
 

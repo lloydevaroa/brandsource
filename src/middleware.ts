@@ -5,6 +5,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const isPublicRoute = createRouteMatcher([
   "/",
   "/products(.*)",
+  "/category(.*)",
   "/cart",
   "/api/artwork(.*)",
   // Stripe calls this server-to-server with no Clerk session; the route

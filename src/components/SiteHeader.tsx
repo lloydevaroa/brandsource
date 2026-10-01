@@ -24,7 +24,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-4 text-sm text-zinc-600 sm:flex">
-          <Link href="/#products" className="hover:text-zinc-900">
+          <Link href="/category/trade-show-and-events" className="hover:text-zinc-900">
             Trade Show products
           </Link>
           <span className="text-zinc-400">NZ suppliers</span>
@@ -94,7 +94,7 @@ export function SiteHeader() {
         <nav className="border-t border-zinc-200 bg-white px-6 py-4 text-sm text-zinc-600 sm:hidden">
           <div className="flex flex-col gap-3">
             <Link
-              href="/#products"
+              href="/category/trade-show-and-events"
               onClick={() => setMenuOpen(false)}
               className="hover:text-zinc-900"
             >

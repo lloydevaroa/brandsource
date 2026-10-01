@@ -76,7 +76,7 @@ export default async function AccountPage({
       {!orders || orders.length === 0 ? (
         <p className="mt-2 text-sm text-zinc-500">
           Nothing here yet.{" "}
-          <Link href="/#products" className="underline underline-offset-2">
+          <Link href="/category/trade-show-and-events" className="underline underline-offset-2">
             Browse Trade Show products
           </Link>
           .

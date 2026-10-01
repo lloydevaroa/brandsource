@@ -207,7 +207,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <Link href="/#products" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link href="/category/trade-show-and-events" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Trade Show products
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Your cart</h1>
@@ -223,7 +223,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
         {items.length === 0 ? (
           <p className="mt-10 text-zinc-600">
             Nothing here yet.{" "}
-            <Link href="/#products" className="underline underline-offset-2">
+            <Link href="/category/trade-show-and-events" className="underline underline-offset-2">
               Browse Trade Show products
             </Link>
             .

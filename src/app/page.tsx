@@ -1,12 +1,13 @@
-import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getCatalog } from "@/lib/catalog";
+import { CategoryTile } from "@/components/CategoryViews";
+import { countProducts, getCategories, getChildren } from "@/lib/categories";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const catalog = await getCatalog();
+  const all = await getCategories();
+  const tiles = getChildren(all, "trade-show-and-events");
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />
@@ -24,12 +25,12 @@ export default async function Home() {
             print with NZ partners. Flat, clear pricing.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#products"
+            <Link
+              href="/category/trade-show-and-events"
               className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
             >
               Browse Trade Show products
-            </a>
+            </Link>
             <span className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700">
               Get a quote
             </span>
@@ -42,45 +43,11 @@ export default async function Home() {
               Trade Show &amp; Events
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              Flat pricing per item, no quote required.
+              Pick a category to see the range.
             </p>
             <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {catalog.map((p) => (
-                <li
-                  key={p.slug}
-                  className="overflow-hidden rounded-xl border border-zinc-200 hover:border-zinc-400"
-                >
-                  {p.example_image_urls[0] ? (
-                    <Link
-                      href={`/products/${p.slug}`}
-                      className="relative block aspect-[4/3] bg-zinc-100"
-                    >
-                      <Image
-                        src={p.example_image_urls[0]}
-                        alt={p.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
-                    </Link>
-                  ) : null}
-                  <div className="p-5">
-                    <h3 className="font-medium">{p.name}</h3>
-                    <p className="mt-2 text-sm text-zinc-600">
-                      {p.short_description}
-                    </p>
-                    <p className="mt-4 text-xs uppercase tracking-wide text-zinc-400">
-                      {p.min_order_qty > 1 ? `MOQ ${p.min_order_qty} · ` : ""}
-                      {p.unit_price != null ? `From $${p.unit_price.toFixed(2)} NZD` : "Price TBD"}
-                    </p>
-                    <Link
-                      href={`/products/${p.slug}`}
-                      className="mt-4 inline-block rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
-                    >
-                      Configure
-                    </Link>
-                  </div>
-                </li>
+              {tiles.map((c) => (
+                <CategoryTile key={c.slug} category={c} productCount={countProducts(all, c)} />
               ))}
             </ul>
           </div>
