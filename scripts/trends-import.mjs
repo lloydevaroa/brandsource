@@ -94,7 +94,7 @@ function mapProduct(p) {
       slug: slugify(p.name),
       name: p.name,
       short_description: shortDescription(p.description),
-      active: p.active === "Active" && p.status === "Normal",
+      active: p.active === "Active" && ["Normal", "New"].includes(p.status),
       supplier: "trends",
       supplier_code: String(p.code),
       sort_order: 100,
