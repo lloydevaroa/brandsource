@@ -4,6 +4,8 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 **Repo:** https://github.com/lloydevaroa/brandsource
 
+> **Have a request, bug or to-do?** Add a line to [`JOE-TODO.md`](JOE-TODO.md) under "Inbox". Lloyd triages it from there. Please don't edit the status section below.
+
 ---
 
 # Project status (owner view)
