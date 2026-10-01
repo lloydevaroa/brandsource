@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# Trends API data is confidential under their API terms; never commit it
+/trends-sample/
