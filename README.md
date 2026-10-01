@@ -89,6 +89,27 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 
 Whoever changes the code updates "Now", "Next / due", "What has happened" and the "Last updated" date in the same commit. Plain English, newest first, no secrets.
 
+## The tools, in plain English
+
+You don't need to log into most of these day to day. This is what each one is, so the names in the sections above make sense.
+
+| Tool | What it is, in one line |
+| --- | --- |
+| **GitHub** | The filing cabinet for the website's code, with a full history of every change. Nothing is ever really lost, and any change can be undone. |
+| **Vercel** | The landlord of the website. It takes the code from GitHub and runs it on the internet, and every time new code is saved it updates the live site. Its dashboard shows whether the site is up and what changed. It also holds the secret keys that connect the other tools together. |
+| **Supabase** | Holds the data. Every product, customer, order and client lives here, along with the artwork customers upload. Think of it as the business's database and file store. You can open it and see real orders without asking anyone. |
+| **Clerk** | The front door and the staff badges. It looks after who can sign in and what they're allowed to see, so staff get the admin area and customers only see their own orders. It means we never store passwords ourselves. |
+| **Stripe** | The card machine. It takes card payments and keeps card numbers off our systems entirely. It's in practice mode for now, so no real money moves. |
+| **Resend** | The postal service for automatic emails: order received, manufacturing started, manufacturing finished, delivered. |
+| **ImprovMX** | Mail forwarding. Emails sent to anything@brandsource.co.nz get passed on to a real inbox. |
+| **Crazy Domains** | Where the brandsource.co.nz name is registered. It decides which server answers when someone types the address. |
+| **Trends** | The supplier. The product range, images and cost prices come from them, and the site loads them in automatically through their system. Customers must never see their name. |
+| **Xero** | The accounting software. When an order is finished, its details are sent here so an invoice can be raised. |
+| **Next.js** | The toolkit the website itself is built with. A very common choice, which means any developer or AI can pick it up. |
+| **Claude Code** | The AI assistant that Lloyd uses to write and change the code. Joe's own Claude can read this document, and the code, to answer questions at any time. |
+
+**How they fit together:** a customer or staff member visits the website (run by Vercel, built from code in GitHub). Clerk checks who they are. Supabase remembers everything. Stripe takes payment, Resend sends the emails, Trends supplies the products, and Xero receives the invoice details. If any one of these is ever outgrown, it can be swapped without rebuilding the rest.
+
 ---
 
 # Technical reference
