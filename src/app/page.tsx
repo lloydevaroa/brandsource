@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CategoryTile } from "@/components/CategoryViews";
 import { countProducts, getCategories, getChildren } from "@/lib/categories";
@@ -13,44 +12,19 @@ export default async function Home() {
       <SiteHeader />
 
       <main>
-        <section className="mx-auto max-w-5xl px-6 py-16 sm:py-24">
-          <p className="text-sm font-medium uppercase tracking-wider text-zinc-500">
-            Trade Show &amp; Events · NZ suppliers
-          </p>
-          <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            Branded event merch, fulfilled in New Zealand
+        <section id="products" className="mx-auto max-w-5xl px-6 pb-14 pt-10 sm:pt-12">
+          <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+            Customisable Events &amp; Trade Show Products
           </h1>
-          <p className="mt-5 max-w-xl text-lg text-zinc-600">
-            Configure online, upload artwork, approve a human proof — then we
-            print with NZ partners. Flat, clear pricing.
+          <p className="mx-auto mt-3 max-w-xl text-center text-zinc-600">
+            Configure online, upload artwork, approve a human proof, then we
+            print with NZ partners.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/category/trade-show-and-events"
-              className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Browse Trade Show products
-            </Link>
-            <span className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700">
-              Get a quote
-            </span>
-          </div>
-        </section>
-
-        <section id="products" className="border-t border-zinc-200 bg-white">
-          <div className="mx-auto max-w-5xl px-6 py-14">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Trade Show &amp; Events
-            </h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              Pick a category to see the range.
-            </p>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {tiles.map((c) => (
-                <CategoryTile key={c.slug} category={c} productCount={countProducts(all, c)} />
-              ))}
-            </ul>
-          </div>
+          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tiles.map((c) => (
+              <CategoryTile key={c.slug} category={c} productCount={countProducts(all, c)} />
+            ))}
+          </ul>
         </section>
 
         <section className="border-t border-zinc-200">
