@@ -116,6 +116,9 @@ export default async function AdminPage() {
             <Link href="/admin/orders" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Overview
             </Link>
+            <Link href="/admin/categories" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Categories
+            </Link>
             <Link href="/admin/xero" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Xero
             </Link>
