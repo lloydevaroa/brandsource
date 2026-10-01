@@ -10,7 +10,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 2 Oct 2026**
+> **Last updated: 2 Oct 2026 (Xero connected)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -31,7 +31,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 
 | What | Who | Status |
 | --- | --- | --- |
-| Connect Xero (create the Xero Web app, paste keys into Vercel, click Connect to Xero in `/admin/xero`) | **Joe** | Code built 24 Sep, not connected |
+| Test Xero end to end: complete a test PO order and check the draft invoice appears in Xero with the right account code and GST | Lloyd + **Joe** | Connected 2 Oct, not yet tested with a real order |
 | Resend domain verification (Crazy Domains must publish one DKIM record) | **Joe** | Pending since 23 Sep. Order emails won't reach real inboxes until done |
 | Vercel plan decision (Pro trial started 15 Sep, would have ended about 29 Sep) | **Joe** / Lloyd | Check the plan status in Vercel |
 | Review how imported Trends products landed in categories (`/admin`) | Lloyd / Joe | New 2 Oct |
@@ -41,12 +41,13 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 28 Sep**
+- 2 Oct: Joe connected BrandSource's Xero account to the site.
 - 2 Oct: Trends importer and supplier tracking columns; catalogue read from the database; supplier detail on product pages; category pages; homepage is the tile page; admin screen to assign categories; Trends signage/display products auto-placed; thumbnails swap the main image.
 - 29 Sep: Trends approved Really Good Marketing's developer access to their API. Image use for the storefront confirmed OK (still no Trends name or branding visible to customers).
 - 25 Sep: Clerk "Device Trust" switched off in the development sign-in so Joe could log in. It must be **on** in production.
 
 **Week of 21 Sep**
-- 24 Sep: Xero push built for completed purchase-order orders (not connected yet).
+- 24 Sep: Xero push built for completed purchase-order orders (connected by Joe 2 Oct).
 - 23 Sep: Stripe test mode verified end to end; Resend keys added; admin CSV reports (by customer, item, price); staff admin polish (team dashboard, client search, saving indicator).
 
 **Week of 14 Sep**
@@ -74,14 +75,14 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | ImprovMX | Forwards @brandsource.co.nz mail | Everything goes to Lloyd for now | Lloyd |
 | Crazy Domains | Domain and DNS for brandsource.co.nz | Still points at an old placeholder server | Joe |
 | Trends.nz | Supplier; product range, images, cost prices via their API | Lloyd has developer access (approved 29 Sep) | Joe |
-| Xero | Receives finished orders for invoicing | Not connected | Joe |
+| Xero | Receives finished orders for invoicing | Connected 2 Oct, untested with a real order | Joe |
 
 **Redundancy steps, in order of value:**
 1. Add Joe (or a BrandSource-owned account) as owner on GitHub, Vercel, Supabase and Clerk, so no login depends on Lloyd alone.
 2. Change the ImprovMX forwarding to a BrandSource inbox.
 3. Keep this README current. It is the memory of the project.
 
-**Going live, in order:** (1) decide the Vercel plan; (2) move test keys to Preview and put live keys in Production; (3) point `brandsource.co.nz` at Vercel; (4) Clerk production instance with Device Trust **on**, then re-grant staff roles; (5) activate live Stripe and create the live webhook at `https://brandsource.co.nz/api/checkout/webhook`; (6) confirm Resend shows Verified; (7) move ImprovMX forwarding; (8) clear test orders and artwork, keep the catalogue; (9) paid Supabase plan with backups; (10) connect Xero; (11) launch-day check: place and refund a small real card order, run a PO order to a real email, download each CSV, test staff and customer sign-in.
+**Going live, in order:** (1) decide the Vercel plan; (2) move test keys to Preview and put live keys in Production; (3) point `brandsource.co.nz` at Vercel; (4) Clerk production instance with Device Trust **on**, then re-grant staff roles; (5) activate live Stripe and create the live webhook at `https://brandsource.co.nz/api/checkout/webhook`; (6) confirm Resend shows Verified; (7) move ImprovMX forwarding; (8) clear test orders and artwork, keep the catalogue; (9) paid Supabase plan with backups; (10) test the Xero invoice push with a real order (Xero is connected); (11) launch-day check: place and refund a small real card order, run a PO order to a real email, download each CSV, test staff and customer sign-in.
 
 **Rules that must not be broken:** no Trends name or branding visible to customers (their API terms, clause 4.1l); imported Trends products and images must stay removable in one go (clause 8.2); `/api/checkout/webhook` must stay in the middleware's public-route list.
 
