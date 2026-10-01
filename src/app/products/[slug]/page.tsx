@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/catalog";
+import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -60,6 +61,8 @@ export default async function ProductPage({
         </p>
 
         <ProductConfigurator product={product} />
+
+        {product.product_details ? <ProductDetailsSections d={product.product_details} /> : null}
       </div>
     </div>
   );
