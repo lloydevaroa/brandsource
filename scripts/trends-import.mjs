@@ -63,12 +63,26 @@ const CATEGORY_MAP = {
   prefix: { "13-": "pens" },
 };
 
+// Trends files all its signage and display products under one category (7-7), so
+// those are placed by product name instead. First matching rule per product.
+const SIGNAGE_RULES = [
+  [/tablecloth/i, ["table-covers"]],
+  [/flag/i, ["flags"]],
+  [/bannerstand/i, ["banner-stands", "trade-show-displays"]],
+  [/pull-up banner|banner stand/i, ["banner-stands"]],
+  [/display wall|counter|lightbox/i, ["trade-show-displays"]],
+];
+
 function categorySlugs(p) {
   const out = new Set();
   for (const c of p.categories ?? []) {
     const num = String(c.num ?? "");
     if (CATEGORY_MAP.exact[num]) out.add(CATEGORY_MAP.exact[num]);
     for (const [pre, slug] of Object.entries(CATEGORY_MAP.prefix)) if (num.startsWith(pre)) out.add(slug);
+  }
+  if ((p.categories ?? []).some((c) => String(c.num) === "7-7")) {
+    const rule = SIGNAGE_RULES.find(([re]) => re.test(p.name));
+    if (rule) for (const slug of rule[1]) out.add(slug);
   }
   return [...out];
 }
@@ -149,7 +163,14 @@ async function copyTemplate(code, link) {
 for (const { row, colours, images, details, templateSrc, categories } of items) {
   const urls = [];
   for (const img of images) urls.push(await copyImage(row.supplier_code, img));
-  if (templateSrc) details.template_url = await copyTemplate(row.supplier_code, templateSrc);
+  if (templateSrc) {
+    // A template the supplier won't serve shouldn't block the product.
+    try {
+      details.template_url = await copyTemplate(row.supplier_code, templateSrc);
+    } catch (e) {
+      console.warn(`  (no branding template for ${row.slug}: ${e.message})`);
+    }
+  }
 
   const { data: product, error } = await db
     .from("products")
