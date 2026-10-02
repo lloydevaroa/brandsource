@@ -87,20 +87,20 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
             name="headline"
             defaultValue={slide.headline ?? ""}
             placeholder="Headline (optional)"
-            className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
+            className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
           />
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               name="button_label"
               defaultValue={slide.button_label ?? ""}
               placeholder="Button text (optional)"
-              className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
+              className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
             />
             <input
               name="button_href"
               defaultValue={slide.button_href ?? ""}
               placeholder="Button link, e.g. /category/lanyards"
-              className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
+              className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
             />
           </div>
           <div className="flex items-center justify-between gap-3">
@@ -121,7 +121,7 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-600 hover:shadow-md active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 disabled:hover:bg-zinc-900 disabled:hover:shadow-none"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -134,7 +134,7 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
           type="button"
           onClick={() => onMove("up")}
           disabled={first || busy}
-          className="text-zinc-600 hover:text-zinc-900 disabled:opacity-30"
+          className="text-zinc-600 rounded-md px-2 py-1 transition hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-zinc-900 disabled:opacity-30 disabled:hover:bg-transparent"
         >
           {moving ? "Moving…" : "↑ Move earlier"}
         </button>
@@ -142,7 +142,7 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
           type="button"
           onClick={() => onMove("down")}
           disabled={last || busy}
-          className="text-zinc-600 hover:text-zinc-900 disabled:opacity-30"
+          className="text-zinc-600 rounded-md px-2 py-1 transition hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-zinc-900 disabled:opacity-30 disabled:hover:bg-transparent"
         >
           ↓ Move later
         </button>
@@ -150,7 +150,7 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
           type="button"
           onClick={onDelete}
           disabled={busy}
-          className="ml-auto text-red-600 hover:text-red-800 disabled:opacity-50"
+          className="ml-auto rounded-md px-2 py-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 active:bg-red-100 focus-visible:outline-2 focus-visible:outline-red-600 disabled:opacity-50 disabled:hover:bg-transparent"
         >
           {deleting ? "Deleting…" : "Delete"}
         </button>
