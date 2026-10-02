@@ -100,8 +100,8 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-[960px] px-6 py-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
               ← BRANDSource
@@ -109,7 +109,7 @@ export default async function AdminPage() {
             <h1 className="mt-2 text-2xl font-semibold">Team dashboard</h1>
             {firstName ? <p className="mt-1 text-sm text-zinc-500">Hi {firstName}</p> : null}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <Link href="/admin/clients" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Clients
             </Link>
