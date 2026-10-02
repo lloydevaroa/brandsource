@@ -5,7 +5,7 @@ import { createContext, useContext } from "react";
 export type MenuCategory = {
   slug: string;
   name: string;
-  children: { slug: string; name: string }[];
+  products: { slug: string; name: string }[];
 };
 
 const MenuCategoriesContext = createContext<MenuCategory[]>([]);

@@ -95,7 +95,7 @@ export function SiteHeader() {
           aria-label="Product categories"
           className="hidden border-t border-zinc-200 sm:block"
         >
-          <ul className="mx-auto flex max-w-5xl items-center gap-1 px-6 text-sm text-zinc-700">
+          <ul className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 px-6 text-sm text-zinc-700">
             {categories.map((c) => (
               <li key={c.slug} className="group relative">
                 <Link
@@ -104,12 +104,12 @@ export function SiteHeader() {
                 >
                   {c.name}
                 </Link>
-                {c.children.length > 0 ? (
+                {c.products.length > 0 ? (
                   <ul className="invisible absolute left-0 top-full z-20 min-w-56 rounded-md border border-zinc-200 bg-white py-2 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                    {c.children.map((k) => (
+                    {c.products.map((k) => (
                       <li key={k.slug}>
                         <Link
-                          href={`/category/${k.slug}`}
+                          href={`/products/${k.slug}`}
                           className="block px-4 py-1.5 hover:bg-zinc-50 hover:text-zinc-900"
                         >
                           {k.name}
@@ -137,11 +137,11 @@ export function SiteHeader() {
                   >
                     {c.name}
                   </Link>
-                  {c.children.length > 0 ? (
+                  {c.products.length > 0 ? (
                     <button
                       type="button"
                       aria-expanded={openGroup === c.slug}
-                      aria-label={`Show ${c.name} sub-categories`}
+                      aria-label={`Show ${c.name} products`}
                       onClick={() => setOpenGroup(openGroup === c.slug ? null : c.slug)}
                       className="p-2 text-zinc-500 hover:text-zinc-900"
                     >
@@ -151,10 +151,10 @@ export function SiteHeader() {
                 </div>
                 {openGroup === c.slug ? (
                   <div className="mt-1 flex flex-col gap-2 border-l border-zinc-200 pl-3">
-                    {c.children.map((k) => (
+                    {c.products.map((k) => (
                       <Link
                         key={k.slug}
-                        href={`/category/${k.slug}`}
+                        href={`/products/${k.slug}`}
                         onClick={() => setMenuOpen(false)}
                         className="hover:text-zinc-900"
                       >

@@ -112,20 +112,27 @@ export function categoryForProduct(all: Category[], productSlug: string): Catego
   return all.find((c) => c.parent_slug && c.products.some((p) => p.slug === productSlug));
 }
 
-/** Two-level menu tree for the site header. Categories with no products are left out. */
+/**
+ * Header menu: the horizontal items are the sub-categories (or a top-level
+ * category with no sub-categories), each with its products as the dropdown.
+ * Categories with no products are left out.
+ */
 export async function getMenuCategories(): Promise<
-  { slug: string; name: string; children: { slug: string; name: string }[] }[]
+  { slug: string; name: string; products: { slug: string; name: string }[] }[]
 > {
   try {
     const all = await getCategories();
-    return all
-      .filter((c) => !c.parent_slug && countProducts(all, c) > 0)
+    const items: Category[] = [];
+    for (const top of all.filter((c) => !c.parent_slug)) {
+      const kids = getChildren(all, top.slug);
+      items.push(...(kids.length > 0 ? kids : [top]));
+    }
+    return items
+      .filter((c) => c.products.length > 0)
       .map((c) => ({
         slug: c.slug,
         name: c.name,
-        children: getChildren(all, c.slug)
-          .filter((k) => k.products.length > 0)
-          .map((k) => ({ slug: k.slug, name: k.name })),
+        products: c.products.map((p) => ({ slug: p.slug, name: p.name })),
       }));
   } catch {
     return [];

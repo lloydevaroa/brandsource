@@ -43,7 +43,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 28 Sep**
-- 2 Oct: Added a category navigation menu under the header. Top-level categories show a dropdown of sub-categories (an expandable list on mobile). Categories with no products yet are hidden until they have some.
+- 2 Oct: Added a category navigation menu under the header. Sub-categories (Table Covers, Lanyards and so on) run across the bar, and each opens a dropdown of its products (an expandable list on mobile). Categories with no products yet are hidden until they have some.
 - 2 Oct: Joe connected BrandSource's Xero account to the site.
 - 2 Oct: Trends importer and supplier tracking columns; catalogue read from the database; supplier detail on product pages; category pages; homepage is the tile page; admin screen to assign categories; Trends signage/display products auto-placed; thumbnails swap the main image.
 - 29 Sep: Trends approved Really Good Marketing's developer access to their API. Image use for the storefront confirmed OK (still no Trends name or branding visible to customers).
