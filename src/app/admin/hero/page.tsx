@@ -1,9 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import { HeroUploader } from "./HeroUploader";
-import { deleteHeroSlide, moveHeroSlide, saveHeroSlide } from "./actions";
+import { HeroSlideCard } from "./HeroSlideCard";
 
 export default async function HeroAdminPage({
   searchParams,
@@ -90,74 +89,7 @@ export default async function HeroAdminPage({
         <ul className="mt-6 space-y-4">
           {mine.length === 0 ? <li className="text-sm text-zinc-500">No images yet for this page.</li> : null}
           {mine.map((s, i) => (
-            <li key={s.id} className="rounded-xl border border-zinc-200 bg-white p-5">
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="relative aspect-[21/9] w-full shrink-0 overflow-hidden rounded-lg bg-zinc-100 sm:w-64">
-                  <Image src={s.image_url} alt="" fill sizes="256px" className="object-cover" />
-                </div>
-                <form action={saveHeroSlide} className="flex-1 space-y-3">
-                  <input type="hidden" name="id" value={s.id} />
-                  <input
-                    name="headline"
-                    defaultValue={s.headline ?? ""}
-                    placeholder="Headline (optional)"
-                    className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
-                  />
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      name="button_label"
-                      defaultValue={s.button_label ?? ""}
-                      placeholder="Button text (optional)"
-                      className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
-                    />
-                    <input
-                      name="button_href"
-                      defaultValue={s.button_href ?? ""}
-                      placeholder="Button link, e.g. /category/lanyards"
-                      className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="flex items-center gap-2 text-sm text-zinc-700">
-                      <input type="checkbox" name="active" defaultChecked={s.active} />
-                      Show on site
-                    </label>
-                    <button
-                      type="submit"
-                      className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <div className="mt-3 flex gap-4 border-t border-zinc-100 pt-3 text-sm">
-                <form action={moveHeroSlide}>
-                  <input type="hidden" name="id" value={s.id} />
-                  <input type="hidden" name="dir" value="up" />
-                  <button type="submit" disabled={i === 0} className="text-zinc-600 hover:text-zinc-900 disabled:opacity-30">
-                    ↑ Move earlier
-                  </button>
-                </form>
-                <form action={moveHeroSlide}>
-                  <input type="hidden" name="id" value={s.id} />
-                  <input type="hidden" name="dir" value="down" />
-                  <button
-                    type="submit"
-                    disabled={i === mine.length - 1}
-                    className="text-zinc-600 hover:text-zinc-900 disabled:opacity-30"
-                  >
-                    ↓ Move later
-                  </button>
-                </form>
-                <form action={deleteHeroSlide} className="ml-auto">
-                  <input type="hidden" name="id" value={s.id} />
-                  <button type="submit" className="text-red-600 hover:text-red-800">
-                    Delete
-                  </button>
-                </form>
-              </div>
-            </li>
+            <HeroSlideCard key={s.id} slide={s} first={i === 0} last={i === mine.length - 1} />
           ))}
         </ul>
       </div>

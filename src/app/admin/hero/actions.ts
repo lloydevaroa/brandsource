@@ -53,16 +53,18 @@ export async function addHeroSlide(pageKey: string, storagePath: string) {
   revalidatePath("/admin/hero");
 }
 
-export async function saveHeroSlide(formData: FormData) {
+export async function saveHeroSlide(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   await requireStaffProfile();
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("Missing slide.");
+  if (!id) return { ok: false, error: "Missing slide." };
   const text = (k: string) => {
     const v = String(formData.get(k) ?? "").trim();
     return v || null;
   };
   const href = text("button_href");
-  if (href && !/^(\/|https?:\/\/)/.test(href)) throw new Error("Button link must start with / or https://");
+  if (href && !/^(\/|https?:\/\/)/.test(href)) {
+    return { ok: false, error: "Button link must start with / or https://" };
+  }
   const { error } = await createServiceSupabase()
     .from("hero_slides")
     .update({
@@ -72,9 +74,10 @@ export async function saveHeroSlide(formData: FormData) {
       active: formData.get("active") === "on",
     })
     .eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return { ok: false, error: error.message };
   refresh();
   revalidatePath("/admin/hero");
+  return { ok: true };
 }
 
 /** Swap a slide's position with its neighbour. */
