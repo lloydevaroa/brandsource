@@ -1,17 +1,21 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { CategoryTile } from "@/components/CategoryViews";
+import { HeroSlider } from "@/components/HeroSlider";
+import { getHeroSlides } from "@/lib/hero";
 import { countProducts, getCategories, getChildren } from "@/lib/categories";
 
 export const revalidate = 60;
 
 export default async function Home() {
   const all = await getCategories();
+  const slides = await getHeroSlides("home");
   const tiles = getChildren(all, "trade-show-and-events");
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />
 
       <main>
+        <HeroSlider slides={slides} />
         <section id="products" className="mx-auto max-w-5xl px-6 pb-14 pt-10 sm:pt-12">
           <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
             Customisable Events &amp; Trade Show Products

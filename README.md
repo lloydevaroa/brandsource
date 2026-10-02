@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 2 Oct 2026 (category menu)**
+> **Last updated: 2 Oct 2026 (hero sliders)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -43,6 +43,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 28 Sep**
+- 2 Oct: Added hero image sliders to the home page and every category page. Staff add, reorder, caption and remove images at Staff > Hero images (`/admin/hero`). Slides change by themselves every 6 seconds with arrows and dots; one image shows as a plain hero, none shows nothing. **Needs `supabase/hero-slides.sql` run once in the Supabase SQL editor before uploads work.**
 - 2 Oct: Added a category navigation menu under the header. Sub-categories (Table Covers, Lanyards and so on) run across the bar, and each opens a dropdown of its products (an expandable list on mobile). Categories with no products yet are hidden until they have some.
 - 2 Oct: Joe connected BrandSource's Xero account to the site.
 - 2 Oct: Trends importer and supplier tracking columns; catalogue read from the database; supplier detail on product pages; category pages; homepage is the tile page; admin screen to assign categories; Trends signage/display products auto-placed; thumbnails swap the main image.

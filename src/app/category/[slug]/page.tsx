@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Breadcrumb, CategoryTile, ProductCard } from "@/components/CategoryViews";
+import { HeroSlider } from "@/components/HeroSlider";
+import { getHeroSlides } from "@/lib/hero";
 import { countProducts, getCategories, getChildren } from "@/lib/categories";
 
 export const revalidate = 60;
@@ -26,6 +28,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const children = getChildren(all, category.slug);
   const siblings = parent ? getChildren(all, parent.slug).filter((c) => c.slug !== category.slug) : [];
 
+  const slides = await getHeroSlides(slug);
+
   const trail = [
     { label: "Home", href: "/" },
     ...(parent ? [{ label: parent.name, href: `/category/${parent.slug}` }] : []),
@@ -35,6 +39,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <SiteHeader />
+      <HeroSlider slides={slides} />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <Breadcrumb trail={trail} />
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">{category.name}</h1>
