@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { CartProvider } from "@/lib/cart";
+import { getMenuCategories } from "@/lib/categories";
+import { MenuCategoriesProvider } from "@/lib/menu-categories";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,18 +22,21 @@ export const metadata: Metadata = {
     "Branded event merch fulfilled in New Zealand. Configure online, human proofing, flat clear pricing.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const menuCategories = await getMenuCategories();
   const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
   return (
     <html lang="en-NZ">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <CartProvider>
-          {clerkKey ? <ClerkProvider publishableKey={clerkKey}>{children}</ClerkProvider> : children}
+          <MenuCategoriesProvider categories={menuCategories}>
+            {clerkKey ? <ClerkProvider publishableKey={clerkKey}>{children}</ClerkProvider> : children}
+          </MenuCategoriesProvider>
         </CartProvider>
       </body>
     </html>

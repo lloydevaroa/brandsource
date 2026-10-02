@@ -111,3 +111,23 @@ export function countProducts(all: Category[], c: Category): number {
 export function categoryForProduct(all: Category[], productSlug: string): Category | undefined {
   return all.find((c) => c.parent_slug && c.products.some((p) => p.slug === productSlug));
 }
+
+/** Two-level menu tree for the site header. Categories with no products are left out. */
+export async function getMenuCategories(): Promise<
+  { slug: string; name: string; children: { slug: string; name: string }[] }[]
+> {
+  try {
+    const all = await getCategories();
+    return all
+      .filter((c) => !c.parent_slug && countProducts(all, c) > 0)
+      .map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        children: getChildren(all, c.slug)
+          .filter((k) => k.products.length > 0)
+          .map((k) => ({ slug: k.slug, name: k.name })),
+      }));
+  } catch {
+    return [];
+  }
+}
