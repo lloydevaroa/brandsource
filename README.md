@@ -189,9 +189,9 @@ Apply in the Supabase SQL editor, in order:
 5. `supabase/notification-fields.sql` — `clients.contact_email` and `orders.manufacturing_finished_notified_at`, for the notification milestones above.
 6. `supabase/categories.sql` — storefront categories (`categories`, `product_categories`), seeded with the 17 Trade Show & Events tiles and the 7 pilot products placed. Browse pages live at `/category/<slug>`; a category with no active products shows "Coming soon" until one is assigned. `scripts/trends-import.mjs` maps Trends category numbers to these slugs (`CATEGORY_MAP`) and only ever adds assignments, so ones made by hand survive a re-sync. Products with no price show "Get a quote". Staff assign products to categories at `/admin/categories`.
 
-7. `supabase/supplier-import.sql` and `supabase/product-details.sql` — supplier tracking columns and richer product detail for the Trends import.
-8. `supabase/xero.sql` — Xero connection and invoice tracking.
-9. `supabase/hero-slides.sql` — hero image sliders for the home and category pages. Must be run once before staff can upload images at `/admin/hero`.
+7. `supabase/supplier-import.sql` and `supabase/product-details.sql`: supplier tracking columns and richer product detail for the Trends import.
+8. `supabase/xero.sql`: Xero connection and invoice tracking.
+9. `supabase/hero-slides.sql`: hero image sliders for the home and category pages. Must be run once before staff can upload images at `/admin/hero`.
 
 Since 2 Oct the storefront reads products from Supabase, not `src/data/catalog.ts`. `catalog.ts` and `scripts/sync-catalog-to-db.mjs` remain only as the source of the original pilot products. Orders, sub-orders, profiles, artwork, categories, products and hero images all live in Supabase.
 
