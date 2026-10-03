@@ -29,7 +29,7 @@ export function CategoryTile({ category, productCount }: { category: Category; p
         href={`/category/${category.slug}`}
         className="group block overflow-hidden rounded-xl border border-zinc-200 bg-white hover:border-zinc-400"
       >
-        <div className="relative aspect-[4/3] bg-zinc-100">
+        <div className={`relative aspect-square ${category.image ? "bg-white" : "bg-zinc-100"}`}>
           {category.image ? (
             <Image
               src={category.image}

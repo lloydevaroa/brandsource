@@ -43,7 +43,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 28 Sep**
-- 3 Oct: Loaded 20 more products from Trends (lanyards, pens, tote bags, badges), 70 in total. Category tile images on the home page now show the whole picture instead of cropping it, so tall products like banner stands are no longer cut off.
+- 3 Oct: Loaded 20 more products from Trends (lanyards, pens, tote bags, badges), 70 in total. Category tile images on the home page now show the whole picture instead of cropping it, so tall products like banner stands are no longer cut off. The tiles are now square, matching the square Trends images, so every tile looks uniform.
 - 2 Oct: Added hero image sliders to the home page and every category page. Staff add, reorder, caption and remove images at Staff > Hero images (`/admin/hero`). Slides change by themselves every 6 seconds with arrows and dots; one image shows as a plain hero, none shows nothing. **Needs `supabase/hero-slides.sql` run once in the Supabase SQL editor before uploads work.**
 - 2 Oct: Added a category navigation menu under the header. Sub-categories (Table Covers, Lanyards and so on) run across the bar, and each opens a dropdown of its products (an expandable list on mobile). Categories with no products yet are hidden until they have some.
 - 2 Oct: Joe connected BrandSource's Xero account to the site.
