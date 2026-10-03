@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 3 Oct 2026 (20 more products, tile images)**
+> **Last updated: 3 Oct 2026 (20 more products, tile images, import-clients and testing-plan items added)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -39,14 +39,23 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Review how imported Trends products landed in categories (`/admin`) | Lloyd / Joe | New 2 Oct |
 | Split staging from production keys in Vercel, move the domain, create Clerk production instance, activate live Stripe, paid Supabase plan, clear test data | Lloyd + **Joe** | Not started. See the go-live list below |
 | Move GitHub, Vercel, Supabase and Clerk into accounts BrandSource owns | **Joe** / Lloyd | Recommended, not started (key redundancy step) |
+| Import BrandSource's existing clients into `/admin/clients` (name exactly as it appears in Xero, account manager, credit terms 7/14/30 days, contact email) | Lloyd + **Joe** | Not started. Joe to supply the client list |
+| Write an internal testing plan: who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
+| Add prices to the imported Trends products (all show "Get a quote" today) and decide a flat pricing rule | **Joe** / Lloyd | Open |
+| Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
 
 **Week of 28 Sep**
+- 3 Oct: Planned Trends catalogue change monitoring (nightly check for changed or discontinued products, weekly sweep for ones that vanish, alert email, products hidden pending review rather than deleted). Not built yet. Also added "import existing clients" and "set up a testing plan" to the build list.
 - 3 Oct: Loaded 20 more products from Trends (lanyards, pens, tote bags, badges), 70 in total. Category tile images on the home page now show the whole picture instead of cropping it, so tall products like banner stands are no longer cut off. The tiles are now square, matching the square Trends images, so every tile looks uniform.
 - 2 Oct: Added hero image sliders to the home page and every category page. Staff add, reorder, caption and remove images at Staff > Hero images (`/admin/hero`). Slides change by themselves every 6 seconds with arrows and dots; one image shows as a plain hero, none shows nothing. **Needs `supabase/hero-slides.sql` run once in the Supabase SQL editor before uploads work.**
 - 2 Oct: Added a category navigation menu under the header. Sub-categories (Table Covers, Lanyards and so on) run across the bar, and each opens a dropdown of its products (an expandable list on mobile). Categories with no products yet are hidden until they have some.
+- 2 Oct: Smoothed the Hero images screen: saving, saved and deleting states, error messages, a confirm before delete, clearer hover and keyboard focus, and a pointer cursor on every clickable control.
 - 2 Oct: Joe connected BrandSource's Xero account to the site.
+- 2 Oct: Added `JOE-TODO.md`, an inbox where Joe (or Joe's Claude) can log requests, bugs and questions. Lloyd triages them into the status table above.
+- 2 Oct: Cleared out the original pilot products. Five were deleted (banner stands, custom buttons, lanyards and the two LED lightboxes), along with two extras (vinyl banners, pop-up banners). Table Covers and Feather Flags were only switched off, because three existing orders use them. Trends signage turned out to exist after all, so the catalogue grew to 30 live products, then 50, all showing "Get a quote".
+- 2 Oct: Importer fixes. Trends products marked "New" were being treated as inactive, and a branding-template PDF that Trends refused to serve no longer stops an import (one product, the Portable Event Lightbox Bannerstand, has no template download). Batches now pause 1.5 seconds between requests to stay inside Trends' rate limits.
 - 2 Oct: Trends importer and supplier tracking columns; catalogue read from the database; supplier detail on product pages; category pages; homepage is the tile page; admin screen to assign categories; Trends signage/display products auto-placed; thumbnails swap the main image.
 - 29 Sep: Trends approved Really Good Marketing's developer access to their API. Image use for the storefront confirmed OK (still no Trends name or branding visible to customers).
 - 25 Sep: Clerk "Device Trust" switched off in the development sign-in so Joe could log in. It must be **on** in production.
@@ -148,6 +157,16 @@ You don't need to log into most of these day to day. This is what each one is, s
 - **Unit prices**: all 7 SKUs now have a flat `unit_price` (Supabase `products`, `src/data/catalog.ts`, and `supabase/seed.sql` all in sync). Basis: Trends' own suggested-retail figure at qty 10 where `supplier_pricing_research` captured one (table-covers, feather-teardrop-flags, banner-stands); for the other four (lanyards, custom-buttons, both LED lightboxes, which only had a qty-10 cost) — Trends' qty-10 markup rate (cost x 1.55) applied to that cost. Project owner confirmed using Trends pricing directly as the V1 basis rather than a separate quote (2026-09-16).
 - **Not yet built**: Stripe is live in test mode only (switch to live keys before taking real payments); Resend keys likewise not set yet (notification code is in place but untested end-to-end).
 
+## Catalogue and storefront (added 2 to 3 Oct)
+
+- **Import from Trends:** `scripts/trends-import.mjs` pulls products, images and supplier details through the Trends API into Supabase, copying images into BrandSource's own storage. `scripts/trends-add-batch.mjs` adds extra batches at a gentle pace; `scripts/trends-sample.mjs` pulls a sample. Needs `TRENDS_API_TOKEN`. The raw sample folder `trends-sample/` is gitignored because the Trends data is confidential. Imported products and images must stay removable in one go.
+- **Placement:** products land in categories by Trends category number, or by product name for signage and displays (Trends files these under one category). The importer only adds assignments, so manual ones survive a re-sync.
+- **Imported size variants:** Trends lists each size as its own product. Only the Medium size of each was imported to keep the range varied; the rest are still in Trends.
+- **Known rough edges:** signage products carry a single meaningless "White" colour option (plan: hide the colour option when there is only one); a Trends product that fits no Trade Show category (Budget Stubby Cooler) has not been placed or deactivated.
+- **Storefront:** home page is the Trade Show & Events category tile page (square tiles, full image, white background); `/category/<slug>` pages; a category menu under the header with products in a dropdown (categories with no products are hidden); product pages with supplier detail and a clickable thumbnail gallery (`ProductGallery`); hero sliders on home and category pages, managed at `/admin/hero` (change every 6 seconds, arrows and dots); `/admin/categories` to assign products by hand.
+- **Deploys:** every push to `main` deploys to the live staging site. To show the team a branch without touching it, Vercel needs the test keys copied into its Preview environment.
+- **Joe's Claude and the database:** the site reaches Supabase through three environment variables in Vercel, with no login involved. A person (or their Claude) needs their own Supabase seat to see the data; sharing the keys would hand over admin access with no login.
+
 ## Local
 
 ```bash
@@ -170,7 +189,11 @@ Apply in the Supabase SQL editor, in order:
 5. `supabase/notification-fields.sql` — `clients.contact_email` and `orders.manufacturing_finished_notified_at`, for the notification milestones above.
 6. `supabase/categories.sql` — storefront categories (`categories`, `product_categories`), seeded with the 17 Trade Show & Events tiles and the 7 pilot products placed. Browse pages live at `/category/<slug>`; a category with no active products shows "Coming soon" until one is assigned. `scripts/trends-import.mjs` maps Trends category numbers to these slugs (`CATEGORY_MAP`) and only ever adds assignments, so ones made by hand survive a re-sync. Products with no price show "Get a quote". Staff assign products to categories at `/admin/categories`.
 
-The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts` directly, not Supabase — it's kept in sync with `seed.sql` by hand. Orders, sub-orders, profiles, artwork and pricing research all live in Supabase.
+7. `supabase/supplier-import.sql` and `supabase/product-details.sql` — supplier tracking columns and richer product detail for the Trends import.
+8. `supabase/xero.sql` — Xero connection and invoice tracking.
+9. `supabase/hero-slides.sql` — hero image sliders for the home and category pages. Must be run once before staff can upload images at `/admin/hero`.
+
+Since 2 Oct the storefront reads products from Supabase, not `src/data/catalog.ts`. `catalog.ts` and `scripts/sync-catalog-to-db.mjs` remain only as the source of the original pilot products. Orders, sub-orders, profiles, artwork, categories, products and hero images all live in Supabase.
 
 ## Auth & data
 
@@ -183,6 +206,8 @@ The storefront (catalog browsing, configurator) reads from `src/data/catalog.ts`
 
 ## Next slices
 
+Still open on the build list: import existing clients, set up an internal testing plan, add prices to imported products, Trends catalogue change monitoring, and the go-live steps under "Handover". See the status table at the top.
+
 Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead of Stripe — see `build-brief.md` "Immediate priority":
 
 1. ~~Data model: clients (type, account manager, credit terms), sub-orders, order lifecycle status~~ — `supabase/clients-and-po.sql`, `src/lib/types.ts`
@@ -194,7 +219,9 @@ Build order pivoted 2026-09-18 to the managed-client PO path (Xero-billed) ahead
 
 Stripe/direct-consumer checkout is built and paused (needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` to test end-to-end) — picked back up once the managed-client path is live.
 
-## SKUs
+## SKUs (original 7 pilot products)
+
+Five of these were deleted on 2 Oct and Table Covers and Feather Flags deactivated; the live catalogue is now the Trends import. Kept for history.
 
 | Slug | Product |
 | --- | --- |
