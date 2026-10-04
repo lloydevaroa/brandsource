@@ -2,7 +2,7 @@
 
 For Lloyd, Joe and Joe's team. Plain English, no code needed. Work through a scenario, tick it off, and add anything odd to "Inbox" in [`JOE-TODO.md`](JOE-TODO.md).
 
-**Status:** started 5 Oct 2026. Scenario 1 is written. The other areas (card checkout, order emails, staff roles, categories, hero images, mobile) still need scenarios.
+**Status:** started 5 Oct 2026. Scenarios 1 to 3 are written (PO order to Xero, card purchase, account manager progression). Order emails are covered inside Scenario 3. Staff roles, categories, hero images and mobile still need their own scenarios.
 
 **Use a test client for anything that reaches Xero.** Draft invoices and any new contacts land in BrandSource's real Xero. Delete test drafts in Xero afterwards.
 
@@ -64,10 +64,93 @@ Client names must match the Xero contact name **exactly**. Test what happens whe
 
 ---
 
+## Scenario 2: Customer buys on the website with a card (Stripe)
+
+**Who:** anyone, ideally a person who has not used the site before, plus a staff member to check the other side.
+**Where:** the staging site on a laptop. Repeat once on a phone.
+**Why:** this is the direct-customer path. Stripe is in **test mode**, so no real money moves.
+
+**Test card:** use Stripe's published test card `4242 4242 4242 4242`, any future expiry date and any 3 digit security code. Never use a real card on staging.
+
+### A. Happy path
+
+1. Browse to a category, open a product, choose options and a quantity, and add it to the cart.
+2. In the cart, upload an artwork file against the item.
+3. Check out. Sign in or sign up when asked.
+4. On the Stripe page, pay with the test card.
+5. You should land back on the site after payment.
+6. As staff, open the staff board (`/admin`) and Orders (`/admin/orders`).
+
+**Pass when:**
+- [ ] The price in the cart matches the product page, and the total is right.
+- [ ] The artwork upload worked and shows against the item.
+- [ ] Payment went through and the customer was sent back to the site.
+- [ ] The order appears in Orders (`/admin/orders`) with the customer name, paid by card and the right total.
+- [ ] On the staff board each item shows as **Payment received**, with the artwork count and the customer.
+- [ ] The customer's account page (`/account`) shows the order and its stage.
+
+### B. Things that should not happen
+
+- [ ] Close the Stripe page without paying. No order should show in Orders or on the board (unpaid checkouts stay hidden).
+- [ ] Pay with Stripe's declined test card `4000 0000 0000 0002`. The customer sees the failure on Stripe's page and no order appears.
+- [ ] An order does not appear twice if you refresh the return page.
+
+### C. Notes
+
+- Order emails are only built for managed (PO) clients so far. A card customer **not** receiving emails is expected, not a bug.
+- Repeat A on a phone and note anything hard to tap or read.
+
+---
+
+## Scenario 3: Account manager order progression
+
+**Who:** an account manager (Joe's team), plus one person watching the order from the outside (a client contact, or a test email address).
+**Where:** the staff board (`/admin`) and Orders (`/admin/orders`), signed in with a staff account.
+**Why:** this is the daily work: taking an order from new to completed and keeping the client informed. It carries on from Scenario 1 (PO order) and Scenario 2 (card order), so run it on an order from either.
+
+**Careful with emails:** the imported clients have no contact email, so no emails go out. To test the emails, add a contact email to a **test client only** (your own address, at `/admin/clients`). Never add a test email to a real client's record, and never move a real client's order through stages as a test.
+
+### A. Moving an order along the board
+
+1. Open the staff board (`/admin`). Find the order's items. Each item is a card in a column.
+2. Click to claim an item as yours. Your name should show on it.
+3. Move the item through the stages in order: **New order, Payment received** (card orders start here), **Artwork required, Proof awaiting approval, Ready to order, Sent to supplier, In production, Dispatched, Completed**.
+4. After each move, check Orders (`/admin/orders`) for the order-level status.
+
+**Pass when:**
+- [ ] The card moves to the new column and stays there after a page refresh.
+- [ ] Claiming shows the right staff name, and it can be removed again.
+- [ ] The order shows **New** until an item reaches Sent to supplier or beyond, then **In production**, then **Completed** once every item is Completed.
+- [ ] With **two items** in one order, the order stays **In production** until both are Completed, not just one.
+- [ ] The artwork attached by the customer can be opened from the card.
+- [ ] A signed-out user or a customer account cannot open the board or change a status.
+
+### B. Client emails (PO orders only, test client with your email)
+
+- [ ] **Order received** arrives when the order is raised.
+- [ ] **Manufacturing begun** arrives when the order first goes In production.
+- [ ] **Manufacturing finished** arrives when every item is Dispatched or Completed.
+- [ ] **Delivery completed** arrives when every item is Completed.
+- [ ] Each email arrives **once**. Moving an item back and forward does not send repeats.
+- [ ] If the client has an account manager set, they are copied on "Order received".
+- [ ] The wording is something Joe would be happy for a client to read.
+
+Emails also need Joe's domain verified with Resend. Until then they may not arrive, which is a known blocker rather than a failed test.
+
+### C. Handing on to invoicing
+
+- [ ] Once a PO order is **Completed**, Send to Xero appears (see Scenario 1).
+- [ ] After sending, the order shows **Invoiced** and moving items on the board does not change it back.
+
+### D. Notes
+
+- Is it clear which items still need action? Is anything missing from a card that you needed?
+- Is the order of stages right for how the team really works? Say so if a stage should be added, renamed or skipped.
+
+---
+
 ## Still to write
 
-- Card checkout (Stripe test mode)
-- The four order emails (needs the Resend domain verified first)
 - Staff and customer sign-in and roles
 - Category assignment and the product pages
 - Hero images

@@ -40,14 +40,14 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Split staging from production keys in Vercel, move the domain, create Clerk production instance, activate live Stripe, paid Supabase plan, clear test data | Lloyd + **Joe** | Not started. See the go-live list below |
 | Move GitHub, Vercel, Supabase and Clerk into accounts BrandSource owns | **Joe** / Lloyd | Recommended, not started (key redundancy step) |
 | Check the loaded clients (535 names from Joe's Xero contact list, exactly as in Xero). Add contact emails and an account manager over time at `/admin/clients`. Two spellings to confirm in Xero: the four brandspanking.co.nz email-named contacts were left out | Lloyd + **Joe** | Loaded 5 Oct |
-| Write an internal testing plan (started in [`TESTING.md`](TESTING.md), first scenario is PO order to Xero draft invoice): who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
+| Write an internal testing plan (started in [`TESTING.md`](TESTING.md): PO order to Xero draft invoice, card purchase, account manager order progression): who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
 | Add prices to the imported Trends products (all show "Get a quote" today) and decide a flat pricing rule | **Joe** / Lloyd | Open |
 | Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
 
 **Week of 5 Oct**
-- 5 Oct: Started the testing plan in `TESTING.md`. First scenario: pick a client, raise a purchase-order order, send a draft invoice to Xero, including a check of what happens when a client name doesn't match Xero.
+- 5 Oct: Started the testing plan in `TESTING.md` with three scenarios: pick a client, raise a purchase-order order and send a draft invoice to Xero (including what happens when a client name doesn't match Xero); a customer buying with a card through Stripe test mode; and an account manager moving an order from new to completed, including the client emails.
 - 5 Oct: Loaded BrandSource's 535 existing clients (from Joe's Xero contact list, names exactly as in Xero) so account managers can pick any of them when raising a purchase-order order. Payment terms are no longer stored in BrandSource: Xero holds them, and the draft invoice is sent without a due date so Xero applies each customer's own terms. Account manager on a client is now optional, since any staff member can raise an order for any client. Draft orders to a Xero draft invoice still needs its first end-to-end test.
 
 **Week of 28 Sep**
