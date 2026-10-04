@@ -43,7 +43,6 @@ from (values
   ('pens', 'Pens', 80),
   ('tote-bags', 'Tote Bags', 90),
   ('trade-show-displays', 'Trade Show Displays', 100),
-  ('awards', 'Awards', 110),
   ('tickets', 'Tickets', 120),
   ('cards', 'Cards', 130),
   ('event-and-promotion-inflatables', 'Event & Promotion Inflatables', 140),

@@ -59,6 +59,8 @@ const CATEGORY_MAP = {
     "1-1": "tote-bags",
     "1-12": "tote-bags",
     "1-16": "tote-bags",
+    "2-10": "tickets", // event wrist bands
+    "7-3": "cards",
   },
   prefix: { "13-": "pens" },
 };
@@ -68,9 +70,14 @@ const CATEGORY_MAP = {
 const SIGNAGE_RULES = [
   [/tablecloth/i, ["table-covers"]],
   [/flag/i, ["flags"]],
-  [/bannerstand/i, ["banner-stands", "trade-show-displays"]],
-  [/pull-up banner|banner stand/i, ["banner-stands"]],
-  [/display wall|counter|lightbox/i, ["trade-show-displays"]],
+  [/bannerstand/i, ["banner-stands", "trade-show-displays", "banners-and-displays"]],
+  [/pull-up banner|banner stand/i, ["banner-stands", "banners-and-displays"]],
+  [/display wall|counter|lightbox/i, ["trade-show-displays", "banners-and-displays"]],
+];
+
+// Placed by product name, on top of any category-number match.
+const NAME_RULES = [
+  [/playing cards/i, ["cards"]],
 ];
 
 function categorySlugs(p) {
@@ -84,6 +91,7 @@ function categorySlugs(p) {
     const rule = SIGNAGE_RULES.find(([re]) => re.test(p.name));
     if (rule) for (const slug of rule[1]) out.add(slug);
   }
+  for (const [re, slugs] of NAME_RULES) if (re.test(p.name)) for (const slug of slugs) out.add(slug);
   return [...out];
 }
 

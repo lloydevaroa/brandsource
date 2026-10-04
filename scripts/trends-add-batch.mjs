@@ -4,12 +4,17 @@
 // Read-only against Trends. trends-sample/ is gitignored (Trends Data is confidential).
 //
 // Usage: node --env-file=.env.local scripts/trends-add-batch.mjs [count]
+//        node --env-file=.env.local scripts/trends-add-batch.mjs --codes 110889,116613
+// --codes adds exactly those product codes instead of the round-robin pick, for
+// filling a specific storefront category.
 
 import { readFile, writeFile } from "node:fs/promises";
 
 const BASE = "https://nz.api.trends.nz/api/v1";
 const FILE = new URL("../trends-sample/products.json", import.meta.url);
-const COUNT = Number(process.argv[2] ?? 30);
+const codesArg = process.argv.indexOf("--codes");
+const CODES = codesArg > -1 ? process.argv[codesArg + 1].split(",").map((c) => c.trim()).filter(Boolean) : null;
+const COUNT = Number(CODES ? 0 : process.argv[2] ?? 30);
 const SOURCES = ["3-4", "13-1", "13-2", "13-3", "1-1", "1-12", "1-16", "2-5", "3-9"];
 
 const { TRENDS_API_TOKEN: token, TRENDS_API_USERNAME: user, TRENDS_API_PASSWORD: pass } = process.env;
@@ -27,14 +32,14 @@ const existing = JSON.parse(await readFile(FILE));
 const have = new Set(existing.map((p) => String(p.code)));
 
 const queues = [];
-for (const cat of SOURCES) {
+for (const cat of CODES ? [] : SOURCES) {
   const list = unwrap(await get(`/products.json?category_no=${cat}&page_size=40&page_no=1`).catch(() => []));
   const fresh = (list ?? []).filter((p) => !have.has(String(p.code)) && ["Normal", "New"].includes(p.status));
   console.log(`${cat}: ${list?.length ?? 0} listed, ${fresh.length} new`);
   if (fresh.length) queues.push(fresh);
 }
 
-const picked = [];
+const picked = (CODES ?? []).filter((c) => !have.has(c)).map((code) => ({ code }));
 while (picked.length < COUNT && queues.some((q) => q.length)) {
   for (const q of queues) {
     const p = q.shift();

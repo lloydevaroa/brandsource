@@ -2,7 +2,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { CategoryTile } from "@/components/CategoryViews";
 import { HeroSlider } from "@/components/HeroSlider";
 import { getHeroSlides } from "@/lib/hero";
-import { countProducts, getCategories, getChildren } from "@/lib/categories";
+import { getCategories, getChildren } from "@/lib/categories";
 
 export const revalidate = 60;
 
@@ -26,7 +26,7 @@ export default async function Home() {
           </p>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tiles.map((c) => (
-              <CategoryTile key={c.slug} category={c} productCount={countProducts(all, c)} />
+              <CategoryTile key={c.slug} category={c} />
             ))}
           </ul>
         </section>

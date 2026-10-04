@@ -21,8 +21,8 @@ export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[
   );
 }
 
-/** A subcategory tile. Empty categories render as "Coming soon" but still link through. */
-export function CategoryTile({ category, productCount }: { category: Category; productCount: number }) {
+/** A subcategory tile. Empty categories are filtered out upstream in getCategories. */
+export function CategoryTile({ category }: { category: Category }) {
   return (
     <li>
       <Link
@@ -42,11 +42,6 @@ export function CategoryTile({ category, productCount }: { category: Category; p
         </div>
         <div className="flex items-center justify-between gap-3 px-5 py-4">
           <h2 className="font-medium group-hover:underline">{category.name}</h2>
-          {productCount === 0 ? (
-            <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-500">
-              Coming soon
-            </span>
-          ) : null}
         </div>
       </Link>
     </li>

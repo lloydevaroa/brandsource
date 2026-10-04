@@ -41,8 +41,9 @@ type LinkRow = {
 
 /**
  * Every active category with the active products assigned to it, in display
- * order. Server only. A category with no products is "coming soon" on the
- * storefront; it fills in by itself once a product is assigned.
+ * order. Server only. Categories are shown only when a supplier SKU backs them:
+ * a category with no products (and no subcategory with products) is left out
+ * entirely, and appears by itself once a product is assigned.
  */
 export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = createServiceSupabase();
@@ -74,7 +75,7 @@ export const getCategories = cache(async (): Promise<Category[]> => {
     byCategory.set(l.category_id, list);
   }
 
-  return rows.map((c) => {
+  const built = rows.map((c) => {
     const products = (byCategory.get(c.id) ?? [])
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
       .map((p) => ({
@@ -93,6 +94,10 @@ export const getCategories = cache(async (): Promise<Category[]> => {
       products,
     };
   });
+
+  const hasProducts = (c: Category): boolean =>
+    c.products.length > 0 || built.some((k) => k.parent_slug === c.slug && k.products.length > 0);
+  return built.filter(hasProducts);
 });
 
 export const getChildren = (all: Category[], slug: string) =>

@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Breadcrumb, CategoryTile, ProductCard } from "@/components/CategoryViews";
 import { HeroSlider } from "@/components/HeroSlider";
 import { getHeroSlides } from "@/lib/hero";
-import { countProducts, getCategories, getChildren } from "@/lib/categories";
+import { getCategories, getChildren } from "@/lib/categories";
 
 export const revalidate = 60;
 
@@ -47,7 +47,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         {children.length > 0 ? (
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {children.map((c) => (
-              <CategoryTile key={c.slug} category={c} productCount={countProducts(all, c)} />
+              <CategoryTile key={c.slug} category={c} />
             ))}
           </ul>
         ) : category.products.length > 0 ? (
@@ -56,14 +56,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
               <ProductCard key={p.slug} product={p} />
             ))}
           </ul>
-        ) : (
-          <div className="mt-8 rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-14 text-center">
-            <p className="text-lg font-medium">Coming soon</p>
-            <p className="mt-2 text-sm text-zinc-600">
-              We&apos;re adding {category.name.toLowerCase()} to the range. Ask us for a quote in the meantime.
-            </p>
-          </div>
-        )}
+        ) : null}
 
         {siblings.length > 0 ? (
           <section className="mt-14 border-t border-zinc-200 pt-8">
