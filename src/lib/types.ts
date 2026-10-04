@@ -26,7 +26,6 @@ export interface Client {
   name: string;
   client_type: ClientType;
   account_manager_id: string | null;
-  credit_term_days: 7 | 14 | 30 | null;
   contact_email: string | null;
 }
 

@@ -41,7 +41,7 @@ async function pushOrderToXero(orderId: string) {
     .select(
       `
       id, status, payment_method, po_number, xero_invoice_id,
-      client:clients ( id, name, contact_email, credit_term_days, xero_contact_id ),
+      client:clients ( id, name, contact_email, xero_contact_id ),
       order_lines ( quantity, unit_price, configuration, product:products ( name ) )
     `
     )
@@ -60,7 +60,6 @@ async function pushOrderToXero(orderId: string) {
       id: string;
       name: string;
       contact_email: string | null;
-      credit_term_days: number | null;
       xero_contact_id: string | null;
     } | null;
     order_lines: {
@@ -84,13 +83,9 @@ async function pushOrderToXero(orderId: string) {
     await supabase.from("clients").update({ xero_contact_id: contactId }).eq("id", order.client.id);
   }
 
-  const due = new Date();
-  due.setDate(due.getDate() + (order.client.credit_term_days ?? 30));
-
   const invoice = await createInvoice({
     contactId,
     reference: order.po_number,
-    dueDate: due.toISOString().slice(0, 10),
     lines: order.order_lines.map((line) => ({
       description: describeLine(line.product?.name ?? "Item", line.configuration),
       quantity: line.quantity,

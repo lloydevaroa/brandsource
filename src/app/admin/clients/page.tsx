@@ -13,7 +13,7 @@ export default async function ClientsPage() {
     supabase
       .from("clients")
       .select(
-        "id, name, contact_email, credit_term_days, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
+        "id, name, contact_email, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
       )
       .eq("client_type", "managed")
       .order("name", { ascending: true }),
@@ -38,7 +38,6 @@ export default async function ClientsPage() {
     id: string;
     name: string;
     contact_email: string | null;
-    credit_term_days: number | null;
     account_manager: { full_name: string | null } | null;
   };
   const rows = (clients ?? []) as unknown as ClientRow[];
@@ -51,7 +50,7 @@ export default async function ClientsPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">Managed clients</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Clients on account/credit terms, billed via Xero rather than card at order time.
+          Clients billed via Xero rather than card at order time. Payment terms are held in Xero. Names must match the Xero contact name exactly.
         </p>
 
         <div className="mt-8">
@@ -73,7 +72,7 @@ export default async function ClientsPage() {
                 )}
               </div>
               <span className="text-zinc-500">
-                {c.account_manager?.full_name ?? "Unassigned"} · {c.credit_term_days ?? "—"} day terms
+                {c.account_manager?.full_name ?? "No account manager"}
               </span>
             </li>
           ))}

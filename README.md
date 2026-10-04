@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 3 Oct 2026 (20 more products, tile images, import-clients and testing-plan items added)**
+> **Last updated: 5 Oct 2026 (535 existing clients loaded, payment terms now held in Xero)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -39,12 +39,15 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Review how imported Trends products landed in categories (`/admin`) | Lloyd / Joe | New 2 Oct |
 | Split staging from production keys in Vercel, move the domain, create Clerk production instance, activate live Stripe, paid Supabase plan, clear test data | Lloyd + **Joe** | Not started. See the go-live list below |
 | Move GitHub, Vercel, Supabase and Clerk into accounts BrandSource owns | **Joe** / Lloyd | Recommended, not started (key redundancy step) |
-| Import BrandSource's existing clients into `/admin/clients` (name exactly as it appears in Xero, account manager, credit terms 7/14/30 days, contact email) | Lloyd + **Joe** | Not started. Joe to supply the client list |
+| Check the loaded clients (535 names from Joe's Xero contact list, exactly as in Xero). Add contact emails and an account manager over time at `/admin/clients`. Two spellings to confirm in Xero: the four brandspanking.co.nz email-named contacts were left out | Lloyd + **Joe** | Loaded 5 Oct |
 | Write an internal testing plan: who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
 | Add prices to the imported Trends products (all show "Get a quote" today) and decide a flat pricing rule | **Joe** / Lloyd | Open |
 | Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
+
+**Week of 5 Oct**
+- 5 Oct: Loaded BrandSource's 535 existing clients (from Joe's Xero contact list, names exactly as in Xero) so account managers can pick any of them when raising a purchase-order order. Payment terms are no longer stored in BrandSource: Xero holds them, and the draft invoice is sent without a due date so Xero applies each customer's own terms. Account manager on a client is now optional, since any staff member can raise an order for any client. Draft orders to a Xero draft invoice still needs its first end-to-end test.
 
 **Week of 28 Sep**
 - 3 Oct: Planned Trends catalogue change monitoring (nightly check for changed or discontinued products, weekly sweep for ones that vanish, alert email, products hidden pending review rather than deleted). Not built yet. Also added "import existing clients" and "set up a testing plan" to the build list.
@@ -141,8 +144,8 @@ You don't need to log into most of these day to day. This is what each one is, s
 
 ## Shipped (as of 2026-09-18)
 
-- **Managed-client data model**: `clients` table (`client_type` managed/direct, `account_manager_id`, `credit_term_days` 7/14/30, enforced by a check constraint that managed clients must have both) and `profiles.client_id` linking a signed-in contact to their organisation. `orders` gained `client_id`, `payment_method` (`card`/`po`), `po_number`, `created_by_id` (the account manager, when staff create on a client's behalf), and `status` is now a proper `order_status` enum (`draft`/`new_order`/`in_production`/`completed`/`invoiced`) instead of free text.
-- **Managed-client PO flow**: `/admin/clients` (staff add a managed client: name, account manager, credit terms) and `/admin/orders/new` (staff pick a client and build an order line-by-line off the same catalog/configurator data as the storefront, optional PO number) — submitting creates the order at `new_order` with `payment_method: 'po'` and its `sub_orders` immediately, no payment step, so it shows up on the `/admin` Kanban straight away with a PO badge. This is the first end-to-end path that doesn't need Stripe keys.
+- **Managed-client data model**: `clients` table (`client_type` managed/direct, optional `account_manager_id` (the credit-terms field and its constraint were dropped 5 Oct; Xero holds payment terms) and `profiles.client_id` linking a signed-in contact to their organisation. `orders` gained `client_id`, `payment_method` (`card`/`po`), `po_number`, `created_by_id` (the account manager, when staff create on a client's behalf), and `status` is now a proper `order_status` enum (`draft`/`new_order`/`in_production`/`completed`/`invoiced`) instead of free text.
+- **Managed-client PO flow**: `/admin/clients` (staff add a managed client: name, optional account manager and contact email) and `/admin/orders/new` (staff pick a client and build an order line-by-line off the same catalog/configurator data as the storefront, optional PO number) — submitting creates the order at `new_order` with `payment_method: 'po'` and its `sub_orders` immediately, no payment step, so it shows up on the `/admin` Kanban straight away with a PO badge. This is the first end-to-end path that doesn't need Stripe keys.
 - **Order status overview**: `/admin/orders` — one row per order (client/customer, PO reference or card, order-level status, sub-order completion progress, total, created date), separate from the Kanban's per-sub-order detail. `orders.status` now actually advances as its sub-orders progress (`updateSubOrderStatus` rolls sub-order status up to the order: `new_order` → `in_production` once any sub-order reaches `sent_to_supplier`/`in_production`/`dispatched` → `completed` once all are), skipping orders already `invoiced` since that's a one-way flag the future Xero push owns.
 - **Notification milestones (managed clients only)**: `src/lib/notifications.ts` sends via Resend at the four points from build-brief.md's client notification table — order received (fires from `/admin/orders/new`, also emails the account manager), manufacturing begun (order rolls to `in_production`), manufacturing finished (all sub-orders reach `dispatched`/`completed` — tracked with its own `orders.manufacturing_finished_notified_at` flag since it doesn't correspond to an `order_status` value on its own), and delivery completed (order rolls to `completed`). Requires `clients.contact_email` (new field, set per client at `/admin/clients`) and `RESEND_API_KEY`/`RESEND_FROM_EMAIL` (not yet set in this deployment — same "built but untested end-to-end" position Stripe was in). Sending is best-effort: a missing key or a failed send is logged, never blocks the order/status action that triggered it. Direct-consumer notifications are a separate, later slice.
 
@@ -185,7 +188,7 @@ Apply in the Supabase SQL editor, in order:
 1. `supabase/schema.sql`
 2. `supabase/seed.sql`
 3. `supabase/supplier-pricing-research.sql`
-4. `supabase/clients-and-po.sql` — managed-client/account-manager/credit-terms data model, and formalizes `orders.status` into a proper `order_status` enum (`draft` → `new_order` → `in_production` → `completed` → `invoiced`). Ahead of the managed-client PO flow, so `orders.payment_method`/`po_number`/`client_id` exist but nothing writes to them yet.
+4. `supabase/clients-and-po.sql` (then `supabase/clients-xero-terms.sql`, which drops credit terms) — managed-client/account-manager data model, and formalizes `orders.status` into a proper `order_status` enum (`draft` → `new_order` → `in_production` → `completed` → `invoiced`). Ahead of the managed-client PO flow, so `orders.payment_method`/`po_number`/`client_id` exist but nothing writes to them yet.
 5. `supabase/notification-fields.sql` — `clients.contact_email` and `orders.manufacturing_finished_notified_at`, for the notification milestones above.
 6. `supabase/categories.sql` — storefront categories (`categories`, `product_categories`), seeded with the 17 Trade Show & Events tiles and the 7 pilot products placed. Browse pages live at `/category/<slug>`; a category with no active products shows "Coming soon" until one is assigned. `scripts/trends-import.mjs` maps Trends category numbers to these slugs (`CATEGORY_MAP`) and only ever adds assignments, so ones made by hand survive a re-sync. Products with no price show "Get a quote". Staff assign products to categories at `/admin/categories`.
 

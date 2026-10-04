@@ -186,13 +186,12 @@ export type XeroInvoiceLine = { description: string; quantity: number; unitAmoun
 /**
  * Creates a sales invoice (ACCREC). Defaults to DRAFT so staff review it in
  * Xero before approving/sending — Xero generates and sends the actual invoice,
- * BrandSource doesn't. Account code, GST treatment and status are env-driven
+ * BrandSource doesn't. No DueDate is sent, so Xero applies the contact's own payment terms. Account code, GST treatment and status are env-driven
  * so the accountant's choices don't need a code change.
  */
 export async function createInvoice(input: {
   contactId: string;
   reference: string | null;
-  dueDate: string;
   lines: XeroInvoiceLine[];
 }) {
   const accountCode = process.env.XERO_SALES_ACCOUNT_CODE || "200";
@@ -205,7 +204,6 @@ export async function createInvoice(input: {
         Type: "ACCREC",
         Contact: { ContactID: input.contactId },
         Date: new Date().toISOString().slice(0, 10),
-        DueDate: input.dueDate,
         Reference: input.reference ?? undefined,
         LineAmountTypes: lineAmountTypes,
         Status: status,
