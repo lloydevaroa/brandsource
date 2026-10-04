@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 5 Oct 2026 (535 existing clients loaded, payment terms held in Xero, testing plan started)**
+> **Last updated: 5 Oct 2026 (20 more products, empty homepage categories filled, 535 existing clients loaded, payment terms held in Xero, testing plan started)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -47,6 +47,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 5 Oct**
+- 5 Oct: Loaded 20 more products from Trends, 90 live in total, aimed at the homepage categories that said "Coming soon". Banners & Displays now has 11 (the banner stands and display walls we already had are now also shown there, plus the 6m display wall), Awards has 11 (lapel pins and badges, personalised ribbons), Tickets has 6 (event wrist bands) and Cards has 3 (business, loyalty and playing cards). Trends does not sell trophies or medals, so Awards is badges and ribbons for now; real trophies would need another supplier. Still "Coming soon": Event & Promotion Inflatables, Tents, Inflatable Tents and Auction Paddles (Trends has no range for these either).
 - 5 Oct: Started the testing plan in `TESTING.md` with three scenarios: pick a client, raise a purchase-order order and send a draft invoice to Xero (including what happens when a client name doesn't match Xero); a customer buying with a card through Stripe test mode; and an account manager moving an order from new to completed, including the client emails.
 - 5 Oct: Loaded BrandSource's 535 existing clients (from Joe's Xero contact list, names exactly as in Xero) so account managers can pick any of them when raising a purchase-order order. Payment terms are no longer stored in BrandSource: Xero holds them, and the draft invoice is sent without a due date so Xero applies each customer's own terms. Account manager on a client is now optional, since any staff member can raise an order for any client. Draft orders to a Xero draft invoice still needs its first end-to-end test.
 
