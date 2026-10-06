@@ -125,6 +125,9 @@ export default async function AdminPage() {
             <Link href="/admin/xero" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Xero
             </Link>
+            <Link href="/admin/errors" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Errors
+            </Link>
             <Link
               href="/admin/orders/new"
               className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"

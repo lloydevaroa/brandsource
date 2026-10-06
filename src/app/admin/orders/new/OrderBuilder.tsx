@@ -140,11 +140,15 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
             quantity,
           })),
         });
+        if ("error" in result) {
+          setSubmitError(result.error);
+          return;
+        }
         setCreatedOrderId(result.orderId);
         setLines([]);
         setPoNumber("");
       } catch (err) {
-        setSubmitError(err instanceof Error ? err.message : "Could not create order.");
+        setSubmitError(`Couldn't create the order because the connection to BrandSource failed (${new Date().toLocaleString("en-NZ")}). Check your internet and try again; if it keeps happening, forward this message to Lloyd.`);
       }
     });
   }

@@ -1,4 +1,5 @@
 import { createServiceSupabase } from "./supabase/server";
+import { UserFacingError } from "./error-log";
 
 /**
  * Xero push (build-brief.md item 5). Plain fetch against Xero's OAuth2 and
@@ -127,7 +128,7 @@ export async function disconnectXero() {
 /** Returns a live access token, refreshing (and storing the rotated refresh token) if needed. */
 async function getAccess() {
   const conn = await getXeroConnection();
-  if (!conn) throw new Error("Xero isn't connected yet. Connect it from Team dashboard → Xero.");
+  if (!conn) throw new UserFacingError("Xero isn't connected to BrandSource. Connect it from Team dashboard → Xero, then try again.");
 
   if (new Date(conn.expires_at).getTime() > Date.now()) {
     return { token: conn.access_token as string, tenantId: conn.tenant_id as string };

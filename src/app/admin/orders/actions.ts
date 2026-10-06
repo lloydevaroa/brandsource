@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createInvoice, findOrCreateContact } from "@/lib/xero";
+import { reportError, UserFacingError } from "@/lib/error-log";
 
 function describeLine(name: string, configuration: Record<string, string | string[]>) {
   const options = Object.entries(configuration)
@@ -24,15 +25,14 @@ export async function sendOrderToXero(
   try {
     return await pushOrderToXero(orderId);
   } catch (err) {
-    console.error("[xero] send failed", orderId, err);
-    return { error: err instanceof Error ? err.message : "Couldn't send to Xero." };
+    return { error: await reportError({ area: "xero", action: "Couldn't send the order to Xero", error: err }) };
   }
 }
 
 async function pushOrderToXero(orderId: string) {
   const profile = await syncCurrentProfile();
   if (!profile || (profile.role !== "admin" && profile.role !== "manager")) {
-    throw new Error("Not authorised");
+    throw new UserFacingError("You are not signed in as a manager or admin, so you cannot send orders to Xero.");
   }
 
   const supabase = createServiceSupabase();
@@ -70,12 +70,12 @@ async function pushOrderToXero(orderId: string) {
     }[];
   };
 
-  if (order.xero_invoice_id) throw new Error("This order has already been sent to Xero.");
+  if (order.xero_invoice_id) throw new UserFacingError("This order has already been sent to Xero. Check Xero before sending again, to avoid a duplicate invoice.");
   if (order.payment_method !== "po" || !order.client) {
-    throw new Error("Only purchase-order jobs for managed clients are invoiced through Xero.");
+    throw new UserFacingError("Only purchase-order orders for managed clients are invoiced through Xero.");
   }
-  if (order.status !== "completed") throw new Error("Only completed jobs can be invoiced.");
-  if (order.order_lines.length === 0) throw new Error("This order has no lines to invoice.");
+  if (order.status !== "completed") throw new UserFacingError("Only completed orders can be sent to Xero. Move the order to Completed first.");
+  if (order.order_lines.length === 0) throw new UserFacingError("This order has no lines to invoice.");
 
   let contactId = order.client.xero_contact_id;
   if (!contactId) {
@@ -105,8 +105,8 @@ async function pushOrderToXero(orderId: string) {
   if (updateError) {
     // The invoice exists in Xero even though we couldn't record it — say so
     // plainly so nobody pushes a duplicate.
-    throw new Error(
-      `Invoice ${invoice.InvoiceNumber} was created in Xero but couldn't be recorded here: ${updateError.message}`
+    throw new UserFacingError(
+      `Invoice ${invoice.InvoiceNumber} WAS created in Xero but couldn't be recorded in BrandSource. Do not send this order again, or it will be duplicated.`
     );
   }
 

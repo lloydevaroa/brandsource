@@ -6,11 +6,12 @@ import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { priceForItem } from "@/lib/pricing";
 import { getCatalog } from "@/lib/catalog";
 import { notifyOrderReceived } from "@/lib/notifications";
+import { reportError, UserFacingError } from "@/lib/error-log";
 
 async function requireStaffProfile() {
   const profile = await syncCurrentProfile();
   if (!profile || (profile.role !== "admin" && profile.role !== "manager")) {
-    throw new Error("Not authorised");
+    throw new UserFacingError("You are not signed in as a staff member, so you cannot create orders.");
   }
   return profile;
 }
@@ -21,15 +22,32 @@ export type ManagedOrderLineInput = {
   quantity: number;
 };
 
+/**
+ * Returns errors rather than throwing: Next.js redacts thrown server-action
+ * messages in production, and staff need a message they can forward.
+ */
 export async function createManagedOrder(input: {
   clientId: string;
   poNumber: string;
   lines: ManagedOrderLineInput[];
-}) {
-  const staff = await requireStaffProfile();
+}): Promise<{ orderId: string } | { error: string }> {
+  let staffId: string | null = null;
+  try {
+    const staff = await requireStaffProfile();
+    staffId = staff.id;
+    return await insertManagedOrder(input, staff.id);
+  } catch (err) {
+    return { error: await reportError({ area: "orders", action: "Couldn't create the order", error: err, staffId }) };
+  }
+}
 
-  if (!input.clientId) throw new Error("Choose a client.");
-  if (input.lines.length === 0) throw new Error("Add at least one product line.");
+async function insertManagedOrder(
+  input: { clientId: string; poNumber: string; lines: ManagedOrderLineInput[] },
+  staffId: string
+) {
+
+  if (!input.clientId) throw new UserFacingError("No client was chosen. Pick a client and try again.");
+  if (input.lines.length === 0) throw new UserFacingError("The order has no product lines. Add at least one and try again.");
 
   const supabase = createServiceSupabase();
 
@@ -38,9 +56,9 @@ export async function createManagedOrder(input: {
     .select("id, client_type")
     .eq("id", input.clientId)
     .single();
-  if (clientError || !client) throw new Error("Client not found.");
+  if (clientError || !client) throw new UserFacingError("That client could not be found. Refresh the page and pick the client again.");
   if (client.client_type !== "managed") {
-    throw new Error("Only managed clients can order on a purchase order.");
+    throw new UserFacingError("Only managed clients can order on a purchase order.");
   }
 
   const { data: products, error: productsError } = await supabase
@@ -56,10 +74,13 @@ export async function createManagedOrder(input: {
   const catalog = await getCatalog();
   const pricedLines = input.lines.map((line) => {
     const productId = productIdBySlug.get(line.productSlug);
-    if (!productId) throw new Error(`Unknown product: ${line.productSlug}`);
+    if (!productId) throw new UserFacingError(`The product "${line.productSlug}" is no longer in the catalogue. Remove it from the order.`);
     const unitPrice = priceForItem(catalog, line.productSlug, line.configuration);
     if (unitPrice === null || unitPrice <= 0) {
-      throw new Error(`No price available for ${line.productSlug}`);
+      const name = catalog.find((p) => p.slug === line.productSlug)?.name ?? line.productSlug;
+      throw new UserFacingError(
+        `"${name}" has no price set in the catalogue, so it can't be added to an order or invoiced. Remove it from the order, or ask Lloyd to set its price.`
+      );
     }
     return { ...line, productId, unitPrice };
   });
@@ -70,7 +91,7 @@ export async function createManagedOrder(input: {
     .from("orders")
     .insert({
       client_id: input.clientId,
-      created_by_id: staff.id,
+      created_by_id: staffId,
       payment_method: "po",
       po_number: input.poNumber.trim() || null,
       status: "new_order",
