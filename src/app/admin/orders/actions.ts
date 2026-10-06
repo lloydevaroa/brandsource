@@ -14,8 +14,10 @@ function describeLine(name: string, configuration: Record<string, string | strin
 }
 
 /**
- * Pushes a completed purchase-order job to Xero as an invoice, then marks the
- * order 'invoiced' (a one-way flag — see recomputeOrderStatus in admin/actions.ts).
+ * Pushes a purchase-order order to Xero as an invoice at any stage after it is
+ * placed, so payment can start while it is being made. Invoicing is recorded by
+ * xero_invoice_id/number, not by order status, so production status keeps
+ * moving as sub-orders progress.
  * Returns errors rather than throwing: Next.js redacts thrown server-action
  * messages in production, and staff need to see what Xero actually said.
  */
@@ -74,7 +76,7 @@ async function pushOrderToXero(orderId: string) {
   if (order.payment_method !== "po" || !order.client) {
     throw new UserFacingError("Only purchase-order orders for managed clients are invoiced through Xero.");
   }
-  if (order.status !== "completed") throw new UserFacingError("Only completed orders can be sent to Xero. Move the order to Completed first.");
+  if (order.status === "draft") throw new UserFacingError("This order is still a draft, so it can't be sent to Xero yet.");
   if (order.order_lines.length === 0) throw new UserFacingError("This order has no lines to invoice.");
 
   let contactId = order.client.xero_contact_id;
@@ -96,7 +98,6 @@ async function pushOrderToXero(orderId: string) {
   const { error: updateError } = await supabase
     .from("orders")
     .update({
-      status: "invoiced",
       xero_invoice_id: invoice.InvoiceID,
       xero_invoice_number: invoice.InvoiceNumber,
       invoiced_at: new Date().toISOString(),

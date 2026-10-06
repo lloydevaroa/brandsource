@@ -20,14 +20,14 @@ For Lloyd, Joe and Joe's team. Plain English, no code needed. Work through a sce
 2. Type a few letters of an existing client's name in the client box. The list should narrow as you type. Pick a client.
 3. Add one or two product lines and enter a PO number.
 4. Submit. The order should appear on the staff board (`/admin`) as **New**, and on **Orders** (`/admin/orders`) with the client, PO number and total.
-5. Move the order through production on the board until it is **Completed**.
-6. On **Orders** (`/admin/orders`), click **Send to Xero** on that order.
+5. On **Orders** (`/admin/orders`), click **Send to Xero** on that order. It can be sent at any stage, so payment can start while the order is being made.
+6. Move the order through production on the board until it is **Completed**. Its status should keep updating after the invoice is sent.
 7. In Xero, open the draft invoice and check it.
 
 **Pass when:**
 - [ ] The client appeared in the picker and matched what you typed.
 - [ ] The order shows on the board and in Orders with the right client, PO number and total.
-- [ ] After Send to Xero the order shows as **Invoiced** with a Xero invoice number, and the button is gone.
+- [ ] After Send to Xero the order shows an **Invoiced** badge with the Xero invoice number, the button is gone, and its production status still moves on as normal.
 - [ ] In Xero it is a **draft** invoice on the **existing** contact for that client (no new contact created).
 - [ ] The PO number appears as the invoice reference, and the lines and amounts match the order.
 - [ ] The due date follows **that contact's payment terms in Xero** (BrandSource does not set it).
@@ -53,7 +53,7 @@ Client names must match the Xero contact name **exactly**. Test what happens whe
 
 ### D. Guard rails
 
-- [ ] An order that is not yet **Completed** has no Send to Xero button.
+- [ ] A draft order has no Send to Xero button.
 - [ ] A sent order cannot be sent again (no duplicate invoice in Xero).
 - [ ] A signed-out user, or a customer account, cannot open `/admin/orders/new`.
 
