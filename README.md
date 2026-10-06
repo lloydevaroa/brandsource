@@ -41,8 +41,8 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Move GitHub, Vercel, Supabase and Clerk into accounts BrandSource owns | **Joe** / Lloyd | Recommended, not started (key redundancy step) |
 | Check the loaded clients (535 names from Joe's Xero contact list, exactly as in Xero). Add contact emails and an account manager over time at `/admin/clients`. Two spellings to confirm in Xero: the four brandspanking.co.nz email-named contacts were left out | Lloyd + **Joe** | Loaded 5 Oct |
 | Write an internal testing plan (started in [`TESTING.md`](TESTING.md): PO order to Xero draft invoice, card purchase, account manager order progression): who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
-| Trends cost pricing (quantity breaks, setup and extra charges, below-minimum flag, notes) for the 90 imported products: run `supabase/supplier-pricing.sql` once, then the pricing import. Cost only, never shown to customers | Lloyd | Built 6 Oct, not yet loaded |
-| Decide a flat selling price rule so products stop showing "Get a quote" (the Trends costs above are the input) | **Joe** / Lloyd | Open |
+| Trends cost pricing (quantity breaks, setup and extra charges, below-minimum flag, notes) for the 90 imported products: run `supabase/supplier-pricing.sql` once, then the pricing import. Cost only, never shown to customers | Lloyd | Loaded 6 Oct |
+| Confirm the selling price rule. Interim test prices set 6 Oct: lowest-quantity Trends cost plus 60% (Trends' own suggested markup), excluding setup fees and extras. Joe to confirm or change; adjust single products in the admin | **Joe** / Lloyd | Interim, for testing |
 | Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
