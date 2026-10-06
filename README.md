@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 5 Oct 2026 (20 more products, empty homepage categories filled, 535 existing clients loaded, payment terms held in Xero, testing plan started)**
+> **Last updated: 6 Oct 2026 (Trends cost pricing ready to load, 20 more products, empty homepage categories filled, 535 existing clients loaded, payment terms held in Xero, testing plan started)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -41,7 +41,8 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Move GitHub, Vercel, Supabase and Clerk into accounts BrandSource owns | **Joe** / Lloyd | Recommended, not started (key redundancy step) |
 | Check the loaded clients (535 names from Joe's Xero contact list, exactly as in Xero). Add contact emails and an account manager over time at `/admin/clients`. Two spellings to confirm in Xero: the four brandspanking.co.nz email-named contacts were left out | Lloyd + **Joe** | Loaded 5 Oct |
 | Write an internal testing plan (started in [`TESTING.md`](TESTING.md): PO order to Xero draft invoice, card purchase, account manager order progression): who tests what, on which device, and what counts as pass. Cover PO order to Xero invoice, card checkout, order emails, staff roles, categories, hero images, mobile | Lloyd + **Joe** | Not started. The site is close to internal testing, so this is next |
-| Add prices to the imported Trends products (all show "Get a quote" today) and decide a flat pricing rule | **Joe** / Lloyd | Open |
+| Trends cost pricing (quantity breaks, setup and extra charges, below-minimum flag, notes) for the 90 imported products: run `supabase/supplier-pricing.sql` once, then the pricing import. Cost only, never shown to customers | Lloyd | Built 6 Oct, not yet loaded |
+| Decide a flat selling price rule so products stop showing "Get a quote" (the Trends costs above are the input) | **Joe** / Lloyd | Open |
 | Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
