@@ -24,7 +24,6 @@ const ROOT = new URL("../../tlc-catalogue/", import.meta.url);
 // Our categories, named the way customers say them. Created if missing; renaming
 // or moving them later in the admin is safe, the importer never overwrites them.
 const NEW_CATEGORIES = [
-  { slug: "banners", name: "Banners", sort_order: 35 },
   { slug: "stretch-fabric-displays", name: "Stretch Fabric Displays", sort_order: 36 },
 ];
 
@@ -111,7 +110,10 @@ function mapProduct(p) {
 }
 
 const products = JSON.parse(await readFile(new URL("products.json", ROOT)));
-const items = products.map(mapProduct);
+// Only the stretch fabric displays are shown. The TLC banners were dropped on
+// 8 Oct 2026 at Lloyd's request; their data and images stay in tlc-catalogue/.
+const RANGE = /^tlc-stretch-/;
+const items = products.filter((p) => RANGE.test(p.slug)).map(mapProduct);
 for (const i of items) {
   if (!i.row.short_description) throw new Error(`No description for ${i.row.slug}`);
   if (!i.categories.length) throw new Error(`No category for ${i.row.slug}`);
