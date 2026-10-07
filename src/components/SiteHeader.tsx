@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   SignInButton,
@@ -22,8 +23,16 @@ export function SiteHeader() {
   return (
     <header className="border-b border-zinc-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-sm font-semibold tracking-wide">
-          BRANDSource
+        <Link href="/" aria-label="BRANDSource home">
+          <Image
+            src="/brand/BrandSource-Primary.svg"
+            alt="BRANDSource"
+            width={822}
+            height={74}
+            className="h-6 w-auto"
+            unoptimized
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-4 text-sm text-zinc-600 sm:flex">
