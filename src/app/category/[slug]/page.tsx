@@ -40,7 +40,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
       <HeroSlider slides={slides} />
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <Breadcrumb trail={trail} />
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">{category.name}</h1>
 

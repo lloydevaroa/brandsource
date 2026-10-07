@@ -26,7 +26,7 @@ export default async function AccountPage({
 
   if (!hasClerk) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 [&>*]:max-w-3xl py-12">
         <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Home
         </Link>
@@ -56,7 +56,7 @@ export default async function AccountPage({
     : { data: null };
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-6xl px-6 [&>*]:max-w-3xl py-12">
       <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
         ← Home
       </Link>

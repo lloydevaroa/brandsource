@@ -22,7 +22,7 @@ export function SiteHeader() {
 
   return (
     <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" aria-label="BRANDSource home">
           <Image
             src="/brand/BrandSource-Primary.svg"
@@ -104,7 +104,7 @@ export function SiteHeader() {
           aria-label="Product categories"
           className="hidden border-t border-zinc-200 sm:block"
         >
-          <ul className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-1 px-6 text-[13px] font-semibold text-brand-charcoal">
+          <ul className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-1 px-3 text-[13px] font-semibold text-brand-charcoal">
             {categories.map((c) => (
               <li key={c.slug} className="group relative">
                 <Link

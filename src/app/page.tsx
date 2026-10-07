@@ -70,16 +70,18 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="bg-brand-charcoal py-10 text-center text-xs text-zinc-400">
-        <Image
-          src="/brand/BrandSource-Reversed.svg"
-          alt="BRANDSource"
-          width={822}
-          height={74}
-          className="mx-auto h-5 w-auto"
-          unoptimized
-        />
-        <p className="mt-4">NZ-fulfilled branded merchandise · V1 pilot scaffold</p>
+      <footer className="bg-brand-charcoal py-10 text-xs text-zinc-400">
+        <div className="mx-auto max-w-6xl px-6">
+          <Image
+            src="/brand/BrandSource-Reversed.svg"
+            alt="BRANDSource"
+            width={822}
+            height={74}
+            className="h-5 w-auto"
+            unoptimized
+          />
+          <p className="mt-4">NZ-fulfilled branded merchandise · V1 pilot scaffold</p>
+        </div>
       </footer>
     </div>
   );
