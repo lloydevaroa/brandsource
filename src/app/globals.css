@@ -6,6 +6,10 @@
 }
 
 @theme inline {
+  /* Brand tokens from Joe's logo pack (brand-assets/README.txt): proposed working colours, not yet confirmed as official. */
+  --color-brand-charcoal: #1b2024;
+  --color-brand-orange: #ff4b00;
+  --color-brand-grey: #f4f4f2;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
