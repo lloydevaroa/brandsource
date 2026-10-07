@@ -69,7 +69,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-black/10 to-transparent">
                 <div className="mx-auto w-full max-w-5xl px-6 pb-10 sm:pb-14">
                   {s.headline ? (
-                    <p className="max-w-xl text-2xl font-semibold tracking-tight text-white sm:text-4xl">
+                    <p className="max-w-xl text-3xl font-extrabold uppercase leading-[1.02] tracking-tight text-white sm:text-5xl">
                       {s.headline}
                     </p>
                   ) : null}
@@ -77,7 +77,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     <Link
                       href={s.button_href}
                       tabIndex={i === index ? 0 : -1}
-                      className="mt-4 inline-block px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
+                      className="mt-4 inline-block px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
                     >
                       {s.button_label}
                     </Link>

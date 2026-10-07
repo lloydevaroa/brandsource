@@ -18,7 +18,7 @@ export default async function Home() {
       <main>
         <HeroSlider slides={slides} />
         <section id="products" className="mx-auto max-w-5xl px-6 pb-14 pt-10 sm:pt-12">
-          <h1 className="text-center text-3xl font-black uppercase tracking-tight sm:text-4xl">
+          <h1 className="text-center text-3xl font-extrabold uppercase tracking-tight sm:text-4xl">
             Customisable Events &amp; Trade Show Products
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-center text-zinc-600">

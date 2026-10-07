@@ -134,7 +134,7 @@ export function ProductConfigurator({ product }: { product: CatalogProduct }) {
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          className="px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
+          className="px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
         >
           Add to cart
         </button>

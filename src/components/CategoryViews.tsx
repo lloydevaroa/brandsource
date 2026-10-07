@@ -71,7 +71,7 @@ export function ProductCard({ product }: { product: CategoryProduct }) {
         </p>
         <Link
           href={`/products/${product.slug}`}
-          className="mt-4 inline-block px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
+          className="mt-4 inline-block px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
         >
           Configure
         </Link>
