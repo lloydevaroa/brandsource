@@ -83,7 +83,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               className="object-cover"
             />
             {s.headline || s.button_label ? (
-              <div className="absolute inset-0 flex items-center bg-gradient-to-r from-brand-charcoal via-brand-charcoal/75 to-transparent sm:via-brand-charcoal/60 sm:to-transparent">
+              <div className="absolute inset-0 flex items-center bg-gradient-to-r from-brand-charcoal/70 via-brand-charcoal/25 to-transparent">
                 <div className="mx-auto w-full max-w-6xl px-6">
                   {s.headline ? (
                     <p className="max-w-md text-3xl font-extrabold uppercase leading-[1.02] tracking-tight text-white sm:max-w-xl sm:text-5xl lg:text-6xl">
