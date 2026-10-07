@@ -138,6 +138,11 @@ const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key } = proces
 if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local");
 const db = createClient(url, key, { auth: { persistSession: false } });
 
+// Tag every product with its supplier row (supabase/suppliers.sql). Tolerates the
+// migration not being run yet by leaving supplier_id unset.
+const { data: supplierRow } = await db.from("suppliers").select("id").eq("slug", "trends").maybeSingle();
+const supplierId = supplierRow?.id ?? null;
+
 const { error: bucketErr } = await db.storage.createBucket(BUCKET, { public: true });
 if (bucketErr && !/already exists/i.test(bucketErr.message)) throw bucketErr;
 
@@ -182,7 +187,10 @@ for (const { row, colours, images, details, templateSrc, categories } of items) 
 
   const { data: product, error } = await db
     .from("products")
-    .upsert({ ...row, example_image_urls: urls, product_details: details }, { onConflict: "supplier,supplier_code" })
+    .upsert(
+      { ...row, ...(supplierId ? { supplier_id: supplierId } : {}), example_image_urls: urls, product_details: details },
+      { onConflict: "supplier,supplier_code" },
+    )
     .select("id")
     .single();
   if (error) throw error;

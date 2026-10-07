@@ -1,5 +1,13 @@
 import { cache } from "react";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import {
+  SUPPLIER_EMBED,
+  isMissingSupplierSchema,
+  isSupplierHidden,
+  oneSupplier,
+  sampleLabel,
+  type SupplierEmbed,
+} from "@/lib/suppliers";
 
 export type ProductDetails = {
   features: string[];
@@ -21,6 +29,8 @@ export type CatalogProduct = {
   min_order_qty: number;
   example_image_urls: string[];
   product_details: ProductDetails | null;
+  /** Badge text while the supplier is only a sample listing (e.g. "TLC sample"), else null. */
+  sample_label: string | null;
   option_groups: {
     key: string; label: string; selection: "single" | "multi"; required: boolean;
     choices: { key: string; label: string; price_delta: number }[];
@@ -35,6 +45,7 @@ type Row = {
   min_order_qty: number;
   example_image_urls: string[] | null;
   product_details: ProductDetails | null;
+  supplier?: SupplierEmbed | SupplierEmbed[] | null;
   option_groups: {
     key: string; label: string; selection: "single" | "multi"; required: boolean; sort_order: number;
     option_choices: { key: string; label: string; price_delta: number | string; sort_order: number }[];
@@ -48,19 +59,30 @@ type Row = {
  */
 export const getCatalog = cache(async (includeInactive = false): Promise<CatalogProduct[]> => {
   const supabase = createServiceSupabase();
-  let query = supabase
-    .from("products")
-    .select(
-      "slug, name, short_description, unit_price, min_order_qty, example_image_urls, product_details, option_groups ( key, label, selection, required, sort_order, option_choices ( key, label, price_delta, sort_order ) )"
-    )
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
-  if (!includeInactive) query = query.eq("active", true);
+  const base =
+    "slug, name, short_description, unit_price, min_order_qty, example_image_urls, product_details, option_groups ( key, label, selection, required, sort_order, option_choices ( key, label, price_delta, sort_order ) )";
+  const run = (cols: string) => {
+    let query = supabase
+      .from("products")
+      .select(cols)
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (!includeInactive) query = query.eq("active", true);
+    return query;
+  };
 
-  const { data, error } = await query;
+  let { data, error } = await run(`${base}, ${SUPPLIER_EMBED}`);
+  // supabase/suppliers.sql not run yet: carry on without supplier rules.
+  if (error && isMissingSupplierSchema(error.message)) ({ data, error } = await run(base));
   if (error) throw new Error(`Could not load catalogue: ${error.message}`);
 
-  return (data as unknown as Row[]).map((p) => ({
+  // Products from a withdrawn or inactive supplier are hidden everywhere except
+  // reports, which still need them to resolve old orders.
+  const rows = (data as unknown as Row[]).filter(
+    (p) => includeInactive || !isSupplierHidden(oneSupplier(p.supplier))
+  );
+
+  return rows.map((p) => ({
     slug: p.slug,
     name: p.name,
     short_description: p.short_description,
@@ -68,6 +90,7 @@ export const getCatalog = cache(async (includeInactive = false): Promise<Catalog
     min_order_qty: p.min_order_qty,
     example_image_urls: p.example_image_urls ?? [],
     product_details: p.product_details,
+    sample_label: sampleLabel(oneSupplier(p.supplier)),
     option_groups: [...p.option_groups]
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((g) => ({

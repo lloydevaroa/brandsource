@@ -8,7 +8,7 @@ export default async function CategoriesAdminPage() {
   if ("guard" in staffResult) return staffResult.guard;
 
   const supabase = createServiceSupabase();
-  const [cats, prods, links] = await Promise.all([
+  const [cats, prods, links, supplierRows] = await Promise.all([
     supabase
       .from("categories")
       .select("id, name, parent_id, sort_order")
@@ -16,7 +16,14 @@ export default async function CategoriesAdminPage() {
       .order("sort_order", { ascending: true }),
     supabase.from("products").select("id, name, active").order("name", { ascending: true }),
     supabase.from("product_categories").select("product_id, category_id"),
+    // Internal only. Ignored if supabase/suppliers.sql has not been run yet.
+    supabase.from("products").select("id, supplier:suppliers ( name )"),
   ]);
+  const supplierOf = new Map<string, string>();
+  for (const r of (supplierRows.data ?? []) as unknown as { id: string; supplier: { name: string } | { name: string }[] | null }[]) {
+    const sup = Array.isArray(r.supplier) ? r.supplier[0] : r.supplier;
+    if (sup) supplierOf.set(r.id, sup.name);
+  }
   const error = cats.error ?? prods.error ?? links.error;
   if (error) {
     return (
@@ -57,6 +64,7 @@ export default async function CategoriesAdminPage() {
                   <div className="flex items-center justify-between gap-4">
                     <h2 className="font-medium">
                       {p.name}
+                      {supplierOf.get(p.id) ? <span className="ml-2 text-xs text-zinc-400">{supplierOf.get(p.id)}</span> : null}
                       {!p.active ? <span className="ml-2 text-xs text-zinc-400">inactive</span> : null}
                     </h2>
                     <button

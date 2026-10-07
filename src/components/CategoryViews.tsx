@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Category, CategoryProduct } from "@/lib/categories";
+import { SampleBadge } from "@/components/SampleBadge";
 
 export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[] }) {
   return (
@@ -62,6 +63,7 @@ export function ProductCard({ product }: { product: CategoryProduct }) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : null}
+        {product.sample_label ? <SampleBadge label={product.sample_label} className="absolute left-3 top-3" /> : null}
       </Link>
       <div className="p-5">
         <h3 className="font-medium">{product.name}</h3>

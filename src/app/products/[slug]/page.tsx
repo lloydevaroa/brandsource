@@ -6,6 +6,7 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SampleBadge } from "@/components/SampleBadge";
 
 export const revalidate = 60;
 
@@ -35,7 +36,8 @@ export default async function ProductPage({
           ← {category ? category.name : "Trade Show & Events"}
         </Link>
         <ProductGallery images={product.example_image_urls} name={product.name} />
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight">
+        {product.sample_label ? <SampleBadge label={product.sample_label} className="mt-6" /> : null}
+        <h1 className={`${product.sample_label ? "mt-2" : "mt-6"} text-3xl font-semibold tracking-tight`}>
           {product.name}
         </h1>
         <p className="mt-2 text-zinc-600">{product.short_description}</p>
