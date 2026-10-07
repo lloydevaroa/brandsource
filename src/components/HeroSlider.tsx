@@ -7,6 +7,23 @@ import type { HeroSlide } from "@/lib/hero";
 
 const INTERVAL_MS = 6000;
 
+/** Words wrapped in *asterisks* render in brand orange, e.g. "Brands *People* Remember". */
+function Headline({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\*[^*]+\*)/g).map((part, k) =>
+        part.startsWith("*") && part.endsWith("*") ? (
+          <span key={k} className="text-brand-orange">
+            {part.slice(1, -1)}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -66,20 +83,20 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               className="object-cover"
             />
             {s.headline || s.button_label ? (
-              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-black/10 to-transparent">
-                <div className="mx-auto w-full max-w-5xl px-6 pb-10 sm:pb-14">
+              <div className="absolute inset-0 flex items-center bg-gradient-to-r from-brand-charcoal via-brand-charcoal/75 to-transparent sm:via-brand-charcoal/60 sm:to-transparent">
+                <div className="mx-auto w-full max-w-6xl px-6">
                   {s.headline ? (
-                    <p className="max-w-xl text-3xl font-extrabold uppercase leading-[1.02] tracking-tight text-white sm:text-5xl">
-                      {s.headline}
+                    <p className="max-w-md text-3xl font-extrabold uppercase leading-[1.02] tracking-tight text-white sm:max-w-xl sm:text-5xl lg:text-6xl">
+                      <Headline text={s.headline} />
                     </p>
                   ) : null}
                   {s.button_label && s.button_href ? (
                     <Link
                       href={s.button_href}
                       tabIndex={i === index ? 0 : -1}
-                      className="mt-4 inline-block px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
+                      className="mt-6 inline-block px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
                     >
-                      {s.button_label}
+                      {s.button_label} <span aria-hidden>&rarr;</span>
                     </Link>
                   ) : null}
                 </div>

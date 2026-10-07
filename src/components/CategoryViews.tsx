@@ -25,24 +25,25 @@ export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[
 export function CategoryTile({ category }: { category: Category }) {
   return (
     <li>
-      <Link
-        href={`/category/${category.slug}`}
-        className="group block overflow-hidden rounded-xl border border-zinc-200 bg-white hover:border-zinc-400"
-      >
-        <div className={`relative aspect-square ${category.image ? "bg-white" : "bg-zinc-100"}`}>
+      <Link href={`/category/${category.slug}`} className="group block">
+        <div
+          className={`relative aspect-square overflow-hidden rounded-lg border border-zinc-200 ${
+            category.image ? "bg-white" : "bg-zinc-100"
+          } group-hover:border-brand-charcoal`}
+        >
           {category.image ? (
             <Image
               src={category.image}
               alt=""
               fill
               className="object-contain"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3 px-5 py-4">
-          <h2 className="font-medium group-hover:underline">{category.name}</h2>
-        </div>
+        <h2 className="mt-3 text-sm font-bold leading-snug">
+          {category.name} <span className="text-brand-orange" aria-hidden>&rarr;</span>
+        </h2>
       </Link>
     </li>
   );
