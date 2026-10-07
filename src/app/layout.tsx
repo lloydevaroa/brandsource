@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Montserrat } from "next/font/google";
+import { SiteFooter } from "@/components/SiteFooter";
 import { CartProvider } from "@/lib/cart";
 import { getMenuCategories } from "@/lib/categories";
 import { MenuCategoriesProvider } from "@/lib/menu-categories";
@@ -32,6 +33,7 @@ export default async function RootLayout({
         <CartProvider>
           <MenuCategoriesProvider categories={menuCategories}>
             {clerkKey ? <ClerkProvider publishableKey={clerkKey}>{children}</ClerkProvider> : children}
+            <SiteFooter />
           </MenuCategoriesProvider>
         </CartProvider>
       </body>
