@@ -77,7 +77,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     <Link
                       href={s.button_href}
                       tabIndex={i === index ? 0 : -1}
-                      className="mt-4 inline-block rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+                      className="mt-4 inline-block px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
                     >
                       {s.button_label}
                     </Link>

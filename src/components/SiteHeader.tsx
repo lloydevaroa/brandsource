@@ -49,7 +49,7 @@ export function SiteHeader() {
             <SignUpButton mode="modal">
               <button
                 type="button"
-                className="rounded-full bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-800"
+                className="px-3 py-1.5 text-xs bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
               >
                 Create account
               </button>
@@ -184,7 +184,7 @@ export function SiteHeader() {
               <SignUpButton mode="modal">
                 <button
                   type="button"
-                  className="w-fit rounded-full bg-zinc-900 px-3 py-1.5 text-white hover:bg-zinc-800"
+                  className="w-fit px-3 py-1.5 text-xs bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
                 >
                   Create account
                 </button>

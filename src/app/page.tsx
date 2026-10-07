@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CategoryTile } from "@/components/CategoryViews";
 import { HeroSlider } from "@/components/HeroSlider";
@@ -11,13 +12,13 @@ export default async function Home() {
   const slides = await getHeroSlides("home");
   const tiles = getChildren(all, "trade-show-and-events");
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-brand-grey text-brand-charcoal">
       <SiteHeader />
 
       <main>
         <HeroSlider slides={slides} />
         <section id="products" className="mx-auto max-w-5xl px-6 pb-14 pt-10 sm:pt-12">
-          <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="text-center text-3xl font-black uppercase tracking-tight sm:text-4xl">
             Customisable Events &amp; Trade Show Products
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-center text-zinc-600">
@@ -33,7 +34,7 @@ export default async function Home() {
 
         <section className="border-t border-zinc-200">
           <div className="mx-auto max-w-5xl px-6 py-12">
-            <p className="text-sm font-medium text-zinc-500">Proofing</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Proofing</p>
             <p className="mt-2 text-lg text-zinc-800">
               Upload → we proof → you approve. Sample imagery only until then.
             </p>
@@ -41,8 +42,16 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 py-8 text-center text-xs text-zinc-500">
-        BRANDSource · NZ-fulfilled branded merchandise · V1 pilot scaffold
+      <footer className="bg-brand-charcoal py-10 text-center text-xs text-zinc-400">
+        <Image
+          src="/brand/BrandSource-Reversed.svg"
+          alt="BRANDSource"
+          width={822}
+          height={74}
+          className="mx-auto h-5 w-auto"
+          unoptimized
+        />
+        <p className="mt-4">NZ-fulfilled branded merchandise · V1 pilot scaffold</p>
       </footer>
     </div>
   );

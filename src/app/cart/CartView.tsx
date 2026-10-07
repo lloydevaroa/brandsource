@@ -246,7 +246,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
                   type="button"
                   onClick={handleCheckout}
                   disabled={submitting || hasUnpriced}
-                  className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  className="px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300] disabled:opacity-60"
                 >
                   {submitting ? "Redirecting to payment…" : "Proceed to payment"}
                 </button>
@@ -260,7 +260,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
                 <SignInButton mode="modal">
                   <button
                     type="button"
-                    className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
+                    className="px-5 py-2.5 text-sm bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300]"
                   >
                     Sign in to check out
                   </button>
