@@ -35,8 +35,8 @@ export function SiteHeader() {
           />
         </Link>
 
-        <nav className="hidden items-center gap-4 text-sm text-zinc-600 sm:flex">
-          <span className="text-zinc-400">NZ suppliers</span>
+        <nav className="hidden items-center gap-5 text-[13px] font-semibold text-brand-charcoal sm:flex">
+          <span className="font-medium text-zinc-500">NZ support</span>
           <Link href="/cart" className="hover:text-zinc-900">
             Cart{itemCount > 0 ? ` (${itemCount})` : ""}
           </Link>
@@ -174,7 +174,7 @@ export function SiteHeader() {
                 ) : null}
               </div>
             ))}
-            <span className="text-zinc-400">NZ suppliers</span>
+            <span className="font-medium text-zinc-500">NZ support</span>
             <SignedOut>
               <SignInButton mode="modal">
                 <button type="button" className="text-left hover:text-zinc-900">

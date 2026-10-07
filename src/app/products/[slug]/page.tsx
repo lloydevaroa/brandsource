@@ -25,7 +25,7 @@ export default async function ProductPage({
   const category = categoryForProduct(await getCategories(), slug);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link

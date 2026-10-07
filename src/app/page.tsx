@@ -20,7 +20,7 @@ export default async function Home() {
   const slides = await getHeroSlides("home");
   const tiles = getChildren(all, "trade-show-and-events");
   return (
-    <div className="min-h-screen bg-brand-grey text-brand-charcoal">
+    <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
 
       <main>
@@ -53,7 +53,7 @@ export default async function Home() {
           </ul>
         </section>
 
-        <section className="border-y border-zinc-200 bg-white">
+        <section className="border-y border-zinc-200 bg-brand-peach">
           <ul className="mx-auto grid max-w-6xl gap-6 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
             {VALUE_POINTS.map((v) => (
               <li key={v.title} className="flex items-start gap-3">
