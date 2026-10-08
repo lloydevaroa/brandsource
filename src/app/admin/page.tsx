@@ -32,7 +32,9 @@ export default async function AdminPage() {
         ),
         order:orders (
           id,
+          status,
           payment_method,
+          rate_tier:rate_tiers ( name, discount_percent ),
           po_number,
           customer:profiles!orders_customer_id_fkey ( full_name, email ),
           client:clients ( name )
@@ -76,7 +78,10 @@ export default async function AdminPage() {
       artwork_files: { id: string }[];
     } | null;
     order: {
+      id: string;
+      status: string;
       payment_method: "card" | "po";
+      rate_tier: { name: string; discount_percent: number | string } | null;
       po_number: string | null;
       customer: { full_name: string | null; email: string | null } | null;
       client: { name: string } | null;
@@ -96,6 +101,12 @@ export default async function AdminPage() {
     customerEmail: row.order?.customer?.email ?? null,
     artworkCount: row.order_line?.artwork_files?.length ?? 0,
     poNumber: row.order?.payment_method === "po" ? row.order?.po_number ?? "PO" : null,
+    orderId: row.order?.id ?? null,
+    // Null tier means Retail (the RRP).
+    tierName: row.order?.rate_tier?.name ?? "Retail",
+    tierDiscount: Number(row.order?.rate_tier?.discount_percent ?? 0),
+    // Only PO orders that haven't been invoiced to Xero can be edited.
+    editable: row.order?.payment_method === "po" && row.order?.status !== "invoiced",
   }));
 
   const columns = STATUS_ORDER.map((status) => ({

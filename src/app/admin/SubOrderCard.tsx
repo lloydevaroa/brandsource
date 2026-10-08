@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import type { SubOrderStatus } from "@/lib/types";
 import { STATUS_ORDER, STATUS_LABEL } from "./status";
@@ -19,6 +20,12 @@ export type SubOrderCardData = {
   artworkCount: number;
   /** Set (to the PO number, or "PO" if none given) for managed-client PO orders. */
   poNumber: string | null;
+  orderId: string | null;
+  /** Rate tier name; "Retail" when none is set. */
+  tierName: string;
+  tierDiscount: number;
+  /** PO order not yet invoiced, so it can be edited. */
+  editable: boolean;
 };
 
 export function SubOrderCard({
@@ -48,9 +55,19 @@ export function SubOrderCard({
 
   return (
     <li className="rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-sm">
-      <p className="font-medium">
-        {subOrder.productName} × {subOrder.quantity}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-medium">
+          {subOrder.productName} × {subOrder.quantity}
+        </p>
+        {subOrder.editable && subOrder.orderId ? (
+          <Link
+            href={`/admin/orders/new?edit=${subOrder.orderId}`}
+            className="shrink-0 rounded border border-zinc-300 px-2 py-0.5 text-[11px] font-medium text-zinc-600 hover:border-zinc-900 hover:text-zinc-900"
+          >
+            Edit order
+          </Link>
+        ) : null}
+      </div>
       {configSummary ? <p className="mt-1 text-xs text-zinc-500">{configSummary}</p> : null}
       <p className="mt-2 text-xs text-zinc-600">
         {subOrder.customerName ?? subOrder.customerEmail ?? "Unknown customer"}
@@ -60,7 +77,18 @@ export function SubOrderCard({
           </span>
         ) : null}
       </p>
-      <p className="text-xs text-zinc-400">
+      <p className="mt-1">
+        <span
+          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+            subOrder.tierDiscount > 0 ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
+          }`}
+          title="Rate tier"
+        >
+          {subOrder.tierName}
+          {subOrder.tierDiscount > 0 ? ` · ${subOrder.tierDiscount}% off` : " · RRP"}
+        </span>
+      </p>
+      <p className="mt-1 text-xs text-zinc-400">
         {new Date(subOrder.createdAt).toLocaleDateString("en-NZ")}
         {subOrder.artworkCount > 0
           ? ` · ${subOrder.artworkCount} artwork file${subOrder.artworkCount === 1 ? "" : "s"}`

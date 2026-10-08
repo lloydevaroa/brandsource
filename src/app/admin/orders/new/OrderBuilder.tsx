@@ -3,13 +3,35 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition, type KeyboardEvent } from "react";
 import type { CatalogProduct } from "@/lib/catalog";
-import { priceForItem, configurationSummary } from "@/lib/pricing";
+import { applyTierDiscount, priceForItem, configurationSummary } from "@/lib/pricing";
+import { STATUS_LABEL } from "../../status";
+import type { SubOrderStatus } from "@/lib/types";
 import type { RateTier } from "@/lib/rate-tiers";
-import { createManagedOrder, type ManagedOrderLineInput } from "./actions";
+import { createManagedOrder, updateManagedOrder, type ManagedOrderLineInput } from "./actions";
 
 export type ClientOption = { id: string; name: string; rate_tier_id: string | null };
 
-type DraftLine = ManagedOrderLineInput & { id: string };
+type DraftLine = ManagedOrderLineInput & {
+  id: string;
+  /** Present for lines already saved on the order being edited. */
+  lineId?: string;
+  /** Saved RRP of an existing line, kept even if the catalogue price has since changed. */
+  listPrice?: number;
+  boardStatus?: string;
+};
+
+export type EditingOrder = {
+  orderId: string;
+  clientId: string;
+  rateTierId: string | null;
+  poNumber: string;
+  lines: DraftLine[];
+};
+
+/** RRP of a line: the saved one for existing lines, else the current catalogue price. */
+function lineRrp(catalog: CatalogProduct[], l: DraftLine) {
+  return l.listPrice ?? priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
+}
 
 function formatNZD(amount: number) {
   return new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD" }).format(amount);
@@ -19,23 +41,28 @@ export function OrderBuilder({
   clients,
   catalog,
   tiers,
+  editing,
 }: {
   clients: ClientOption[];
   catalog: CatalogProduct[];
   tiers: RateTier[];
+  editing?: EditingOrder;
 }) {
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
-  const [clientQuery, setClientQuery] = useState(clients[0]?.name ?? "");
+  const initialClient = editing ? clients.find((c) => c.id === editing.clientId) : clients[0];
+  const [clientId, setClientId] = useState(initialClient?.id ?? "");
+  const [clientQuery, setClientQuery] = useState(initialClient?.name ?? "");
   const [clientMenuOpen, setClientMenuOpen] = useState(false);
   const [clientHighlight, setClientHighlight] = useState(0);
-  const [poNumber, setPoNumber] = useState("");
+  const [poNumber, setPoNumber] = useState(editing?.poNumber ?? "");
   const retail = tiers.find((t) => t.discount_percent === 0) ?? null;
   const tierFor = (clientTierId: string | null) => tiers.find((t) => t.id === clientTierId) ?? retail;
   // Starts at the client's own tier; the account manager can override it per order.
-  const [tierId, setTierId] = useState(tierFor(clients[0]?.rate_tier_id ?? null)?.id ?? "");
+  const [tierId, setTierId] = useState(
+    (editing ? tierFor(editing.rateTierId) : tierFor(clients[0]?.rate_tier_id ?? null))?.id ?? ""
+  );
   const tier = tiers.find((t) => t.id === tierId) ?? null;
   const discount = tier?.discount_percent ?? 0;
-  const [lines, setLines] = useState<DraftLine[]>([]);
+  const [lines, setLines] = useState<DraftLine[]>(editing?.lines ?? []);
 
   const [productSlug, setProductSlug] = useState(catalog[0]?.slug ?? "");
   const product = catalog.find((p) => p.slug === productSlug) ?? catalog[0];
@@ -54,7 +81,7 @@ export function OrderBuilder({
       .filter((g) => (g.selection === "multi" ? false : !selections[g.key]));
   }, [product, selections]);
 
-  const total = lines.reduce((sum, l) => sum + (priceForItem(catalog, l.productSlug, l.configuration, discount) ?? 0) * l.quantity, 0);
+  const total = lines.reduce((sum, l) => sum + applyTierDiscount(lineRrp(catalog, l), discount) * l.quantity, 0);
 
   const filteredClients = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
@@ -138,6 +165,10 @@ export function OrderBuilder({
     setSelections({});
   }
 
+  function setLineQuantity(id: string, qty: number) {
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, quantity: Math.max(1, qty || 1) } : l)));
+  }
+
   function removeLine(id: string) {
     setLines((prev) => prev.filter((l) => l.id !== id));
   }
@@ -147,23 +178,38 @@ export function OrderBuilder({
     setCreatedOrderId(null);
     startTransition(async () => {
       try {
-        const result = await createManagedOrder({
-          clientId,
-          rateTierId: tierId || null,
-          poNumber,
-          lines: lines.map(({ productSlug, configuration, quantity }) => ({
-            productSlug,
-            configuration,
-            quantity,
-          })),
-        });
+        const result = editing
+          ? await updateManagedOrder({
+              orderId: editing.orderId,
+              clientId,
+              rateTierId: tierId || null,
+              poNumber,
+              lines: lines.map(({ lineId, productSlug, configuration, quantity }) => ({
+                lineId,
+                productSlug,
+                configuration,
+                quantity,
+              })),
+            })
+          : await createManagedOrder({
+              clientId,
+              rateTierId: tierId || null,
+              poNumber,
+              lines: lines.map(({ productSlug, configuration, quantity }) => ({
+                productSlug,
+                configuration,
+                quantity,
+              })),
+            });
         if ("error" in result) {
           setSubmitError(result.error);
           return;
         }
         setCreatedOrderId(result.orderId);
-        setLines([]);
-        setPoNumber("");
+        if (!editing) {
+          setLines([]);
+          setPoNumber("");
+        }
       } catch (err) {
         setSubmitError(`Couldn't create the order because the connection to BrandSource failed (${new Date().toLocaleString("en-NZ")}). Check your internet and try again; if it keeps happening, forward this message to Lloyd.`);
       }
@@ -348,8 +394,8 @@ export function OrderBuilder({
           <ul className="mt-3 space-y-2">
             {lines.map((l) => {
               const product = catalog.find((p) => p.slug === l.productSlug);
-              const price = priceForItem(catalog, l.productSlug, l.configuration, discount) ?? 0;
-              const rrp = priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
+              const rrp = lineRrp(catalog, l);
+              const price = applyTierDiscount(rrp, discount);
               return (
                 <li
                   key={l.id}
@@ -359,19 +405,37 @@ export function OrderBuilder({
                     <p className="font-medium">
                       {product?.name ?? l.productSlug} × {l.quantity}
                     </p>
+                    {l.lineId && l.boardStatus && l.boardStatus !== "new_order" ? (
+                      <p className="text-xs text-amber-700">
+                        On the board: {STATUS_LABEL[l.boardStatus as SubOrderStatus] ?? l.boardStatus}. Can&apos;t be removed until moved back to New order.
+                      </p>
+                    ) : null}
                     <p className="text-xs text-zinc-500">{configurationSummary(catalog, l.productSlug, l.configuration)}</p>
                     <p className="mt-1 text-xs text-zinc-600">
                       {formatNZD(price * l.quantity)}
                       {discount > 0 ? ` · ${formatNZD(price)} each, RRP ${formatNZD(rrp)}` : ""}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeLine(l.id)}
-                    className="text-xs text-zinc-400 hover:text-red-600"
-                  >
-                    Remove
-                  </button>
+                  <div className="flex flex-col items-end gap-2">
+                    {l.lineId ? (
+                      <input
+                        type="number"
+                        min={1}
+                        value={l.quantity}
+                        onChange={(e) => setLineQuantity(l.id, Number(e.target.value))}
+                        aria-label="Quantity"
+                        className="w-20 rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+                      />
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => removeLine(l.id)}
+                      disabled={!!l.lineId && !!l.boardStatus && l.boardStatus !== "new_order"}
+                      className="text-xs text-zinc-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-zinc-400"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </li>
               );
             })}
@@ -386,7 +450,7 @@ export function OrderBuilder({
         {submitError ? <p className="mt-3 text-sm text-red-600">{submitError}</p> : null}
         {createdOrderId ? (
           <p className="mt-3 text-sm text-emerald-600">
-            Order created —{" "}
+            {editing ? "Changes saved" : "Order created"} —{" "}
             <Link href="/admin" className="underline underline-offset-2">
               view it on the team dashboard
             </Link>
@@ -400,7 +464,7 @@ export function OrderBuilder({
           disabled={isPending || lines.length === 0 || !clientId}
           className="mt-4 rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
         >
-          {isPending ? "Creating…" : "Create order"}
+          {isPending ? (editing ? "Saving…" : "Creating…") : editing ? "Save changes" : "Create order"}
         </button>
       </div>
     </div>
