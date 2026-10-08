@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useMemo, useState, useTransition, type KeyboardEvent } from "react";
 import type { CatalogProduct } from "@/lib/catalog";
 import { priceForItem, configurationSummary } from "@/lib/pricing";
+import type { RateTier } from "@/lib/rate-tiers";
 import { createManagedOrder, type ManagedOrderLineInput } from "./actions";
 
-export type ClientOption = { id: string; name: string };
+export type ClientOption = { id: string; name: string; rate_tier_id: string | null };
 
 type DraftLine = ManagedOrderLineInput & { id: string };
 
@@ -14,12 +15,26 @@ function formatNZD(amount: number) {
   return new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD" }).format(amount);
 }
 
-export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; catalog: CatalogProduct[] }) {
+export function OrderBuilder({
+  clients,
+  catalog,
+  tiers,
+}: {
+  clients: ClientOption[];
+  catalog: CatalogProduct[];
+  tiers: RateTier[];
+}) {
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
   const [clientQuery, setClientQuery] = useState(clients[0]?.name ?? "");
   const [clientMenuOpen, setClientMenuOpen] = useState(false);
   const [clientHighlight, setClientHighlight] = useState(0);
   const [poNumber, setPoNumber] = useState("");
+  const retail = tiers.find((t) => t.discount_percent === 0) ?? null;
+  const tierFor = (clientTierId: string | null) => tiers.find((t) => t.id === clientTierId) ?? retail;
+  // Starts at the client's own tier; the account manager can override it per order.
+  const [tierId, setTierId] = useState(tierFor(clients[0]?.rate_tier_id ?? null)?.id ?? "");
+  const tier = tiers.find((t) => t.id === tierId) ?? null;
+  const discount = tier?.discount_percent ?? 0;
   const [lines, setLines] = useState<DraftLine[]>([]);
 
   const [productSlug, setProductSlug] = useState(catalog[0]?.slug ?? "");
@@ -39,7 +54,7 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
       .filter((g) => (g.selection === "multi" ? false : !selections[g.key]));
   }, [product, selections]);
 
-  const total = lines.reduce((sum, l) => sum + (priceForItem(catalog, l.productSlug, l.configuration) ?? 0) * l.quantity, 0);
+  const total = lines.reduce((sum, l) => sum + (priceForItem(catalog, l.productSlug, l.configuration, discount) ?? 0) * l.quantity, 0);
 
   const filteredClients = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
@@ -50,6 +65,7 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
 
   function selectClient(client: ClientOption) {
     setClientId(client.id);
+    setTierId(tierFor(client.rate_tier_id)?.id ?? "");
     setClientQuery(client.name);
     setClientMenuOpen(false);
   }
@@ -133,6 +149,7 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
       try {
         const result = await createManagedOrder({
           clientId,
+          rateTierId: tierId || null,
           poNumber,
           lines: lines.map(({ productSlug, configuration, quantity }) => ({
             productSlug,
@@ -210,6 +227,22 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
             ) : null}
           </label>
           <label className="text-sm">
+            <span className="mb-1 block font-medium">Rate tier</span>
+            <select
+              value={tierId}
+              onChange={(e) => setTierId(e.target.value)}
+              disabled={tiers.length <= 1}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
+            >
+              {tiers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                  {t.discount_percent > 0 ? ` (${t.discount_percent}% off RRP)` : " (RRP)"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm sm:col-span-2">
             <span className="mb-1 block font-medium">PO number (optional)</span>
             <input
               value={poNumber}
@@ -315,7 +348,8 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
           <ul className="mt-3 space-y-2">
             {lines.map((l) => {
               const product = catalog.find((p) => p.slug === l.productSlug);
-              const price = priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
+              const price = priceForItem(catalog, l.productSlug, l.configuration, discount) ?? 0;
+              const rrp = priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
               return (
                 <li
                   key={l.id}
@@ -326,7 +360,10 @@ export function OrderBuilder({ clients, catalog }: { clients: ClientOption[]; ca
                       {product?.name ?? l.productSlug} × {l.quantity}
                     </p>
                     <p className="text-xs text-zinc-500">{configurationSummary(catalog, l.productSlug, l.configuration)}</p>
-                    <p className="mt-1 text-xs text-zinc-600">{formatNZD(price * l.quantity)}</p>
+                    <p className="mt-1 text-xs text-zinc-600">
+                      {formatNZD(price * l.quantity)}
+                      {discount > 0 ? ` · ${formatNZD(price)} each, RRP ${formatNZD(rrp)}` : ""}
+                    </p>
                   </div>
                   <button
                     type="button"

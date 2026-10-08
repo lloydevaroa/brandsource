@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../../staff-guard";
 import { getCatalog } from "@/lib/catalog";
+import { getRateTiers, isMissingTierSchema } from "@/lib/rate-tiers";
 import { OrderBuilder } from "./OrderBuilder";
 
 export default async function NewOrderPage() {
@@ -9,11 +10,18 @@ export default async function NewOrderPage() {
   if ("guard" in staffResult) return staffResult.guard;
 
   const supabase = createServiceSupabase();
-  const { data: clients, error } = await supabase
+  const tiers = await getRateTiers();
+  let { data: clients, error } = await supabase
     .from("clients")
-    .select("id, name")
+    .select("id, name, rate_tier_id")
     .eq("client_type", "managed")
     .order("name", { ascending: true });
+  // supabase/rate-tiers.sql not run yet: carry on at RRP.
+  if (error && isMissingTierSchema(error.message)) {
+    const retry = await supabase.from("clients").select("id, name").eq("client_type", "managed").order("name", { ascending: true });
+    clients = (retry.data ?? []).map((c) => ({ ...c, rate_tier_id: null }));
+    error = retry.error;
+  }
 
   if (error) {
     return (
@@ -37,7 +45,7 @@ export default async function NewOrderPage() {
         </p>
 
         <div className="mt-8">
-          <OrderBuilder clients={clients ?? []} catalog={await getCatalog()} />
+          <OrderBuilder clients={clients ?? []} catalog={await getCatalog()} tiers={tiers} />
         </div>
       </div>
     </div>

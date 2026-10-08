@@ -5,6 +5,7 @@ import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { getStripe } from "@/lib/stripe";
 import { getCatalog } from "@/lib/catalog";
 import { priceForItem, configurationSummary } from "@/lib/pricing";
+import { getViewerTier, isMissingTierSchema } from "@/lib/rate-tiers";
 
 export const runtime = "nodejs";
 
@@ -80,13 +81,21 @@ export async function POST(req: Request) {
     }
   }
 
-  const { data: order, error: orderError } = await supabase
+  // The signed-in customer's rate tier (from their linked client), else Retail.
+  const tier = await getViewerTier();
+  const discount = tier?.discount_percent ?? 0;
+
+  const orderRow: Record<string, unknown> = { customer_id: profile.id, status: "draft", payment_method: "card" };
+  let { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({ customer_id: profile.id, status: "draft", payment_method: "card" })
+    .insert(tier ? { ...orderRow, rate_tier_id: tier.id } : orderRow)
     .select("id")
     .single();
-  if (orderError) {
-    return NextResponse.json({ error: orderError.message }, { status: 500 });
+  if (orderError && isMissingTierSchema(orderError.message) && !tier) {
+    ({ data: order, error: orderError } = await supabase.from("orders").insert(orderRow).select("id").single());
+  }
+  if (orderError || !order) {
+    return NextResponse.json({ error: orderError?.message ?? "Could not create the order." }, { status: 500 });
   }
 
   const lineItems: {
@@ -99,7 +108,8 @@ export async function POST(req: Request) {
   }[] = [];
 
   for (const item of items) {
-    const unitPrice = priceForItem(catalog, item.productSlug, item.configuration);
+    const unitPrice = priceForItem(catalog, item.productSlug, item.configuration, discount);
+    const listPrice = priceForItem(catalog, item.productSlug, item.configuration);
     if (unitPrice === null || unitPrice <= 0) {
       return NextResponse.json(
         { error: `No price available for ${item.productSlug}` },
@@ -113,6 +123,7 @@ export async function POST(req: Request) {
         product_id: productIdBySlug.get(item.productSlug),
         quantity: item.quantity,
         unit_price: unitPrice,
+        ...(tier ? { list_price: listPrice } : {}),
         configuration: item.configuration,
       })
       .select("id")

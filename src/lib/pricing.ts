@@ -1,10 +1,19 @@
 import type { CatalogProduct } from "@/lib/catalog";
 
-/** Flat unit price for a configured line: product base + any option price deltas. */
+/** Rate tier price: RRP less a percentage, to the cent. Same rule as lib/rate-tiers.ts. */
+export function applyTierDiscount(rrp: number, discountPercent: number) {
+  return Math.round(rrp * (1 - discountPercent / 100) * 100) / 100;
+}
+
+/**
+ * Unit price for a configured line: product base + any option price deltas
+ * (the RRP), less the rate tier discount when one applies.
+ */
 export function priceForItem(
   catalog: CatalogProduct[],
   productSlug: string,
-  configuration: Record<string, string | string[]>
+  configuration: Record<string, string | string[]>,
+  discountPercent = 0
 ) {
   const product = catalog.find((p) => p.slug === productSlug);
   if (!product) return null;
@@ -17,7 +26,8 @@ export function priceForItem(
       sum + keys.reduce((s, k) => s + (g.choices.find((c) => c.key === k)?.price_delta ?? 0), 0)
     );
   }, 0);
-  return base + delta;
+  const rrp = base + delta;
+  return discountPercent > 0 ? applyTierDiscount(rrp, discountPercent) : rrp;
 }
 
 /** Human-readable "Group: choice" summary of a line's selected options. */

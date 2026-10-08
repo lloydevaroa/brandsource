@@ -7,6 +7,7 @@ import { priceForItem } from "@/lib/pricing";
 import { getCatalog } from "@/lib/catalog";
 import { notifyOrderReceived } from "@/lib/notifications";
 import { reportError, UserFacingError } from "@/lib/error-log";
+import { getRateTier, isMissingTierSchema } from "@/lib/rate-tiers";
 
 async function requireStaffProfile() {
   const profile = await syncCurrentProfile();
@@ -28,6 +29,7 @@ export type ManagedOrderLineInput = {
  */
 export async function createManagedOrder(input: {
   clientId: string;
+  rateTierId?: string | null;
   poNumber: string;
   lines: ManagedOrderLineInput[];
 }): Promise<{ orderId: string } | { error: string }> {
@@ -42,7 +44,7 @@ export async function createManagedOrder(input: {
 }
 
 async function insertManagedOrder(
-  input: { clientId: string; poNumber: string; lines: ManagedOrderLineInput[] },
+  input: { clientId: string; rateTierId?: string | null; poNumber: string; lines: ManagedOrderLineInput[] },
   staffId: string
 ) {
 
@@ -61,6 +63,11 @@ async function insertManagedOrder(
     throw new UserFacingError("Only managed clients can order on a purchase order.");
   }
 
+  // Tier is looked up here, never taken as a percentage from the browser.
+  // Unset means Retail (the RRP).
+  const tier = await getRateTier(input.rateTierId);
+  const discount = tier?.discount_percent ?? 0;
+
   const { data: products, error: productsError } = await supabase
     .from("products")
     .select("id, slug")
@@ -75,31 +82,36 @@ async function insertManagedOrder(
   const pricedLines = input.lines.map((line) => {
     const productId = productIdBySlug.get(line.productSlug);
     if (!productId) throw new UserFacingError(`The product "${line.productSlug}" is no longer in the catalogue. Remove it from the order.`);
-    const unitPrice = priceForItem(catalog, line.productSlug, line.configuration);
+    const unitPrice = priceForItem(catalog, line.productSlug, line.configuration, discount);
+    const listPrice = priceForItem(catalog, line.productSlug, line.configuration);
     if (unitPrice === null || unitPrice <= 0) {
       const name = catalog.find((p) => p.slug === line.productSlug)?.name ?? line.productSlug;
       throw new UserFacingError(
         `"${name}" has no price set in the catalogue, so it can't be added to an order or invoiced. Remove it from the order, or ask Lloyd to set its price.`
       );
     }
-    return { ...line, productId, unitPrice };
+    return { ...line, productId, unitPrice, listPrice };
   });
 
   const totalAmount = pricedLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
 
-  const { data: order, error: orderError } = await supabase
+  const orderRow: Record<string, unknown> = {
+    client_id: input.clientId,
+    created_by_id: staffId,
+    payment_method: "po",
+    po_number: input.poNumber.trim() || null,
+    status: "new_order",
+    total_amount: totalAmount,
+  };
+  let { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({
-      client_id: input.clientId,
-      created_by_id: staffId,
-      payment_method: "po",
-      po_number: input.poNumber.trim() || null,
-      status: "new_order",
-      total_amount: totalAmount,
-    })
+    .insert(tier ? { ...orderRow, rate_tier_id: tier.id } : orderRow)
     .select("id")
     .single();
-  if (orderError) throw new Error(orderError.message);
+  if (orderError && isMissingTierSchema(orderError.message) && !tier) {
+    ({ data: order, error: orderError } = await supabase.from("orders").insert(orderRow).select("id").single());
+  }
+  if (orderError || !order) throw new Error(orderError?.message ?? "Order was not created");
 
   for (const line of pricedLines) {
     const { data: orderLine, error: lineError } = await supabase
@@ -109,6 +121,7 @@ async function insertManagedOrder(
         product_id: line.productId,
         quantity: line.quantity,
         unit_price: line.unitPrice,
+        ...(tier ? { list_price: line.listPrice } : {}),
         configuration: line.configuration,
       })
       .select("id")

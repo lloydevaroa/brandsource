@@ -7,8 +7,11 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/SiteHeader";
 import type { CatalogProduct } from "@/lib/catalog";
 import { useCart, type CartItem } from "@/lib/cart";
+import { applyTierDiscount } from "@/lib/pricing";
 
-function unitPrice(catalog: CatalogProduct[], item: CartItem) {
+export type CartTier = { name: string; discountPercent: number } | null;
+
+function unitPrice(catalog: CatalogProduct[], item: CartItem, discountPercent = 0) {
   const product = catalog.find((p) => p.slug === item.productSlug);
   if (!product) return null;
   const base = product.unit_price ?? null;
@@ -22,7 +25,8 @@ function unitPrice(catalog: CatalogProduct[], item: CartItem) {
       keys.reduce((s, k) => s + (g.choices.find((c) => c.key === k)?.price_delta ?? 0), 0)
     );
   }, 0);
-  return base + delta;
+  const rrp = base + delta;
+  return discountPercent > 0 ? applyTierDiscount(rrp, discountPercent) : rrp;
 }
 
 function formatNZD(amount: number) {
@@ -44,13 +48,13 @@ function configurationSummary(catalog: CatalogProduct[], item: CartItem) {
   });
 }
 
-function CartLine({ item, catalog }: { item: CartItem; catalog: CatalogProduct[] }) {
+function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogProduct[]; tier: CartTier }) {
   const { removeItem, updateQuantity, addArtwork, removeArtwork } = useCart();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const summary = configurationSummary(catalog, item);
-  const price = unitPrice(catalog, item);
+  const price = unitPrice(catalog, item, tier?.discountPercent);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -152,15 +156,15 @@ function CartLine({ item, catalog }: { item: CartItem; catalog: CatalogProduct[]
   );
 }
 
-export function CartView({ catalog }: { catalog: CatalogProduct[] }) {
+export function CartView({ catalog, tier }: { catalog: CatalogProduct[]; tier: CartTier }) {
   return (
     <Suspense fallback={null}>
-      <CartPageInner catalog={catalog} />
+      <CartPageInner catalog={catalog} tier={tier} />
     </Suspense>
   );
 }
 
-function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
+function CartPageInner({ catalog, tier }: { catalog: CatalogProduct[]; tier: CartTier }) {
   const { items, clear } = useCart();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
@@ -168,10 +172,10 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const subtotal = items.reduce((sum, item) => {
-    const price = unitPrice(catalog, item);
+    const price = unitPrice(catalog, item, tier?.discountPercent);
     return price === null ? sum : sum + price * item.quantity;
   }, 0);
-  const hasUnpriced = items.some((item) => unitPrice(catalog, item) === null);
+  const hasUnpriced = items.some((item) => unitPrice(catalog, item, tier?.discountPercent) === null);
 
   async function handleCheckout() {
     setSubmitting(true);
@@ -212,7 +216,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Your cart</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Flat pricing. Upload artwork below — we&apos;ll proof each item before production.
+          {tier ? `${tier.name} rate applied (${tier.discountPercent}% off RRP). ` : "Flat pricing. "}Upload artwork below — we&apos;ll proof each item before production.
         </p>
         {canceled ? (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -232,7 +236,7 @@ function CartPageInner({ catalog }: { catalog: CatalogProduct[] }) {
           <>
             <ul className="mt-8 space-y-4">
               {items.map((item) => (
-                <CartLine key={item.id} item={item} catalog={catalog} />
+                <CartLine key={item.id} item={item} catalog={catalog} tier={tier} />
               ))}
             </ul>
 

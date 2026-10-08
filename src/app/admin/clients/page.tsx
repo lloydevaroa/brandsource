@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
+import { getRateTiers, isMissingTierSchema } from "@/lib/rate-tiers";
 import { NewClientForm } from "./NewClientForm";
+import { ClientTierSelect, LinkLoginForm } from "./ClientTools";
 
 export default async function ClientsPage() {
   const staffResult = await requireStaffProfile("Clients");
@@ -9,14 +11,23 @@ export default async function ClientsPage() {
 
   const supabase = createServiceSupabase();
 
-  const [{ data: clients, error }, { data: staff }] = await Promise.all([
+  const clientQuery = (cols: string) =>
     supabase
       .from("clients")
-      .select(
-        "id, name, contact_email, account_manager:profiles!clients_account_manager_id_fkey ( full_name )"
-      )
+      .select(cols)
       .eq("client_type", "managed")
-      .order("name", { ascending: true }),
+      .order("name", { ascending: true });
+  const managerEmbed = "account_manager:profiles!clients_account_manager_id_fkey ( full_name )";
+
+  const tiers = await getRateTiers();
+  let clientsResult = await clientQuery(`id, name, contact_email, rate_tier_id, ${managerEmbed}`);
+  // supabase/rate-tiers.sql not run yet: list clients without tiers.
+  if (clientsResult.error && isMissingTierSchema(clientsResult.error.message)) {
+    clientsResult = await clientQuery(`id, name, contact_email, ${managerEmbed}`);
+  }
+
+  const [{ data: clients, error }, { data: staff }] = await Promise.all([
+    Promise.resolve(clientsResult),
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -38,6 +49,7 @@ export default async function ClientsPage() {
     id: string;
     name: string;
     contact_email: string | null;
+    rate_tier_id?: string | null;
     account_manager: { full_name: string | null } | null;
   };
   const rows = (clients ?? []) as unknown as ClientRow[];
@@ -57,6 +69,10 @@ export default async function ClientsPage() {
           <NewClientForm staff={staff ?? []} />
         </div>
 
+        <div className="mt-4">
+          <LinkLoginForm clients={rows.map((c) => ({ id: c.id, name: c.name }))} />
+        </div>
+
         <ul className="mt-6 space-y-2">
           {rows.map((c) => (
             <li
@@ -71,8 +87,9 @@ export default async function ClientsPage() {
                   <span className="ml-2 text-xs text-amber-600">no contact email — notifications won&apos;t send</span>
                 )}
               </div>
-              <span className="text-zinc-500">
+              <span className="flex items-center gap-3 text-zinc-500">
                 {c.account_manager?.full_name ?? "No account manager"}
+                <ClientTierSelect clientId={c.id} tierId={c.rate_tier_id ?? null} tiers={tiers} />
               </span>
             </li>
           ))}
