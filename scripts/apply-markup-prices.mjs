@@ -10,13 +10,20 @@
 // markup or the rounded figure); anything hand-set in the admin is left alone.
 //
 // Needs supabase/supplier-pricing.sql run and trends-pricing-import.mjs done.
-// Usage: node --env-file=.env.local scripts/apply-markup-prices.mjs [--markup=60] [--dry-run]
+// Re-pricing: pass --from-markup=60 to move prices this script set at an earlier
+// markup (raw or rounded) to the new --markup. Prices matching neither are
+// treated as hand-set and left alone.
+// Usage: node --env-file=.env.local scripts/apply-markup-prices.mjs [--markup=50] [--from-markup=60] [--dry-run]
 
 import { createClient } from "@supabase/supabase-js";
 
 const DRY = process.argv.includes("--dry-run");
-const markup = Number((process.argv.find((a) => a.startsWith("--markup=")) ?? "--markup=60").split("=")[1]);
+const arg = (name, dflt) => (process.argv.find((a) => a.startsWith(`--${name}=`)) ?? `--${name}=${dflt}`).split("=")[1];
+const markup = Number(arg("markup", 50));
 if (!Number.isFinite(markup) || markup < 0) throw new Error("Bad --markup");
+const fromArg = arg("from-markup", "");
+const fromMarkup = fromArg === "" ? null : Number(fromArg);
+if (fromMarkup !== null && !Number.isFinite(fromMarkup)) throw new Error("Bad --from-markup");
 
 const cents = (n) => Math.round(n * 100) / 100;
 
@@ -56,8 +63,10 @@ for (const p of products) {
   const raw = cents(Number(b.unit_cost) * (1 + markup / 100));
   const price = roundUp(raw);
   const current = p.unit_price == null ? null : Number(p.unit_price);
-  if (current != null && current !== raw) { kept++; continue; } // hand-set, or already rounded
-  console.log(`${p.name}: cost $${b.unit_cost} @${b.min_qty} -> +${markup}% $${raw} -> $${price}`);
+  const earlierRaw = fromMarkup == null ? null : cents(Number(b.unit_cost) * (1 + fromMarkup / 100));
+  const mine = current == null || current === raw || (earlierRaw != null && (current === earlierRaw || current === roundUp(earlierRaw)));
+  if (!mine || current === price) { kept++; continue; } // hand-set, or already at this price
+  console.log(`${p.name}: cost $${b.unit_cost} @${b.min_qty} -> +${markup}% $${raw} -> $${price} (was ${current ?? "empty"})`);
   if (!DRY) {
     const q = db.from("products").update({ unit_price: price }).eq("id", p.id);
     const { error: uErr } = await (current == null ? q.is("unit_price", null) : q.eq("unit_price", current));
