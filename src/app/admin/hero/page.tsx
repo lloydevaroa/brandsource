@@ -41,6 +41,7 @@ export default async function HeroAdminPage({
   }
 
   const pages = [
+    { key: "default", label: "Sitewide default" },
     { key: "home", label: "Home page" },
     ...(cats.data ?? []).filter((c) => c.parent_id !== null).map((c) => ({ key: c.slug, label: c.name })),
   ];
@@ -58,7 +59,7 @@ export default async function HeroAdminPage({
         <h1 className="mt-2 text-2xl font-semibold">Hero images</h1>
         <p className="mt-2 text-sm text-zinc-500">
           The big image at the top of the home page and each category page. Add more than one and
-          they slide automatically. A page with none shows no hero.
+          they slide automatically. A page with none shows the sitewide default, and no hero if that is empty too.
         </p>
 
         <ul className="mt-6 flex flex-wrap gap-2">
