@@ -241,7 +241,7 @@ export function OrderBuilder({
               aria-autocomplete="list"
               autoComplete="off"
               value={clientQuery}
-              placeholder="Search clients…"
+              placeholder="Type to search, or select from the list…"
               onChange={(e) => handleClientInputChange(e.target.value)}
               onFocus={() => setClientMenuOpen(true)}
               onBlur={handleClientBlur}
