@@ -21,6 +21,8 @@ export type ManagedOrderLineInput = {
   productSlug: string;
   configuration: Record<string, string | string[]>;
   quantity: number;
+  /** Artwork already uploaded to storage (from the cart), attached to the new line. */
+  artwork?: { path: string; filename: string }[];
 };
 
 /**
@@ -55,7 +57,7 @@ async function insertManagedOrder(
 
   const { data: client, error: clientError } = await supabase
     .from("clients")
-    .select("id, client_type")
+    .select("id, client_type, rate_tier_id")
     .eq("id", input.clientId)
     .single();
   if (clientError || !client) throw new UserFacingError("That client could not be found. Refresh the page and pick the client again.");
@@ -64,8 +66,8 @@ async function insertManagedOrder(
   }
 
   // Tier is looked up here, never taken as a percentage from the browser.
-  // Unset means Retail (the RRP).
-  const tier = await getRateTier(input.rateTierId);
+  // Not specified (undefined) means the client's own tier; null means Retail (the RRP).
+  const tier = await getRateTier(input.rateTierId === undefined ? client.rate_tier_id : input.rateTierId);
   const discount = tier?.discount_percent ?? 0;
 
   const { data: products, error: productsError } = await supabase
@@ -134,6 +136,13 @@ async function insertManagedOrder(
       status: "new_order",
     });
     if (subOrderError) throw new Error(subOrderError.message);
+
+    if (line.artwork && line.artwork.length > 0) {
+      const { error: artworkError } = await supabase.from("artwork_files").insert(
+        line.artwork.map((a) => ({ order_line_id: orderLine.id, storage_path: a.path, uploaded_by: staffId }))
+      );
+      if (artworkError) throw new Error(artworkError.message);
+    }
   }
 
   await notifyOrderReceived(order.id);

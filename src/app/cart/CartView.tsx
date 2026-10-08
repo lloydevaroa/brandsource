@@ -8,8 +8,10 @@ import { SiteHeader } from "@/components/SiteHeader";
 import type { CatalogProduct } from "@/lib/catalog";
 import { useCart, type CartItem } from "@/lib/cart";
 import { applyTierDiscount } from "@/lib/pricing";
+import { createManagedOrder } from "@/app/admin/orders/new/actions";
 
 export type CartTier = { name: string; discountPercent: number } | null;
+export type StaffOrdering = { clients: { id: string; name: string; tierName: string; tierDiscount: number }[] };
 
 function unitPrice(catalog: CatalogProduct[], item: CartItem, discountPercent = 0) {
   const product = catalog.find((p) => p.slug === item.productSlug);
@@ -156,20 +158,132 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
   );
 }
 
-export function CartView({ catalog, tier }: { catalog: CatalogProduct[]; tier: CartTier }) {
+/**
+ * Staff only: raise the cart as a PO order for a managed client instead of paying by card.
+ * The order uses the client's default tier; change it afterwards with Edit order on the dashboard.
+ */
+function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"]; onCreated: (clientName: string) => void }) {
+  const { items, clear } = useCart();
+  const [query, setQuery] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [poNumber, setPoNumber] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  const matches = (q ? clients.filter((c) => c.name.toLowerCase().includes(q)) : clients).slice(0, 8);
+  const chosen = clients.find((c) => c.id === clientId);
+
+  async function submit() {
+    if (!chosen) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await createManagedOrder({
+        clientId: chosen.id,
+        poNumber,
+        lines: items.map((i) => ({
+          productSlug: i.productSlug,
+          configuration: i.configuration,
+          quantity: i.quantity,
+          artwork: i.artwork,
+        })),
+      });
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      clear();
+      onCreated(chosen.name);
+    } catch {
+      setError("Couldn't create the order because the connection to BrandSource failed. Check your internet and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <h2 className="text-sm font-semibold text-amber-900">Staff: create a PO order for a client</h2>
+      <p className="mt-1 text-xs text-amber-800">
+        Prices above are the RRP. The order takes the client&apos;s rate tier (Retail if they have none). Change it later with Edit order on the dashboard.
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="text-sm">
+          <label htmlFor="po-client" className="mb-1 block font-medium">Client</label>
+          <input
+            id="po-client"
+            value={chosen ? chosen.name : query}
+            onChange={(e) => {
+              setClientId("");
+              setQuery(e.target.value);
+            }}
+            placeholder="Search clients…"
+            autoComplete="off"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+          />
+          {!chosen ? (
+            <ul className="mt-1 max-h-48 overflow-auto rounded-lg border border-zinc-200 bg-white py-1">
+              {matches.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => setClientId(c.id)}
+                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-zinc-50"
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              ))}
+              {matches.length === 0 ? <li className="px-3 py-1.5 text-sm text-zinc-400">No matching clients</li> : null}
+            </ul>
+          ) : (
+            <p className="mt-1 text-xs text-zinc-600">
+              Tier: {chosen.tierName}
+              {chosen.tierDiscount > 0 ? ` (${chosen.tierDiscount}% off RRP)` : " (RRP)"} ·{" "}
+              <button type="button" onClick={() => { setClientId(""); setQuery(""); }} className="underline underline-offset-2">
+                change client
+              </button>
+            </p>
+          )}
+        </div>
+        <label className="text-sm">
+          <span className="mb-1 block font-medium">PO number (optional)</span>
+          <input
+            value={poNumber}
+            onChange={(e) => setPoNumber(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={busy || !chosen}
+        className="mt-4 rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+      >
+        {busy ? "Creating…" : "Create PO order"}
+      </button>
+    </div>
+  );
+}
+
+export function CartView({ catalog, tier, staff }: { catalog: CatalogProduct[]; tier: CartTier; staff: StaffOrdering | null }) {
   return (
     <Suspense fallback={null}>
-      <CartPageInner catalog={catalog} tier={tier} />
+      <CartPageInner catalog={catalog} tier={tier} staff={staff} />
     </Suspense>
   );
 }
 
-function CartPageInner({ catalog, tier }: { catalog: CatalogProduct[]; tier: CartTier }) {
+function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; tier: CartTier; staff: StaffOrdering | null }) {
   const { items, clear } = useCart();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdFor, setCreatedFor] = useState<string | null>(null);
 
   const subtotal = items.reduce((sum, item) => {
     const price = unitPrice(catalog, item, tier?.discountPercent);
@@ -218,6 +332,15 @@ function CartPageInner({ catalog, tier }: { catalog: CatalogProduct[]; tier: Car
         <p className="mt-2 text-sm text-zinc-500">
           {tier ? `${tier.name} rate applied (${tier.discountPercent}% off RRP). ` : "Flat pricing. "}Upload artwork below — we&apos;ll proof each item before production.
         </p>
+        {createdFor ? (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            PO order created for {createdFor}.{" "}
+            <Link href="/admin" className="font-medium underline underline-offset-2">
+              View it on the team dashboard
+            </Link>
+            , where Edit order lets you change the rate tier.
+          </div>
+        ) : null}
         {canceled ? (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             Checkout was canceled. Your cart is still here whenever you&apos;re ready.
@@ -239,6 +362,8 @@ function CartPageInner({ catalog, tier }: { catalog: CatalogProduct[]; tier: Car
                 <CartLine key={item.id} item={item} catalog={catalog} tier={tier} />
               ))}
             </ul>
+
+            {staff ? <StaffPoOrder clients={staff.clients} onCreated={setCreatedFor} /> : null}
 
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center justify-between text-sm">
