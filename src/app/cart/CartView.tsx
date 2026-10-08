@@ -177,15 +177,13 @@ function StaffPoOrder({
   onCreated: (clientName: string) => void;
 }) {
   const { items, clear } = useCart();
-  const [query, setQuery] = useState("");
   const [clientId, setClientId] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [tierId, setTierId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const q = query.trim().toLowerCase();
-  const matches = (q ? clients.filter((c) => c.name.toLowerCase().includes(q)) : clients).slice(0, 8);
+  const sortedClients = [...clients].sort((x, y) => x.name.localeCompare(y.name));
   const chosen = clients.find((c) => c.id === clientId);
 
   // The chosen tier also drives the prices shown in the cart above.
@@ -200,7 +198,6 @@ function StaffPoOrder({
   }
   function clearClient() {
     setClientId("");
-    setQuery("");
     applyTier("");
   }
 
@@ -241,42 +238,21 @@ function StaffPoOrder({
         The tier starts at the client&apos;s saved tier (Retail if none). Change it here to price this order, and the prices above update. It can also be changed later with Edit order on the dashboard.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="text-sm">
-          <label htmlFor="po-client" className="mb-1 block font-medium">Client</label>
-          <input
-            id="po-client"
-            value={chosen ? chosen.name : query}
-            onChange={(e) => {
-              if (clientId) clearClient();
-              setQuery(e.target.value);
-            }}
-            placeholder="Search clients…"
-            autoComplete="off"
+        <label className="text-sm">
+          <span className="mb-1 block font-medium">Client</span>
+          <select
+            value={clientId}
+            onChange={(e) => (e.target.value ? chooseClient(e.target.value) : clearClient())}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
-          />
-          {!chosen ? (
-            <ul className="mt-1 max-h-48 overflow-auto rounded-lg border border-zinc-200 bg-white py-1">
-              {matches.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => chooseClient(c.id)}
-                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-zinc-50"
-                  >
-                    {c.name}
-                  </button>
-                </li>
-              ))}
-              {matches.length === 0 ? <li className="px-3 py-1.5 text-sm text-zinc-400">No matching clients</li> : null}
-            </ul>
-          ) : (
-            <p className="mt-1 text-xs text-zinc-600">
-              <button type="button" onClick={clearClient} className="underline underline-offset-2">
-                change client
-              </button>
-            </p>
-          )}
-        </div>
+          >
+            <option value="">Select a client…</option>
+            {sortedClients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium">Rate tier</span>
           <select
