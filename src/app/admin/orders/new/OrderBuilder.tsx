@@ -48,7 +48,7 @@ export function OrderBuilder({
   tiers: RateTier[];
   editing?: EditingOrder;
 }) {
-  const initialClient = editing ? clients.find((c) => c.id === editing.clientId) : clients[0];
+  const initialClient = editing ? clients.find((c) => c.id === editing.clientId) : undefined;
   const [clientId, setClientId] = useState(initialClient?.id ?? "");
   const [clientQuery, setClientQuery] = useState(initialClient?.name ?? "");
   const [clientMenuOpen, setClientMenuOpen] = useState(false);
@@ -58,7 +58,7 @@ export function OrderBuilder({
   const tierFor = (clientTierId: string | null) => tiers.find((t) => t.id === clientTierId) ?? retail;
   // Starts at the client's own tier; the account manager can override it per order.
   const [tierId, setTierId] = useState(
-    (editing ? tierFor(editing.rateTierId) : tierFor(clients[0]?.rate_tier_id ?? null))?.id ?? ""
+    (editing ? tierFor(editing.rateTierId) : tierFor(null))?.id ?? ""
   );
   const tier = tiers.find((t) => t.id === tierId) ?? null;
   const discount = tier?.discount_percent ?? 0;
