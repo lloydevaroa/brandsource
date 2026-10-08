@@ -46,10 +46,12 @@ export default async function ProductImagesPage({
 
   const suppliers = [...new Map(products.map((p) => [p.supplierSlug, p.supplier])).entries()];
   // Trends supplies its own images, so the default view shows everyone else.
-  const filter = supplierParam ?? "others";
+  // No filter chosen means nothing is listed until staff pick one (or search).
+  const filter = supplierParam ?? "";
   const needle = q.trim().toLowerCase();
-  const shown = products
-    .filter((p) => (filter === "all" ? true : filter === "others" ? p.supplierSlug !== "trends" : p.supplierSlug === filter))
+  const active = Boolean(supplierParam || empty || needle);
+  const shown = !active ? [] : products
+    .filter((p) => (filter === "" || filter === "all" ? true : filter === "others" ? p.supplierSlug !== "trends" : p.supplierSlug === filter))
     .filter((p) => (empty ? p.images.length === 0 : true))
     .filter((p) => !needle || p.name.toLowerCase().includes(needle));
 
@@ -68,12 +70,10 @@ export default async function ProductImagesPage({
         <h1 className="mt-2 text-2xl font-semibold">Product images</h1>
         <p className="mt-2 text-sm text-zinc-500">
           Add, reorder or remove the photos on a product page. The first image is the main one. By default this
-          shows suppliers other than Trends, whose images come from their catalogue.
+          lists nothing until you pick a filter. Trends images come from their catalogue, so &ldquo;Non-Trends&rdquo; skips them.
         </p>
 
-        <BulkUploader products={products.map((p) => ({ slug: p.slug, name: p.name }))} />
-
-        <ul className="mt-8 flex flex-wrap gap-2">
+        <ul className="mt-6 flex flex-wrap gap-2">
           <li><Link href={`/admin/product-images?supplier=others${emptyQs}`} className={chip(filter === "others")}>Non-Trends</Link></li>
           <li><Link href={`/admin/product-images?supplier=all${emptyQs}`} className={chip(filter === "all")}>All</Link></li>
           {suppliers.map(([slug, name]) => (
@@ -83,7 +83,7 @@ export default async function ProductImagesPage({
           ))}
           <li>
             <Link
-              href={`/admin/product-images?supplier=${filter}${empty ? "" : "&empty=1"}`}
+              href={empty ? `/admin/product-images${filter ? `?supplier=${filter}` : ""}` : `/admin/product-images?${filter ? `supplier=${filter}&` : ""}empty=1`}
               className={chip(Boolean(empty))}
             >
               Missing images only
@@ -92,22 +92,26 @@ export default async function ProductImagesPage({
         </ul>
 
         <form className="mt-4">
-          <input type="hidden" name="supplier" value={filter} />
+          {filter ? <input type="hidden" name="supplier" value={filter} /> : null}
           {empty ? <input type="hidden" name="empty" value="1" /> : null}
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search products"
-            className="w-full max-w-sm rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
+            placeholder="Type in the product you would like to provide an image"
+            className="w-full max-w-xl rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
           />
         </form>
 
-        <p className="mt-4 text-sm text-zinc-500">{shown.length} products</p>
+        <p className="mt-4 text-sm text-zinc-500">
+          {active ? `${shown.length} products` : "Choose a filter above, or search for a product, to see its images."}
+        </p>
         <ul className="mt-3 space-y-4">
           {shown.map((p) => (
             <ProductImageCard key={p.slug} product={p} />
           ))}
         </ul>
+
+        <BulkUploader products={products.map((p) => ({ slug: p.slug, name: p.name }))} />
       </div>
     </div>
   );

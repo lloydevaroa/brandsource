@@ -144,7 +144,7 @@ export function BulkUploader({ products }: { products: Product[] }) {
                     value={i.typed}
                     disabled={busy}
                     onChange={(e) => setTyped(i.id, e.target.value)}
-                    placeholder="Type to pick a product"
+                    placeholder="Type in the product you would like to provide an image"
                     className={`mt-1 w-full rounded border px-2 py-1 text-sm ${
                       i.slug ? "border-green-300 bg-green-50" : "border-amber-300 bg-amber-50"
                     }`}
