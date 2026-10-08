@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import { prepareImage } from "@/lib/resize-image";
 import { addProductImage, createProductImageUpload, moveProductImage, removeProductImage } from "./actions";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -28,10 +29,11 @@ export function ProductImageCard({ product }: { product: Product }) {
       for (const file of files) {
         if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not an image.`);
         if (file.size > MAX_BYTES) throw new Error(`${file.name} is over 10MB. Please shrink it first.`);
-        const { path, token } = await createProductImageUpload(product.slug, file.name);
+        const prepared = await prepareImage(file);
+        const { path, token } = await createProductImageUpload(product.slug, prepared.filename);
         const { error: upErr } = await supabase.storage
           .from("product-images")
-          .uploadToSignedUrl(path, token, file, { contentType: file.type });
+          .uploadToSignedUrl(path, token, prepared.blob, { contentType: prepared.type });
         if (upErr) throw new Error(upErr.message);
         await addProductImage(product.slug, path);
       }
@@ -65,10 +67,13 @@ export function ProductImageCard({ product }: { product: Product }) {
         <h2 className="font-medium">{product.name}</h2>
         <span className="text-xs text-zinc-500">{product.supplier}</span>
       </div>
-
       {product.images.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">No images yet.</p>
-      ) : (
+        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Hidden from the website until it has an image.
+        </p>
+      ) : null}
+
+      {product.images.length === 0 ? null : (
         <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {product.images.map((src, i) => (
             <li key={src} className="space-y-1.5">
@@ -112,7 +117,7 @@ export function ProductImageCard({ product }: { product: Product }) {
           className="block text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white file:transition hover:file:bg-zinc-600 active:file:scale-95 disabled:opacity-60"
         />
         <p className="mt-2 text-xs text-zinc-500">
-          {uploading ? "Uploading…" : "JPG, PNG or WEBP, up to 10MB each. Square images on a white background work best."}
+          {uploading ? "Uploading…" : "JPG, PNG or WEBP, up to 10MB each. Large files are shrunk automatically. Square images on a white background work best."}
         </p>
         {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
       </div>

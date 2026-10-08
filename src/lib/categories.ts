@@ -88,6 +88,8 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   const byCategory = new Map<string, LinkRow["products"][]>();
   for (const l of links.data as unknown as LinkRow[]) {
     if (isSupplierHidden(oneSupplier(l.products.supplier))) continue;
+    // No image, no display: staff are prompted to add one at /admin/product-images.
+    if (!l.products.example_image_urls?.length) continue;
     const list = byCategory.get(l.category_id) ?? [];
     list.push(l.products);
     byCategory.set(l.category_id, list);

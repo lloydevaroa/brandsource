@@ -11,7 +11,7 @@ import { SampleBadge } from "@/components/SampleBadge";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  return (await getCatalog()).map((p) => ({ slug: p.slug }));
+  return (await getCatalog()).filter((p) => p.example_image_urls.length > 0).map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({
@@ -22,7 +22,8 @@ export default async function ProductPage({
   const { slug } = await params;
   const catalog = await getCatalog();
   const product = catalog.find((p) => p.slug === slug);
-  if (!product) notFound();
+  // No image, no display.
+  if (!product || product.example_image_urls.length === 0) notFound();
   const category = categoryForProduct(await getCategories(), slug);
 
   return (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import { ProductImageCard } from "./ProductImageCard";
+import { BulkUploader } from "./BulkUploader";
 
 type Row = {
   slug: string;
@@ -70,7 +71,9 @@ export default async function ProductImagesPage({
           shows suppliers other than Trends, whose images come from their catalogue.
         </p>
 
-        <ul className="mt-6 flex flex-wrap gap-2">
+        <BulkUploader products={products.map((p) => ({ slug: p.slug, name: p.name }))} />
+
+        <ul className="mt-8 flex flex-wrap gap-2">
           <li><Link href={`/admin/product-images?supplier=others${emptyQs}`} className={chip(filter === "others")}>Non-Trends</Link></li>
           <li><Link href={`/admin/product-images?supplier=all${emptyQs}`} className={chip(filter === "all")}>All</Link></li>
           {suppliers.map(([slug, name]) => (

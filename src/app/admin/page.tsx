@@ -14,7 +14,7 @@ export default async function AdminPage() {
 
   const supabase = createServiceSupabase();
 
-  const [{ data: subOrders, error }, { data: staff }] = await Promise.all([
+  const [{ data: subOrders, error }, { data: staff }, { count: noImageCount }] = await Promise.all([
     supabase
       .from("sub_orders")
       .select(
@@ -45,6 +45,11 @@ export default async function AdminPage() {
       .select("id, full_name")
       .in("role", ["admin", "manager"])
       .order("full_name", { ascending: true }),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("active", true)
+      .eq("example_image_urls", "{}"),
   ]);
 
   if (error) {
@@ -101,6 +106,15 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-[960px] px-6 py-10">
+        {noImageCount ? (
+          <Link
+            href="/admin/product-images?supplier=all&empty=1"
+            className="mb-6 block rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
+          >
+            {noImageCount} {noImageCount === 1 ? "product is" : "products are"} hidden from the website because{" "}
+            {noImageCount === 1 ? "it has" : "they have"} no image. Add images →
+          </Link>
+        ) : null}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
