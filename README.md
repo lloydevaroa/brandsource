@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 8 Oct 2026 (suppliers can now be added and controlled in the admin, every product records its supplier, TLC banner and stretch fabric sample range ready to load; Trends cost pricing ready to load, 535 existing clients loaded)**
+> **Last updated: 8 Oct 2026 (staff can upload and manage product images for non-Trends suppliers, suppliers can now be added and controlled in the admin, every product records its supplier, TLC banner and stretch fabric sample range ready to load; Trends cost pricing ready to load, 535 existing clients loaded)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -22,6 +22,7 @@ BrandSource is a working **staging site** at brandsource-seven.vercel.app. It ru
 
 ## Now (week of 5 Oct 2026)
 
+- Product images: a new Product images screen in the team dashboard (`/admin/product-images`) lets staff upload photos to any product, reorder them (the first is the main image) and remove them. It shows non-Trends suppliers by default, since Trends images come from its catalogue.
 - Suppliers: a new Suppliers screen in the team dashboard (`/admin/suppliers`) adds and edits suppliers, and every product now records which supplier it comes from (Trends, TLC and so on). The supplier is internal and never shown to customers.
 - TLC Live sample range: 4 stretch fabric display products from TLC's product guide, ready to load as a clearly marked "TLC sample" so the client can see them in the draft site while TLC agrees to usage and hosting. One switch per supplier turns the badge off (approved), hides the range (withdrawn) or brings it back.
 
@@ -52,6 +53,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 5 Oct**
+- 8 Oct: Added a Product images screen to the team dashboard so Joe can upload, reorder and remove product photos himself for suppliers other than Trends (call action C1). No database step needed; it uses the existing product image storage. Uploaded photos show on the product page within a minute.
 - 8 Oct: Narrowed the TLC sample to the 4 stretch fabric displays (standard, hanging, table top, shelving) and removed the 15 TLC banner products, at Lloyd's request. The import script now loads only the stretch fabric range; the banner data stays in the vault in case it is wanted later.
 - 8 Oct: Added a supplier system. A Suppliers screen in the team dashboard adds and edits suppliers (contact details, how we order, notes) and each supplier has a listing status: Live, Sample (shows a badge such as "TLC sample" on its products until the supplier approves) or Withdrawn (hides all its products straight away, reversible). Every product records its supplier, shown to staff only; the Trends name stays off the storefront as the Trends terms require. Built a TLC Live sample import of 19 banner and stretch fabric products (46 images cropped from TLC's 2024 product guide, no prices, quote only), under two new customer-language categories, Banners and Stretch Fabric Displays (pull-up banners also sit in Banner Stands, tear drop and wing banners also in Flags). Until the one-off database step is run the storefront carries on exactly as before. TLC's artwork is placeholder-quality in places; their original photos are needed before launch.
 - 5 Oct: Loaded 20 more products from Trends, 90 live in total, aimed at the homepage categories that were empty. Banners & Displays now has 11 (the banner stands and display walls we already had are now also shown there, plus the 6m display wall), Awards has 11 (lapel pins and badges, personalised ribbons), Tickets has 6 (event wrist bands) and Cards has 3 (business, loyalty and playing cards). Trends does not sell trophies or medals, so Awards is badges and ribbons for now; real trophies would need another supplier. Still empty (now hidden from the homepage): Event & Promotion Inflatables, Tents, Inflatable Tents and Auction Paddles (Trends has no range for these either).
