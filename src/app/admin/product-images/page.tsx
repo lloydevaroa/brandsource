@@ -3,6 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import { ProductImageCard } from "./ProductImageCard";
 import { BulkUploader } from "./BulkUploader";
+import { ProductSearch } from "./ProductSearch";
 
 type Row = {
   slug: string;
@@ -91,16 +92,7 @@ export default async function ProductImagesPage({
           </li>
         </ul>
 
-        <form className="mt-4">
-          {filter ? <input type="hidden" name="supplier" value={filter} /> : null}
-          {empty ? <input type="hidden" name="empty" value="1" /> : null}
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Type in the product you would like to provide an image"
-            className="w-full max-w-xl rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm"
-          />
-        </form>
+        <ProductSearch names={products.map((p) => p.name)} initial={q} supplier={filter} empty={Boolean(empty)} />
 
         <p className="mt-4 text-sm text-zinc-500">
           {active ? `${shown.length} products` : "Choose a filter above, or search for a product, to see its images."}
