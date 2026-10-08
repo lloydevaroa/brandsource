@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -183,7 +183,15 @@ function StaffPoOrder({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sortedClients = [...clients].sort((x, y) => x.name.localeCompare(y.name));
+  const [clientQuery, setClientQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const sortedClients = useMemo(() => [...clients].sort((x, y) => x.name.localeCompare(y.name)), [clients]);
+  const filteredClients = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    return q ? sortedClients.filter((c) => c.name.toLowerCase().includes(q)) : sortedClients;
+  }, [sortedClients, clientQuery]);
+  const activeIndex = Math.min(highlight, Math.max(filteredClients.length - 1, 0));
   const chosen = clients.find((c) => c.id === clientId);
 
   // The chosen tier also drives the prices shown in the cart above.
@@ -192,13 +200,40 @@ function StaffPoOrder({
     const t = tiers.find((x) => x.id === id);
     onTierChange(t && t.discountPercent > 0 ? { name: t.name, discountPercent: t.discountPercent } : null);
   }
-  function chooseClient(id: string) {
-    setClientId(id);
-    applyTier(clients.find((c) => c.id === id)?.tierId ?? "");
+  function chooseClient(c: StaffOrdering["clients"][number]) {
+    setClientId(c.id);
+    setClientQuery(c.name);
+    setMenuOpen(false);
+    applyTier(c.tierId);
   }
-  function clearClient() {
-    setClientId("");
-    applyTier("");
+  function onClientInput(value: string) {
+    setClientQuery(value);
+    setMenuOpen(true);
+    setHighlight(0);
+    if (chosen && chosen.name !== value) {
+      setClientId("");
+      applyTier("");
+    }
+  }
+  function onClientBlur() {
+    setMenuOpen(false);
+    setClientQuery(chosen?.name ?? "");
+  }
+  function onClientKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (!menuOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight((i) => Math.min(i + 1, filteredClients.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const match = filteredClients[activeIndex];
+      if (match) chooseClient(match);
+    } else if (e.key === "Escape") {
+      setMenuOpen(false);
+    }
   }
 
   async function submit() {
@@ -238,20 +273,45 @@ function StaffPoOrder({
         The tier starts at the client&apos;s saved tier (Retail if none). Change it here to price this order, and the prices above update. It can also be changed later with Edit order on the dashboard.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm">
+        <label className="relative text-sm">
           <span className="mb-1 block font-medium">Client</span>
-          <select
-            value={clientId}
-            onChange={(e) => (e.target.value ? chooseClient(e.target.value) : clearClient())}
+          <input
+            type="text"
+            role="combobox"
+            aria-expanded={menuOpen}
+            aria-autocomplete="list"
+            autoComplete="off"
+            value={clientQuery}
+            placeholder="Type to search, or select from the list…"
+            onChange={(e) => onClientInput(e.target.value)}
+            onFocus={() => setMenuOpen(true)}
+            onBlur={onClientBlur}
+            onKeyDown={onClientKeyDown}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
-          >
-            <option value="">Select a client…</option>
-            {sortedClients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          />
+          {menuOpen && filteredClients.length > 0 ? (
+            <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+              {filteredClients.map((c, i) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => chooseClient(c)}
+                    className={`block w-full px-3 py-1.5 text-left text-sm ${
+                      i === activeIndex ? "bg-zinc-900 text-white" : "hover:bg-zinc-50"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {menuOpen && filteredClients.length === 0 ? (
+            <p className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-400 shadow-lg">
+              No matching clients
+            </p>
+          ) : null}
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium">Rate tier</span>
