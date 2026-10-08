@@ -11,7 +11,10 @@ import { applyTierDiscount } from "@/lib/pricing";
 import { createManagedOrder } from "@/app/admin/orders/new/actions";
 
 export type CartTier = { name: string; discountPercent: number } | null;
-export type StaffOrdering = { clients: { id: string; name: string; tierName: string; tierDiscount: number }[] };
+export type StaffOrdering = {
+  tiers: { id: string; name: string; discountPercent: number }[];
+  clients: { id: string; name: string; tierId: string }[];
+};
 
 function unitPrice(catalog: CatalogProduct[], item: CartItem, discountPercent = 0) {
   const product = catalog.find((p) => p.slug === item.productSlug);
@@ -162,17 +165,44 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
  * Staff only: raise the cart as a PO order for a managed client instead of paying by card.
  * The order uses the client's default tier; change it afterwards with Edit order on the dashboard.
  */
-function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"]; onCreated: (clientName: string) => void }) {
+function StaffPoOrder({
+  clients,
+  tiers,
+  onTierChange,
+  onCreated,
+}: {
+  clients: StaffOrdering["clients"];
+  tiers: StaffOrdering["tiers"];
+  onTierChange: (tier: CartTier) => void;
+  onCreated: (clientName: string) => void;
+}) {
   const { items, clear } = useCart();
   const [query, setQuery] = useState("");
   const [clientId, setClientId] = useState("");
   const [poNumber, setPoNumber] = useState("");
+  const [tierId, setTierId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const q = query.trim().toLowerCase();
   const matches = (q ? clients.filter((c) => c.name.toLowerCase().includes(q)) : clients).slice(0, 8);
   const chosen = clients.find((c) => c.id === clientId);
+
+  // The chosen tier also drives the prices shown in the cart above.
+  function applyTier(id: string) {
+    setTierId(id);
+    const t = tiers.find((x) => x.id === id);
+    onTierChange(t && t.discountPercent > 0 ? { name: t.name, discountPercent: t.discountPercent } : null);
+  }
+  function chooseClient(id: string) {
+    setClientId(id);
+    applyTier(clients.find((c) => c.id === id)?.tierId ?? "");
+  }
+  function clearClient() {
+    setClientId("");
+    setQuery("");
+    applyTier("");
+  }
 
   async function submit() {
     if (!chosen) return;
@@ -181,6 +211,7 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
     try {
       const result = await createManagedOrder({
         clientId: chosen.id,
+        rateTierId: tierId || null,
         poNumber,
         lines: items.map((i) => ({
           productSlug: i.productSlug,
@@ -194,6 +225,7 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
         return;
       }
       clear();
+      onTierChange(null);
       onCreated(chosen.name);
     } catch {
       setError("Couldn't create the order because the connection to BrandSource failed. Check your internet and try again.");
@@ -206,7 +238,7 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
     <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
       <h2 className="text-sm font-semibold text-amber-900">Staff: create a PO order for a client</h2>
       <p className="mt-1 text-xs text-amber-800">
-        Prices above are the RRP. The order takes the client&apos;s rate tier (Retail if they have none). Change it later with Edit order on the dashboard.
+        The tier starts at the client&apos;s saved tier (Retail if none). Change it here to price this order, and the prices above update. It can also be changed later with Edit order on the dashboard.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="text-sm">
@@ -215,7 +247,7 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
             id="po-client"
             value={chosen ? chosen.name : query}
             onChange={(e) => {
-              setClientId("");
+              if (clientId) clearClient();
               setQuery(e.target.value);
             }}
             placeholder="Search clients…"
@@ -228,7 +260,7 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
                 <li key={c.id}>
                   <button
                     type="button"
-                    onClick={() => setClientId(c.id)}
+                    onClick={() => chooseClient(c.id)}
                     className="block w-full px-3 py-1.5 text-left text-sm hover:bg-zinc-50"
                   >
                     {c.name}
@@ -239,15 +271,30 @@ function StaffPoOrder({ clients, onCreated }: { clients: StaffOrdering["clients"
             </ul>
           ) : (
             <p className="mt-1 text-xs text-zinc-600">
-              Tier: {chosen.tierName}
-              {chosen.tierDiscount > 0 ? ` (${chosen.tierDiscount}% off RRP)` : " (RRP)"} ·{" "}
-              <button type="button" onClick={() => { setClientId(""); setQuery(""); }} className="underline underline-offset-2">
+              <button type="button" onClick={clearClient} className="underline underline-offset-2">
                 change client
               </button>
             </p>
           )}
         </div>
         <label className="text-sm">
+          <span className="mb-1 block font-medium">Rate tier</span>
+          <select
+            value={tierId}
+            onChange={(e) => applyTier(e.target.value)}
+            disabled={!chosen}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm disabled:opacity-60"
+          >
+            {!chosen ? <option value="">Choose a client first</option> : null}
+            {tiers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.discountPercent > 0 ? ` (${t.discountPercent}% off RRP)` : " (RRP)"}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium">PO number (optional)</span>
           <input
             value={poNumber}
@@ -284,12 +331,15 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdFor, setCreatedFor] = useState<string | null>(null);
+  // Tier chosen by staff for the PO order in progress; a customer's own tier takes no part here.
+  const [staffTier, setStaffTier] = useState<CartTier>(null);
+  const activeTier = tier ?? staffTier;
 
   const subtotal = items.reduce((sum, item) => {
-    const price = unitPrice(catalog, item, tier?.discountPercent);
+    const price = unitPrice(catalog, item, activeTier?.discountPercent);
     return price === null ? sum : sum + price * item.quantity;
   }, 0);
-  const hasUnpriced = items.some((item) => unitPrice(catalog, item, tier?.discountPercent) === null);
+  const hasUnpriced = items.some((item) => unitPrice(catalog, item, activeTier?.discountPercent) === null);
 
   async function handleCheckout() {
     setSubmitting(true);
@@ -330,7 +380,7 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Your cart</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          {tier ? `${tier.name} rate applied (${tier.discountPercent}% off RRP). ` : "Flat pricing. "}Upload artwork below — we&apos;ll proof each item before production.
+          {activeTier ? `${activeTier.name} rate applied (${activeTier.discountPercent}% off RRP). ` : "Flat pricing. "}Upload artwork below — we&apos;ll proof each item before production.
         </p>
         {createdFor ? (
           <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -359,11 +409,11 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
           <>
             <ul className="mt-8 space-y-4">
               {items.map((item) => (
-                <CartLine key={item.id} item={item} catalog={catalog} tier={tier} />
+                <CartLine key={item.id} item={item} catalog={catalog} tier={activeTier} />
               ))}
             </ul>
 
-            {staff ? <StaffPoOrder clients={staff.clients} onCreated={setCreatedFor} /> : null}
+            {staff ? <StaffPoOrder clients={staff.clients} tiers={staff.tiers} onTierChange={setStaffTier} onCreated={setCreatedFor} /> : null}
 
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center justify-between text-sm">
@@ -374,7 +424,7 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
                 <button
                   type="button"
                   onClick={handleCheckout}
-                  disabled={submitting || hasUnpriced}
+                  disabled={submitting || hasUnpriced || !!staffTier}
                   className="px-5 py-2.5 text-sm rounded bg-brand-orange text-white font-bold uppercase tracking-wide hover:bg-[#e64300] disabled:opacity-60"
                 >
                   {submitting ? "Redirecting to payment…" : "Proceed to payment"}
@@ -383,6 +433,11 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
                   You&apos;ll pay securely via Stripe, then we&apos;ll proof your artwork before
                   anything goes to production.
                 </p>
+                {staffTier ? (
+                  <p className="mt-2 text-sm text-amber-700">
+                    Card payment is off while a client rate tier is applied above. Use Create PO order, or set the tier back to Retail.
+                  </p>
+                ) : null}
                 {submitError ? <p className="mt-2 text-sm text-red-600">{submitError}</p> : null}
               </SignedIn>
               <SignedOut>

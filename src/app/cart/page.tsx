@@ -20,11 +20,11 @@ async function getStaffOrdering(): Promise<StaffOrdering | null> {
     const rows = withTier.error
       ? ((await supabase.from("clients").select("id, name").eq("client_type", "managed").order("name", { ascending: true })).data ?? []).map((c) => ({ ...c, rate_tier_id: null }))
       : withTier.data ?? [];
+    const retail = tiers.find((t) => t.discount_percent === 0);
     return {
-      clients: rows.map((c) => {
-        const tier = tiers.find((t) => t.id === c.rate_tier_id);
-        return { id: c.id, name: c.name, tierName: tier?.name ?? "Retail", tierDiscount: tier?.discount_percent ?? 0 };
-      }),
+      tiers: tiers.map((t) => ({ id: t.id, name: t.name, discountPercent: t.discount_percent })),
+      // A client with no tier of their own is Retail.
+      clients: rows.map((c) => ({ id: c.id, name: c.name, tierId: c.rate_tier_id ?? retail?.id ?? "" })),
     };
   } catch {
     return null;
