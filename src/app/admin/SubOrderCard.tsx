@@ -9,7 +9,6 @@ import {
   COLUMN_ORDER,
   COLUMN_STATUS,
   boardColumn,
-  checklistProgress,
   type BoardColumn,
   type Checklist,
   type ChecklistKey,
@@ -68,7 +67,6 @@ export function SubOrderCard({
     })
   );
   const column = boardColumn(optimistic.status);
-  const progress = checklistProgress(optimistic.checklist);
 
   const configSummary = Object.entries(subOrder.configuration)
     .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -129,12 +127,7 @@ export function SubOrderCard({
 
       <div className="mt-3 flex flex-col gap-2">
         <div>
-          <p className="mb-1 flex items-center justify-between text-xs font-medium text-zinc-700">
-            <span>Progress</span>
-            <span className="font-normal text-zinc-500">
-              {progress.done} of {progress.total}
-            </span>
-          </p>
+          <p className="mb-1 text-xs font-medium text-zinc-700">Progress</p>
           <ul className="space-y-1">
             {CHECKLIST_ITEMS.map((item) => (
               <li key={item.key}>
