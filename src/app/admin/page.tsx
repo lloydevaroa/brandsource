@@ -34,7 +34,7 @@ export default async function AdminPage() {
           rate_tier:rate_tiers ( name, discount_percent ),
           po_number,
           customer:profiles!orders_customer_id_fkey ( full_name, email ),
-          client:clients ( name )
+          client:clients ( name, account_manager:profiles!clients_account_manager_id_fkey ( full_name ) )
         )
       `;
   const loadSubOrders = async () => {
@@ -89,7 +89,7 @@ export default async function AdminPage() {
       rate_tier: { name: string; discount_percent: number | string } | null;
       po_number: string | null;
       customer: { full_name: string | null; email: string | null } | null;
-      client: { name: string } | null;
+      client: { name: string; account_manager: { full_name: string | null } | null } | null;
     } | null;
   };
   const rows = (subOrders ?? []) as unknown as Row[];
@@ -104,6 +104,7 @@ export default async function AdminPage() {
     quantity: row.order_line?.quantity ?? 0,
     configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
     customerName: row.order?.customer?.full_name ?? row.order?.client?.name ?? null,
+    accountManager: row.order?.client?.account_manager?.full_name ?? null,
     customerEmail: row.order?.customer?.email ?? null,
     artworkCount: row.order_line?.artwork_files?.length ?? 0,
     poNumber: row.order?.payment_method === "po" ? row.order?.po_number ?? "PO" : null,

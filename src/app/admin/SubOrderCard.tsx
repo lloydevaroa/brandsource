@@ -29,6 +29,8 @@ export type SubOrderCardData = {
   configuration: Record<string, string | string[]>;
   customerName: string | null;
   customerEmail: string | null;
+  /** The client's account manager (from the client record), if one is set. */
+  accountManager: string | null;
   artworkCount: number;
   /** Set (to the PO number, or "PO" if none given) for managed-client PO orders. */
   poNumber: string | null;
@@ -88,7 +90,7 @@ export function SubOrderCard({
         ) : null}
       </div>
       {configSummary ? <p className="mt-1 text-xs text-zinc-500">{configSummary}</p> : null}
-      <p className="mt-2 text-xs text-zinc-600">
+      <p className="mt-2 text-sm font-medium text-zinc-800">
         {subOrder.customerName ?? subOrder.customerEmail ?? "Unknown customer"}
         {subOrder.poNumber ? (
           <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
@@ -96,9 +98,9 @@ export function SubOrderCard({
           </span>
         ) : null}
       </p>
-      <p className="mt-1">
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
             subOrder.tierDiscount > 0 ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
           }`}
           title="Rate tier"
@@ -106,12 +108,23 @@ export function SubOrderCard({
           {subOrder.tierName}
           {subOrder.tierDiscount > 0 ? ` · ${subOrder.tierDiscount}% off` : " · RRP"}
         </span>
+        <span
+          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+            subOrder.artworkCount > 0 ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"
+          }`}
+          title="Artwork files"
+        >
+          {subOrder.artworkCount > 0
+            ? `${subOrder.artworkCount} artwork file${subOrder.artworkCount === 1 ? "" : "s"}`
+            : "No artwork yet"}
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs text-zinc-600">
+        <span className="text-zinc-400">Account manager </span>
+        {subOrder.accountManager ?? <span className="text-zinc-400">not set</span>}
       </p>
-      <p className="mt-1 text-xs text-zinc-400">
-        {new Date(subOrder.createdAt).toLocaleDateString("en-NZ")}
-        {subOrder.artworkCount > 0
-          ? ` · ${subOrder.artworkCount} artwork file${subOrder.artworkCount === 1 ? "" : "s"}`
-          : " · no artwork yet"}
+      <p className="mt-0.5 text-xs text-zinc-400">
+        Raised {new Date(subOrder.createdAt).toLocaleDateString("en-NZ")}
       </p>
 
       <div className="mt-3 flex flex-col gap-2">
@@ -181,7 +194,11 @@ export function SubOrderCard({
           ))}
         </select>
 
+        <label className="-mb-1 text-[11px] text-zinc-400" htmlFor={`assignee-${subOrder.id}`}>
+          Assigned to
+        </label>
         <select
+          id={`assignee-${subOrder.id}`}
           value={optimistic.claimedBy ?? ""}
           disabled={isPending}
           onChange={(e) => {
