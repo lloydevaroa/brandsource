@@ -27,7 +27,7 @@ function formatNZD(amount: number | null) {
 }
 
 export default async function OrdersOverviewPage() {
-  const staffResult = await requireStaffProfile("Order status overview");
+  const staffResult = await requireStaffProfile("Orders & reports");
   if ("guard" in staffResult) return staffResult.guard;
 
   const supabase = createServiceSupabase();
@@ -53,7 +53,7 @@ export default async function OrdersOverviewPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Order status overview</h1>
+        <h1 className="text-2xl font-semibold">Orders &amp; reports</h1>
         <p className="mt-2 text-red-600">Could not load orders: {error.message}</p>
       </div>
     );
@@ -80,7 +80,7 @@ export default async function OrdersOverviewPage() {
         <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Team dashboard
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Order status overview</h1>
+        <h1 className="mt-2 text-2xl font-semibold">Orders &amp; reports</h1>
         <p className="mt-2 text-sm text-zinc-500">
           One row per order, rolled up from its sub-orders — for line-by-line detail and to
           change status, use the{" "}

@@ -135,17 +135,17 @@ export default async function AdminPage() {
             {firstName ? <p className="mt-1 text-sm text-zinc-500">Hi {firstName}</p> : null}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Link
+              href="/admin/orders/new"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              + New PO order
+            </Link>
             <Link href="/admin/clients" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Clients
             </Link>
             <Link href="/admin/orders" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-              Overview
-            </Link>
-            <Link href="/admin/categories" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-              Categories
-            </Link>
-            <Link href="/admin/suppliers" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-              Suppliers
+              Orders &amp; reports
             </Link>
             <Link href="/admin/hero" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Hero images
@@ -156,14 +156,11 @@ export default async function AdminPage() {
             <Link href="/admin/xero" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Xero
             </Link>
+            <Link href="/admin/suppliers" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Suppliers
+            </Link>
             <Link href="/admin/errors" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Errors
-            </Link>
-            <Link
-              href="/admin/orders/new"
-              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              + New PO order
             </Link>
             <p className="text-sm text-zinc-500">{cards.length} open order lines</p>
           </div>
