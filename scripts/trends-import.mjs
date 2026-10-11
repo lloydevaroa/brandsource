@@ -6,13 +6,17 @@
 // Reads trends-sample/products.json (run scripts/trends-sample.mjs first).
 // Needs supabase/supplier-import.sql, product-details.sql and categories.sql run once.
 //
-// Usage: node --env-file=.env.local scripts/trends-import.mjs [--dry-run]
+// Usage: node --env-file=.env.local scripts/trends-import.mjs [--dry-run] [--codes 107658,100580]
+// --codes imports only those product codes, leaving the rest of products.json untouched
+// (a full run re-upserts every product and re-copies every image).
 // Trends Data is confidential: never commit trends-sample/.
 
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 
 const DRY = process.argv.includes("--dry-run");
+const codesArg = process.argv.indexOf("--codes");
+const ONLY = codesArg > -1 ? new Set(process.argv[codesArg + 1].split(",").map((c) => c.trim())) : null;
 const BUCKET = "product-images";
 const MAX_IMAGES = 8;
 
@@ -62,6 +66,9 @@ const CATEGORY_MAP = {
     "2-10": "tickets", // event wrist bands
     "7-3": "cards",
     "2-6": "event-accessories", // bar and counter mats
+    "2-1": "event-accessories", // stubby and can holders
+    "2-14": "event-accessories", // key rings
+    "1-14": "tote-bags", // conference bags
   },
   prefix: { "13-": "pens" },
 };
@@ -120,7 +127,9 @@ function mapProduct(p) {
 }
 
 const raw = JSON.parse(await readFile(new URL("../trends-sample/products.json", import.meta.url)));
-const items = (Array.isArray(raw) ? raw : raw.products).map(mapProduct);
+const items = (Array.isArray(raw) ? raw : raw.products)
+  .filter((p) => !ONLY || ONLY.has(String(p.code)))
+  .map(mapProduct);
 
 const slugs = items.map((i) => i.row.slug);
 if (new Set(slugs).size !== slugs.length) throw new Error("Duplicate slugs in import: " + slugs.join(", "));

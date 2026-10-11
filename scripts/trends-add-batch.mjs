@@ -5,6 +5,7 @@
 //
 // Usage: node --env-file=.env.local scripts/trends-add-batch.mjs [count]
 //        node --env-file=.env.local scripts/trends-add-batch.mjs --codes 110889,116613
+// --sources 101-10,101-19 overrides the Trends categories the picks are spread across.
 // --codes adds exactly those product codes instead of the round-robin pick, for
 // filling a specific storefront category.
 
@@ -15,7 +16,10 @@ const FILE = new URL("../trends-sample/products.json", import.meta.url);
 const codesArg = process.argv.indexOf("--codes");
 const CODES = codesArg > -1 ? process.argv[codesArg + 1].split(",").map((c) => c.trim()).filter(Boolean) : null;
 const COUNT = Number(CODES ? 0 : process.argv[2] ?? 30);
-const SOURCES = ["3-4", "13-1", "13-2", "13-3", "1-1", "1-12", "1-16", "2-5", "3-9"];
+const srcArg = process.argv.indexOf("--sources");
+const SOURCES = srcArg > -1
+  ? process.argv[srcArg + 1].split(",").map((c) => c.trim()).filter(Boolean)
+  : ["3-4", "13-1", "13-2", "13-3", "1-1", "1-12", "1-16", "2-5", "3-9"];
 
 const { TRENDS_API_TOKEN: token, TRENDS_API_USERNAME: user, TRENDS_API_PASSWORD: pass } = process.env;
 const auth = token ? `Bearer ${token}` : `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
