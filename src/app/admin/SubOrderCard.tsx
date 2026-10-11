@@ -119,8 +119,8 @@ export function SubOrderCard({
             : "No artwork yet"}
         </span>
       </div>
-      <p className="mt-1.5 text-xs text-zinc-600">
-        <span className="text-zinc-400">Account manager </span>
+      <p className="mt-2 text-xs text-zinc-700">
+        <span className="font-medium text-zinc-500">Account manager: </span>
         {subOrder.accountManager ?? <span className="text-zinc-400">not set</span>}
       </p>
       <p className="mt-0.5 text-xs text-zinc-400">
@@ -194,8 +194,8 @@ export function SubOrderCard({
           ))}
         </select>
 
-        <label className="-mb-1 text-[11px] text-zinc-400" htmlFor={`assignee-${subOrder.id}`}>
-          Assigned to
+        <label className="-mb-1 text-xs font-medium text-zinc-500" htmlFor={`assignee-${subOrder.id}`}>
+          Assigned to:
         </label>
         <select
           id={`assignee-${subOrder.id}`}
