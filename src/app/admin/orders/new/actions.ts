@@ -151,6 +151,19 @@ async function insertManagedOrder(
   return { orderId: order.id as string };
 }
 
+async function attachArtwork(
+  supabase: ReturnType<typeof createServiceSupabase>,
+  orderLineId: string,
+  artwork: { path: string; filename: string }[] | undefined,
+  staffId: string
+) {
+  if (!artwork || artwork.length === 0) return;
+  const { error } = await supabase
+    .from("artwork_files")
+    .insert(artwork.map((a) => ({ order_line_id: orderLineId, storage_path: a.path, uploaded_by: staffId })));
+  if (error) throw new Error(error.message);
+}
+
 export type EditOrderLineInput = ManagedOrderLineInput & {
   /** Set for lines already on the order; they keep their saved price and their place on the board. */
   lineId?: string;
@@ -168,24 +181,30 @@ export async function updateManagedOrder(input: {
   rateTierId?: string | null;
   poNumber: string;
   lines: EditOrderLineInput[];
+  /** Saved artwork files (artwork_files ids) the account manager removed from kept lines. */
+  removedArtworkIds?: string[];
 }): Promise<{ orderId: string } | { error: string }> {
   let staffId: string | null = null;
   try {
     const staff = await requireStaffProfile();
     staffId = staff.id;
-    return await applyOrderEdit(input);
+    return await applyOrderEdit(input, staff.id);
   } catch (err) {
     return { error: await reportError({ area: "orders", action: "Couldn't save the order changes", error: err, staffId }) };
   }
 }
 
-async function applyOrderEdit(input: {
-  orderId: string;
-  clientId: string;
-  rateTierId?: string | null;
-  poNumber: string;
-  lines: EditOrderLineInput[];
-}) {
+async function applyOrderEdit(
+  input: {
+    orderId: string;
+    clientId: string;
+    rateTierId?: string | null;
+    poNumber: string;
+    lines: EditOrderLineInput[];
+    removedArtworkIds?: string[];
+  },
+  staffId: string
+) {
   if (!input.clientId) throw new UserFacingError("No client was chosen. Pick a client and try again.");
   if (input.lines.length === 0) throw new UserFacingError("An order needs at least one item. Add one, or leave the order as it is.");
 
@@ -258,6 +277,7 @@ async function applyOrderEdit(input: {
         .update({ quantity: line.quantity, unit_price: line.unitPrice, list_price: line.listPrice })
         .eq("id", line.lineId);
       if (error) throw new Error(error.message);
+      await attachArtwork(supabase, line.lineId, line.artwork, staffId);
     } else {
       const { data: orderLine, error } = await supabase
         .from("order_lines")
@@ -276,7 +296,18 @@ async function applyOrderEdit(input: {
         .from("sub_orders")
         .insert({ order_id: input.orderId, order_line_id: orderLine.id, status: "new_order" });
       if (subError) throw new Error(subError.message);
+      await attachArtwork(supabase, orderLine.id as string, line.artwork, staffId);
     }
+  }
+
+  // Artwork removed from lines that stay on the order (only ever this order's own files).
+  if (input.removedArtworkIds && input.removedArtworkIds.length > 0) {
+    const { error } = await supabase
+      .from("artwork_files")
+      .delete()
+      .in("id", input.removedArtworkIds)
+      .in("order_line_id", [...existingById.keys()]);
+    if (error) throw new Error(error.message);
   }
 
   for (const l of removed) {
@@ -309,5 +340,6 @@ async function applyOrderEdit(input: {
 
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/new");
   return { orderId: input.orderId };
 }

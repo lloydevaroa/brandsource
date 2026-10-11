@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import type { CatalogProduct } from "@/lib/catalog";
 import { applyTierDiscount, priceForItem, configurationSummary } from "@/lib/pricing";
 import { STATUS_LABEL } from "../../status";
@@ -11,7 +11,17 @@ import { createManagedOrder, updateManagedOrder, type ManagedOrderLineInput } fr
 
 export type ClientOption = { id: string; name: string; rate_tier_id: string | null };
 
-type DraftLine = ManagedOrderLineInput & {
+type LineArtwork = {
+  path: string;
+  filename: string;
+  /** Present for files already saved on the order (artwork_files id). */
+  savedId?: string;
+  /** Signed link for saved files. */
+  url?: string;
+};
+
+type DraftLine = Omit<ManagedOrderLineInput, "artwork"> & {
+  artwork?: LineArtwork[];
   id: string;
   /** Present for lines already saved on the order being edited. */
   lineId?: string;
@@ -31,6 +41,100 @@ export type EditingOrder = {
 /** RRP of a line: the saved one for existing lines, else the current catalogue price. */
 function lineRrp(catalog: CatalogProduct[], l: DraftLine) {
   return l.listPrice ?? priceForItem(catalog, l.productSlug, l.configuration) ?? 0;
+}
+
+/** Upload artwork the client supplied; files are attached to the line when the order is saved. */
+function ArtworkField({
+  lineKey,
+  files,
+  onAdd,
+  onRemove,
+}: {
+  lineKey: string;
+  files: LineArtwork[];
+  onAdd: (file: LineArtwork) => void;
+  onRemove: (file: LineArtwork) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    setUploading(true);
+    setError(null);
+    try {
+      for (const file of picked) {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("cartItemId", lineKey);
+        const res = await fetch("/api/artwork/upload", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(`${file.name}: ${data.error ?? "Upload failed"}`);
+          continue;
+        }
+        onAdd({ path: data.path, filename: data.filename });
+      }
+    } catch {
+      setError("Upload failed. Check your connection and try again.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t border-zinc-100 pt-3">
+      <p className="text-xs font-medium text-zinc-700">
+        Artwork{files.length > 0 ? ` (${files.length})` : ""}
+      </p>
+      {files.length > 0 ? (
+        <ul className="mt-1 space-y-1">
+          {files.map((f) => (
+            <li key={f.path} className="flex items-center justify-between gap-3 text-xs">
+              <span className="min-w-0 truncate">
+                {f.url ? (
+                  <a href={f.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                    {f.filename}
+                  </a>
+                ) : (
+                  f.filename
+                )}
+                {!f.savedId ? <span className="ml-1.5 text-amber-700">· not saved yet</span> : null}
+              </span>
+              <button type="button" onClick={() => onRemove(f)} className="shrink-0 text-zinc-400 hover:text-red-600">
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 text-xs text-zinc-400">None yet.</p>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept=".jpg,.jpeg,.png,.webp,.svg,.pdf,.ai,.eps"
+        onChange={handleChange}
+        disabled={uploading}
+        className="sr-only"
+        id={`artwork-${lineKey}`}
+      />
+      <label
+        htmlFor={`artwork-${lineKey}`}
+        className={`mt-2 inline-block cursor-pointer rounded border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:border-zinc-900 hover:text-zinc-900 ${
+          uploading ? "pointer-events-none opacity-60" : ""
+        }`}
+      >
+        {uploading ? "Uploading…" : "+ Add artwork"}
+      </label>
+      <span className="ml-2 text-[11px] text-zinc-400">JPG, PNG, WEBP, SVG, PDF, AI or EPS, up to 25MB</span>
+      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
+    </div>
+  );
 }
 
 function formatNZD(amount: number) {
@@ -169,6 +273,16 @@ export function OrderBuilder({
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, quantity: Math.max(1, qty || 1) } : l)));
   }
 
+  function addLineArtwork(id: string, file: LineArtwork) {
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, artwork: [...(l.artwork ?? []), file] } : l)));
+  }
+
+  function removeLineArtwork(id: string, file: LineArtwork) {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, artwork: (l.artwork ?? []).filter((a) => a.path !== file.path) } : l))
+    );
+  }
+
   function removeLine(id: string) {
     setLines((prev) => prev.filter((l) => l.id !== id));
   }
@@ -184,21 +298,27 @@ export function OrderBuilder({
               clientId,
               rateTierId: tierId || null,
               poNumber,
-              lines: lines.map(({ lineId, productSlug, configuration, quantity }) => ({
+              lines: lines.map(({ lineId, productSlug, configuration, quantity, artwork }) => ({
                 lineId,
                 productSlug,
                 configuration,
                 quantity,
+                // Only files not yet saved are sent; saved ones stay as they are.
+                artwork: (artwork ?? []).filter((a) => !a.savedId).map(({ path, filename }) => ({ path, filename })),
               })),
+              removedArtworkIds: (editing.lines.flatMap((l) => l.artwork ?? []))
+                .filter((a) => a.savedId && !lines.some((l) => l.lineId && (l.artwork ?? []).some((x) => x.savedId === a.savedId)))
+                .flatMap((a) => (a.savedId ? [a.savedId] : [])),
             })
           : await createManagedOrder({
               clientId,
               rateTierId: tierId || null,
               poNumber,
-              lines: lines.map(({ productSlug, configuration, quantity }) => ({
+              lines: lines.map(({ productSlug, configuration, quantity, artwork }) => ({
                 productSlug,
                 configuration,
                 quantity,
+                artwork: (artwork ?? []).map(({ path, filename }) => ({ path, filename })),
               })),
             });
         if ("error" in result) {
@@ -397,10 +517,8 @@ export function OrderBuilder({
               const rrp = lineRrp(catalog, l);
               const price = applyTierDiscount(rrp, discount);
               return (
-                <li
-                  key={l.id}
-                  className="flex items-start justify-between gap-4 rounded-lg border border-zinc-200 p-3 text-sm"
-                >
+                <li key={l.id} className="rounded-lg border border-zinc-200 p-3 text-sm">
+                  <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-medium">
                       {product?.name ?? l.productSlug} × {l.quantity}
@@ -436,6 +554,13 @@ export function OrderBuilder({
                       Remove
                     </button>
                   </div>
+                  </div>
+                  <ArtworkField
+                    lineKey={l.id}
+                    files={l.artwork ?? []}
+                    onAdd={(f) => addLineArtwork(l.id, f)}
+                    onRemove={(f) => removeLineArtwork(l.id, f)}
+                  />
                 </li>
               );
             })}
@@ -448,6 +573,11 @@ export function OrderBuilder({
         </div>
 
         {submitError ? <p className="mt-3 text-sm text-red-600">{submitError}</p> : null}
+        {lines.some((l) => (l.artwork ?? []).some((a) => !a.savedId)) ? (
+          <p className="mt-3 text-xs text-amber-700">
+            Artwork you have added is attached when you press {editing ? "Save changes" : "Create order"}.
+          </p>
+        ) : null}
         {createdOrderId ? (
           <p className="mt-3 text-sm text-emerald-600">
             {editing ? "Changes saved" : "Order created"} —{" "}

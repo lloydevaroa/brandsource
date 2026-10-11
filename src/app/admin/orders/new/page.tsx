@@ -43,7 +43,7 @@ export default async function NewOrderPage({
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select(
-        "id, payment_method, status, po_number, client_id, rate_tier_id, order_lines ( id, quantity, unit_price, list_price, configuration, product:products ( slug ), sub_orders ( status ) )"
+        "id, payment_method, status, po_number, client_id, rate_tier_id, order_lines ( id, quantity, unit_price, list_price, configuration, product:products ( slug ), sub_orders ( status ), artwork_files ( id, storage_path ) )"
       )
       .eq("id", edit)
       .single();
@@ -74,13 +74,22 @@ export default async function NewOrderPage({
       configuration: Record<string, string | string[]>;
       product: { slug: string } | null;
       sub_orders: { status: string }[];
+      artwork_files: { id: string; storage_path: string }[];
     };
+    const orderLines = order.order_lines as unknown as Line[];
+    // Signed links so staff can open the files already attached (the bucket is private).
+    const artworkPaths = orderLines.flatMap((l) => l.artwork_files.map((a) => a.storage_path));
+    const signed = artworkPaths.length
+      ? await supabase.storage.from("artwork").createSignedUrls(artworkPaths, 3600)
+      : { data: [] as { path: string | null; signedUrl: string }[] };
+    const urlByPath = new Map((signed.data ?? []).map((d) => [d.path ?? "", d.signedUrl]));
+
     editing = {
       orderId: order.id,
       clientId: order.client_id,
       rateTierId: order.rate_tier_id ?? null,
       poNumber: order.po_number ?? "",
-      lines: (order.order_lines as unknown as Line[]).map((l) => ({
+      lines: orderLines.map((l) => ({
         id: l.id,
         lineId: l.id,
         productSlug: l.product?.slug ?? "",
@@ -88,6 +97,13 @@ export default async function NewOrderPage({
         quantity: l.quantity,
         listPrice: Number(l.list_price ?? l.unit_price),
         boardStatus: l.sub_orders[0]?.status ?? "new_order",
+        artwork: l.artwork_files.map((a) => ({
+          path: a.storage_path,
+          savedId: a.id,
+          // Uploads are stored as staged/<id>/<timestamp>-<name>.
+          filename: (a.storage_path.split("/").pop() ?? "artwork").replace(/^\d+-/, ""),
+          url: urlByPath.get(a.storage_path) ?? undefined,
+        })),
       })),
     };
   }
@@ -101,7 +117,7 @@ export default async function NewOrderPage({
         <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-zinc-500">
           {editing
-            ? "Change the client, rate tier, PO number, quantities or items. Items already on the board keep their status and assignee."
+            ? "Change the client, rate tier, PO number, quantities or items, and add artwork the client has supplied. Items already on the board keep their status and assignee."
             : "Create an order on behalf of a managed client — no card payment, invoiced later via Xero on their credit terms."}
         </p>
 
