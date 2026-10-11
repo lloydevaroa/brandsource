@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "./staff-guard";
-import { updateSubOrderStatus, claimSubOrder } from "./actions";
+import { updateSubOrderStatus, setChecklistItem, claimSubOrder } from "./actions";
 import { SubOrderCard, type SubOrderCardData } from "./SubOrderCard";
-import { STATUS_ORDER, STATUS_LABEL } from "./status";
+import { COLUMN_ORDER, COLUMN_LABEL, boardColumn, effectiveChecklist } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
 
 export default async function AdminPage() {
@@ -14,13 +14,10 @@ export default async function AdminPage() {
 
   const supabase = createServiceSupabase();
 
-  const [{ data: subOrders, error }, { data: staff }, { count: noImageCount }] = await Promise.all([
-    supabase
-      .from("sub_orders")
-      .select(
-        `
+  const subOrderSelect = (withChecklist: boolean) => `
         id,
         status,
+        ${withChecklist ? "checklist," : ""}
         claimed_by,
         created_at,
         order_line:order_lines (
@@ -39,9 +36,16 @@ export default async function AdminPage() {
           customer:profiles!orders_customer_id_fkey ( full_name, email ),
           client:clients ( name )
         )
-      `
-      )
-      .order("created_at", { ascending: true }),
+      `;
+  const loadSubOrders = async () => {
+    const first = await supabase.from("sub_orders").select(subOrderSelect(true)).order("created_at", { ascending: true });
+    if (!first.error) return first;
+    // supabase/checklist.sql not run yet: show the board without ticks.
+    return supabase.from("sub_orders").select(subOrderSelect(false)).order("created_at", { ascending: true });
+  };
+
+  const [{ data: subOrders, error }, { data: staff }, { count: noImageCount }] = await Promise.all([
+    loadSubOrders(),
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -69,6 +73,7 @@ export default async function AdminPage() {
   type Row = {
     id: string;
     status: string;
+    checklist?: unknown;
     claimed_by: string | null;
     created_at: string;
     order_line: {
@@ -92,6 +97,7 @@ export default async function AdminPage() {
   const cards: SubOrderCardData[] = rows.map((row) => ({
     id: row.id,
     status: row.status as SubOrderStatus,
+    checklist: effectiveChecklist(row.status, row.checklist),
     claimedBy: row.claimed_by,
     createdAt: row.created_at,
     productName: row.order_line?.product?.name ?? "Unknown product",
@@ -109,9 +115,9 @@ export default async function AdminPage() {
     editable: row.order?.payment_method === "po" && row.order?.status !== "invoiced",
   }));
 
-  const columns = STATUS_ORDER.map((status) => ({
-    status,
-    items: cards.filter((c) => c.status === status),
+  const columns = COLUMN_ORDER.map((column) => ({
+    column,
+    items: cards.filter((c) => boardColumn(c.status) === column),
   }));
 
   return (
@@ -168,9 +174,9 @@ export default async function AdminPage() {
 
         <div className="mt-8 flex gap-4 overflow-x-auto pb-4">
           {columns.map((col) => (
-            <div key={col.status} className="w-72 flex-shrink-0">
+            <div key={col.column} className="w-72 flex-shrink-0">
               <h2 className="mb-2 text-sm font-semibold text-zinc-700">
-                {STATUS_LABEL[col.status]}{" "}
+                {COLUMN_LABEL[col.column]}{" "}
                 <span className="font-normal text-zinc-400">({col.items.length})</span>
               </h2>
               <ul className="space-y-3">
@@ -180,6 +186,7 @@ export default async function AdminPage() {
                     subOrder={item}
                     staff={staff ?? []}
                     onUpdateStatus={updateSubOrderStatus}
+                    onToggle={setChecklistItem}
                     onClaim={claimSubOrder}
                   />
                 ))}

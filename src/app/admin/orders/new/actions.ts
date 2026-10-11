@@ -8,6 +8,7 @@ import { getCatalog } from "@/lib/catalog";
 import { notifyOrderReceived } from "@/lib/notifications";
 import { reportError, UserFacingError } from "@/lib/error-log";
 import { getRateTier, isMissingTierSchema } from "@/lib/rate-tiers";
+import { rollupOrder } from "../../status";
 
 async function requireStaffProfile() {
   const profile = await syncCurrentProfile();
@@ -318,13 +319,9 @@ async function applyOrderEdit(
   }
 
   // Order-level status from its sub-orders (no emails: the order was already notified when created).
-  const { data: subs } = await supabase.from("sub_orders").select("status").eq("order_id", input.orderId);
-  const statuses = (subs ?? []).map((s) => s.status as string);
-  const nextStatus = statuses.length && statuses.every((s) => s === "completed")
-    ? "completed"
-    : statuses.some((s) => ["sent_to_supplier", "in_production", "dispatched"].includes(s))
-      ? "in_production"
-      : "new_order";
+  let subsResult = await supabase.from("sub_orders").select("status, checklist").eq("order_id", input.orderId);
+  if (subsResult.error) subsResult = (await supabase.from("sub_orders").select("status").eq("order_id", input.orderId)) as typeof subsResult;
+  const nextStatus = rollupOrder(subsResult.data ?? []).status;
 
   const { error: updateError } = await supabase
     .from("orders")

@@ -76,13 +76,21 @@ export async function POST(req: Request) {
   }
 
   if (lines && lines.length > 0) {
-    const { error: subOrderError } = await supabase.from("sub_orders").insert(
+    // Card orders arrive in New order with "Payment received" already ticked.
+    let { error: subOrderError } = await supabase.from("sub_orders").insert(
       lines.map((line) => ({
         order_id: orderId,
         order_line_id: line.id,
-        status: "payment_received",
+        status: "new_order",
+        checklist: { payment_received: true },
       }))
     );
+    if (subOrderError) {
+      // supabase/checklist.sql not run yet: keep the old behaviour so paid orders are never lost.
+      ({ error: subOrderError } = await supabase.from("sub_orders").insert(
+        lines.map((line) => ({ order_id: orderId, order_line_id: line.id, status: "payment_received" }))
+      ));
+    }
     if (subOrderError) {
       return NextResponse.json({ error: subOrderError.message }, { status: 500 });
     }

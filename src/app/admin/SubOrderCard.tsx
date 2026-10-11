@@ -3,13 +3,25 @@
 import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import type { SubOrderStatus } from "@/lib/types";
-import { STATUS_ORDER, STATUS_LABEL } from "./status";
+import {
+  CHECKLIST_ITEMS,
+  COLUMN_LABEL,
+  COLUMN_ORDER,
+  COLUMN_STATUS,
+  boardColumn,
+  checklistProgress,
+  type BoardColumn,
+  type Checklist,
+  type ChecklistKey,
+} from "./status";
 
 export type StaffOption = { id: string; full_name: string | null };
 
 export type SubOrderCardData = {
   id: string;
   status: SubOrderStatus;
+  /** Ticks saved on the card (already merged with anything an old-style status implies). */
+  checklist: Checklist;
   claimedBy: string | null;
   createdAt: string;
   productName: string;
@@ -32,22 +44,29 @@ export function SubOrderCard({
   subOrder,
   staff,
   onUpdateStatus,
+  onToggle,
   onClaim,
 }: {
   subOrder: SubOrderCardData;
   staff: StaffOption[];
   onUpdateStatus: (id: string, status: SubOrderStatus) => Promise<void>;
+  onToggle: (id: string, key: ChecklistKey, checked: boolean) => Promise<void>;
   onClaim: (id: string, claimedBy: string | null) => Promise<void>;
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [optimistic, setOptimistic] = useOptimistic(
-    { status: subOrder.status, claimedBy: subOrder.claimedBy },
-    (state, update: Partial<{ status: SubOrderStatus; claimedBy: string | null }>) => ({
+    { status: subOrder.status, checklist: subOrder.checklist, claimedBy: subOrder.claimedBy },
+    (
+      state,
+      update: Partial<{ status: SubOrderStatus; checklist: Checklist; claimedBy: string | null }>
+    ) => ({
       ...state,
       ...update,
     })
   );
+  const column = boardColumn(optimistic.status);
+  const progress = checklistProgress(optimistic.checklist);
 
   const configSummary = Object.entries(subOrder.configuration)
     .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -96,11 +115,53 @@ export function SubOrderCard({
       </p>
 
       <div className="mt-3 flex flex-col gap-2">
+        <div>
+          <p className="mb-1 flex items-center justify-between text-xs font-medium text-zinc-700">
+            <span>Progress</span>
+            <span className="font-normal text-zinc-500">
+              {progress.done} of {progress.total}
+            </span>
+          </p>
+          <ul className="space-y-1">
+            {CHECKLIST_ITEMS.map((item) => (
+              <li key={item.key}>
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={!!optimistic.checklist[item.key]}
+                    disabled={isPending}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setError(null);
+                      startTransition(async () => {
+                        setOptimistic({
+                          checklist: { ...optimistic.checklist, [item.key]: checked },
+                          ...(checked && column === "new_order" ? { status: COLUMN_STATUS.processing } : {}),
+                        });
+                        try {
+                          await onToggle(subOrder.id, item.key, checked);
+                        } catch {
+                          setError("Could not update progress");
+                        }
+                      });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-zinc-300"
+                  />
+                  <span className={optimistic.checklist[item.key] ? "text-zinc-500 line-through" : ""}>
+                    {item.label}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <select
-          value={optimistic.status}
+          value={column}
           disabled={isPending}
+          aria-label="Board column"
           onChange={(e) => {
-            const next = e.target.value as SubOrderStatus;
+            const next = COLUMN_STATUS[e.target.value as BoardColumn];
             setError(null);
             startTransition(async () => {
               setOptimistic({ status: next });
@@ -113,9 +174,9 @@ export function SubOrderCard({
           }}
           className="rounded border border-zinc-300 px-2 py-1 text-xs"
         >
-          {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
+          {COLUMN_ORDER.map((c) => (
+            <option key={c} value={c}>
+              {COLUMN_LABEL[c]}
             </option>
           ))}
         </select>

@@ -9,7 +9,7 @@ const STATUS_LABEL: Record<string, string> = {
   proof_awaiting_approval: "Awaiting your approval",
   ready_to_order: "Ready to order",
   sent_to_supplier: "Sent to supplier",
-  in_production: "In production",
+  in_production: "Being processed",
   dispatched: "Dispatched",
   completed: "Completed",
 };

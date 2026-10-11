@@ -114,13 +114,14 @@ Client names must match the Xero contact name **exactly**. Test what happens whe
 
 1. Open the staff board (`/admin`). Find the order's items. Each item is a card in a column.
 2. Click to claim an item as yours. Your name should show on it.
-3. Move the item through the stages in order: **New order, Payment received** (card orders start here), **Artwork required, Proof awaiting approval, Ready to order, Sent to supplier, In production, Dispatched, Completed**.
+3. Tick the progress boxes on the card in order: **Payment received, Artwork received, Proof approved, Ordered from supplier, In production, Dispatched**. The first tick moves a New order card to **Processing** by itself. When the job is delivered, move the card to **Completed** with the column dropdown (card orders arrive in New order with Payment received already ticked).
 4. After each move, check Orders (`/admin/orders`) for the order-level status.
 
 **Pass when:**
-- [ ] The card moves to the new column and stays there after a page refresh.
+- [ ] The ticks and the "N of 6" count stay after a page refresh, and the card moves to Processing on the first tick.
+- [ ] Moving to Completed only happens when you choose it, even with all six ticked.
 - [ ] Claiming shows the right staff name, and it can be removed again.
-- [ ] The order shows **New** until an item reaches Sent to supplier or beyond, then **In production**, then **Completed** once every item is Completed.
+- [ ] The order shows **New** until an item has "Ordered from supplier" (or In production / Dispatched) ticked, then **In production**, then **Completed** once every item is Completed.
 - [ ] With **two items** in one order, the order stays **In production** until both are Completed, not just one.
 - [ ] The artwork attached by the customer can be opened from the card.
 - [ ] A signed-out user or a customer account cannot open the board or change a status.
