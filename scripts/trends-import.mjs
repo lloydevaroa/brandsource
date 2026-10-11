@@ -61,6 +61,7 @@ const CATEGORY_MAP = {
     "1-16": "tote-bags",
     "2-10": "tickets", // event wrist bands
     "7-3": "cards",
+    "2-6": "event-accessories", // bar and counter mats
   },
   prefix: { "13-": "pens" },
 };
@@ -78,6 +79,7 @@ const SIGNAGE_RULES = [
 // Placed by product name, on top of any category-number match.
 const NAME_RULES = [
   [/playing cards/i, ["cards"]],
+  [/ice bucket/i, ["event-accessories"]],
 ];
 
 function categorySlugs(p) {
