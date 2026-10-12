@@ -11,6 +11,8 @@ const isPublicRoute = createRouteMatcher([
   // Stripe calls this server-to-server with no Clerk session; the route
   // verifies the Stripe signature itself.
   "/api/checkout/webhook",
+  // Clerk calls this server-to-server; the route verifies the Svix signature.
+  "/api/clerk/webhook",
   "/sign-in(.*)",
   "/sign-up(.*)",
 ]);
