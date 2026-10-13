@@ -69,9 +69,21 @@ const CATEGORY_MAP = {
     "2-1": "event-accessories", // stubby and can holders
     "2-14": "event-accessories", // key rings
     "1-14": "tote-bags", // conference bags
+    "1-2": "cooler-bags",
+    "10-5": "umbrellas",
   },
-  prefix: { "13-": "pens" },
+  prefix: { "13-": "pens", "4-": "drinkware", "9-": "caps-and-hats" },
 };
+
+// Storefront categories this importer places products into that categories.sql
+// doesn't create. Created under Trade Show & Events on a real run, insert only.
+const NEW_CATEGORIES = [
+  { slug: "clipboards", name: "Clipboards", sort_order: 180 },
+  { slug: "caps-and-hats", name: "Caps & Hats", sort_order: 190 },
+  { slug: "umbrellas", name: "Umbrellas", sort_order: 200 },
+  { slug: "cooler-bags", name: "Cooler Bags", sort_order: 210 },
+  { slug: "drinkware", name: "Drinkware", sort_order: 220 },
+];
 
 // Trends files all its signage and display products under one category (7-7), so
 // those are placed by product name instead. First matching rule per product.
@@ -87,6 +99,7 @@ const SIGNAGE_RULES = [
 const NAME_RULES = [
   [/playing cards/i, ["cards"]],
   [/ice bucket/i, ["event-accessories"]],
+  [/clipboard/i, ["clipboards"]],
 ];
 
 function categorySlugs(p) {
@@ -153,6 +166,14 @@ const db = createClient(url, key, { auth: { persistSession: false } });
 // migration not being run yet by leaving supplier_id unset.
 const { data: supplierRow } = await db.from("suppliers").select("id").eq("slug", "trends").maybeSingle();
 const supplierId = supplierRow?.id ?? null;
+
+// Never overwrites an existing category.
+const { data: tradeShow, error: tradeShowErr } = await db.from("categories").select("id").eq("slug", "trade-show-and-events").single();
+if (tradeShowErr) throw tradeShowErr;
+const { error: newCatErr } = await db
+  .from("categories")
+  .upsert(NEW_CATEGORIES.map((c) => ({ ...c, parent_id: tradeShow.id })), { onConflict: "slug", ignoreDuplicates: true });
+if (newCatErr) throw newCatErr;
 
 const { error: bucketErr } = await db.storage.createBucket(BUCKET, { public: true });
 if (bucketErr && !/already exists/i.test(bucketErr.message)) throw bucketErr;

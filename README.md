@@ -12,7 +12,7 @@ NZ branded merchandise platform (working name for Brand Spanking) — Trade Show
 
 > **For Joe and Joe's Claude.** This section is the plain-English answer to "what is going on, what has happened, and what is due next". Start here. The technical detail further down is for whoever is changing the code. Lloyd (Really Good Marketing) keeps this section current with every batch of work; if the date below is stale, say so.
 >
-> **Last updated: 11 Oct 2026 (team dashboard board simplified to New order, Processing and Completed with a tick-list on each card; account managers can add client artwork on the Edit order page; team dashboard menu tidied and the Categories screen removed; the staff cart client field searches and drops down like the New PO order page; prices now cost plus 50% to match The Collateral Company, rate card tiers built and waiting for one database step; staff can upload and manage product images for non-Trends suppliers, suppliers can now be added and controlled in the admin, every product records its supplier, TLC banner and stretch fabric sample range ready to load; Trends cost pricing ready to load, 535 existing clients loaded)**
+> **Last updated: 13 Oct 2026 (40 more tradeshow and event products loaded from Trends, 230 in total, with new Clipboards, Caps & Hats, Umbrellas, Cooler Bags and Drinkware categories; team dashboard board simplified to New order, Processing and Completed with a tick-list on each card; account managers can add client artwork on the Edit order page; team dashboard menu tidied and the Categories screen removed; the staff cart client field searches and drops down like the New PO order page; prices now cost plus 50% to match The Collateral Company, rate card tiers built and waiting for one database step; staff can upload and manage product images for non-Trends suppliers, suppliers can now be added and controlled in the admin, every product records its supplier, TLC banner and stretch fabric sample range ready to load; Trends cost pricing ready to load, 535 existing clients loaded)**
 
 **Suggested questions for Claude:** "What happened this week?" · "What is blocked on me?" · "What's due next?" · "Is the live site ready to take real money, and if not, what's left?" · "If Lloyd were unavailable tomorrow, what would I need to do?"
 
@@ -29,6 +29,7 @@ BrandSource is a working **staging site** at brandsource-seven.vercel.app. It ru
 - Suppliers: a new Suppliers screen in the team dashboard (`/admin/suppliers`) adds and edits suppliers, and every product now records which supplier it comes from (Trends, TLC and so on). The supplier is internal and never shown to customers.
 - TLC Live range: 52 products from TLC's product guide, loaded hidden with no images until the team uploads artwork; once shown they carry a clearly marked "TLC sample" so the client can see them in the draft site while TLC agrees to usage and hosting. One switch per supplier turns the badge off (approved), hides the range (withdrawn) or brings it back.
 
+- Catalogue: 230 Trends products are now live, with images, colour choices and prices. Trade Show & Events gained five categories on 13 Oct (Clipboards, Caps & Hats, Umbrellas, Cooler Bags, Drinkware). About 77 more products in Trends' tradeshow and events ranges are not loaded (mostly plush toys, sports balls, paper cups and children's items), as a weaker fit for trade shows.
 - Trends catalogue import: products, images and supplier details load into the database, with new products placed into storefront categories by name.
 - Storefront now reads products from the database (previously a hand-maintained file), has category pages, and the homepage is the Trade Show & Events tile page.
 - Product pages: richer supplier detail, square uncropped images, clickable thumbnails.
@@ -57,6 +58,9 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 | Monitor the Trends catalogue for removed or changed products (nightly check, weekly full sweep, alert email, hide rather than delete) | Lloyd | Designed 3 Oct, not built. See `build-brief.md` |
 
 ## What has happened (newest first)
+
+**Week of 12 Oct**
+- 13 Oct: Loaded 40 more products from Trends, 230 in total, all live with images, colour choices and prices (cost plus 50%, rounded up, as before). Seven came from Trends' Tradeshows range (a canvas tote, a lanyard, three clipboards, a cap and an umbrella) and 33 from its Festivals & Events range, picked to suit trade show and event giveaways. Added five categories under Trade Show & Events: Clipboards, Caps & Hats, Umbrellas, Cooler Bags and Drinkware. Event Accessories gained stubby coolers, bar runners and key rings, Tote Bags gained six bags, and Tickets gained two kids' wrist bands. The import script now creates those categories and places future Trends products into them by Trends' own category.
 
 **Week of 5 Oct**
 - 11 Oct: Board cards show more at a glance: the client name in bold, the rate tier and an artwork badge (blue with a count, amber when none yet), the client's account manager, and the date raised. The staff dropdown is labelled "Assigned to" so it isn't confused with the account manager.
