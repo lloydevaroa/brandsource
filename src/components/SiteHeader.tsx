@@ -12,6 +12,7 @@ import {
 } from "@clerk/nextjs";
 import { useCart } from "@/lib/cart";
 import { useMenuCategories } from "@/lib/menu-categories";
+import { SiteSearch } from "@/components/SiteSearch";
 
 export function SiteHeader() {
   const { items } = useCart();
@@ -34,6 +35,8 @@ export function SiteHeader() {
             priority
           />
         </Link>
+
+        <SiteSearch className="mx-6 hidden max-w-sm flex-1 sm:block" />
 
         <nav className="hidden items-center gap-5 text-[13px] font-semibold text-brand-charcoal sm:flex">
           <span className="font-medium text-zinc-500">NZ support</span>
@@ -97,6 +100,10 @@ export function SiteHeader() {
             </svg>
           </button>
         </div>
+      </div>
+
+      <div className="px-6 pb-3 sm:hidden">
+        <SiteSearch />
       </div>
 
       {categories.length > 0 ? (

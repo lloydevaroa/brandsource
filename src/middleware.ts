@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/products(.*)",
   "/category(.*)",
+  "/search",
   "/cart",
   "/api/artwork(.*)",
   // Stripe calls this server-to-server with no Clerk session; the route
