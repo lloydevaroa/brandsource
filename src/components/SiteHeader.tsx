@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,8 +11,11 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { useCart } from "@/lib/cart";
-import { useMenuCategories } from "@/lib/menu-categories";
+import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
+import { AllProductsMenu } from "@/components/AllProductsMenu";
 import { SiteSearch } from "@/components/SiteSearch";
+
+const ALL_PRODUCTS = "__all-products";
 
 export function SiteHeader() {
   const { items } = useCart();
@@ -20,6 +23,7 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const categories = useMenuCategories();
+  const allProducts = useMemo(() => groupProductsAz(categories), [categories]);
 
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -109,9 +113,10 @@ export function SiteHeader() {
       {categories.length > 0 ? (
         <nav
           aria-label="Product categories"
-          className="hidden border-t border-zinc-200 sm:block"
+          className="relative hidden border-t border-zinc-200 sm:block"
         >
           <ul className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-1 px-3 text-[13px] font-semibold text-brand-charcoal">
+            <AllProductsMenu />
             {categories.map((c) => (
               <li key={c.slug} className="group relative">
                 <Link
@@ -143,6 +148,43 @@ export function SiteHeader() {
       {menuOpen ? (
         <nav className="border-t border-zinc-200 bg-white px-6 py-4 text-sm text-zinc-600 sm:hidden">
           <div className="flex flex-col gap-3">
+            {allProducts.length > 0 ? (
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-900">All products</span>
+                  <button
+                    type="button"
+                    aria-expanded={openGroup === ALL_PRODUCTS}
+                    aria-label="Show all products A to Z"
+                    onClick={() => setOpenGroup(openGroup === ALL_PRODUCTS ? null : ALL_PRODUCTS)}
+                    className="p-2 text-zinc-500 hover:text-zinc-900"
+                  >
+                    <span aria-hidden>{openGroup === ALL_PRODUCTS ? "−" : "+"}</span>
+                  </button>
+                </div>
+                {openGroup === ALL_PRODUCTS ? (
+                  <div className="mt-1 flex max-h-96 flex-col gap-3 overflow-y-auto border-l border-zinc-200 pl-3">
+                    {allProducts.map((g) => (
+                      <div key={g.letter} className="flex flex-col gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wide text-brand-orange">
+                          {g.letter}
+                        </span>
+                        {g.products.map((k) => (
+                          <Link
+                            key={k.slug}
+                            href={`/products/${k.slug}`}
+                            onClick={() => setMenuOpen(false)}
+                            className="hover:text-zinc-900"
+                          >
+                            {k.name}
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {categories.map((c) => (
               <div key={c.slug}>
                 <div className="flex items-center justify-between">

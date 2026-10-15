@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
+
+/**
+ * "All products" item for the desktop category bar: opens a full-width A to Z
+ * panel of every product. Opens on hover or click; closes on Escape, an
+ * outside click, or picking a product. The bar (`nav`) must be `relative`, as
+ * the panel is positioned against it, not against this item.
+ */
+export function AllProductsMenu() {
+  const categories = useMenuCategories();
+  const groups = useMemo(() => groupProductsAz(categories), [categories]);
+  const panelId = useId();
+  const itemRef = useRef<HTMLLIElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onDown = (e: MouseEvent) => {
+      if (!itemRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [open]);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <li
+      ref={itemRef}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen(true)}
+        className={`flex items-center gap-1.5 px-3 py-2.5 hover:text-zinc-900 ${
+          open ? "text-zinc-900" : ""
+        }`}
+      >
+        All products
+        <svg
+          aria-hidden
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M2 3.5l3 3 3-3" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div
+          id={panelId}
+          className="absolute inset-x-0 top-full z-30 border-t border-zinc-200 bg-white shadow-lg"
+        >
+          <div className="mx-auto max-h-[70vh] max-w-6xl overflow-y-auto px-6 py-6">
+            <div className="columns-2 gap-x-10 lg:columns-4">
+              {groups.map((g) => (
+                <section key={g.letter} className="mb-6 break-inside-avoid">
+                  <h3 className="border-b border-zinc-200 pb-1 text-xs font-bold uppercase tracking-wide text-brand-orange">
+                    {g.letter}
+                  </h3>
+                  <ul className="mt-2">
+                    {g.products.map((p) => (
+                      <li key={p.slug}>
+                        <Link
+                          href={`/products/${p.slug}`}
+                          onClick={() => setOpen(false)}
+                          className="block py-1 text-[13px] font-medium text-zinc-700 hover:text-zinc-900"
+                        >
+                          {p.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </li>
+  );
+}
