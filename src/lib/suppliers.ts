@@ -1,6 +1,6 @@
 // Supplier visibility rules for the storefront. The supplier is internal; the
 // only thing a customer can ever see is the badge text of a supplier that is
-// still listed as a sample (e.g. "TLC sample"). Withdrawn or inactive suppliers
+// still listed as a sample (e.g. "Unique Displays sample"). Withdrawn or inactive suppliers
 // hide all of their products.
 
 export type SupplierListingStatus = "active" | "sample" | "withdrawn";

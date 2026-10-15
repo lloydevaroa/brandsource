@@ -5,7 +5,7 @@
 -- Every product points at a supplier (products.supplier_id). The supplier is an
 -- INTERNAL fact: it is never shown to customers (Trends' API terms forbid naming
 -- them). The one exception is a supplier whose listing_status is 'sample', where
--- public_label (e.g. "TLC sample") is shown as a badge while we wait for approval.
+-- public_label (e.g. "Unique Displays sample") is shown as a badge while we wait for approval.
 --
 --   listing_status  active     live, no badge
 --                   sample     live with the public_label badge, pending the supplier's OK
@@ -39,11 +39,21 @@ on conflict (slug) do nothing;
 
 insert into public.suppliers (name, slug, channel, website, notes, listing_status, public_label)
 values (
-  'TLC Live', 'tlc', 'email_po', 'https://www.tlc-live.co.nz',
-  'Banners and stretch fabric displays from the September 2024 product guide. Shown as a sample until TLC agrees to usage and hosting; then set to Live. If they decline, set to Withdrawn or run scripts/tlc-import.mjs --remove.',
-  'sample', 'TLC sample'
+  'Unique Displays', 'tlc', 'email_po', 'https://www.uniquedisplays.co.nz',
+  'Banners and stretch fabric displays from the September 2024 product guide. Shown as a sample until Unique Displays agrees to usage and hosting; then set to Live. If they decline, set to Withdrawn or run scripts/tlc-import.mjs --remove.',
+  'sample', 'Unique Displays sample'
 )
 on conflict (slug) do nothing;
+
+-- This supplier was first loaded as "TLC Live" and is now Unique Displays (renamed 15 Oct 2026).
+-- The slug stays 'tlc' because products and stored images are keyed on it. Only touches rows
+-- still carrying an old name, so a name set by hand in the admin is left alone.
+update public.suppliers
+set name = 'Unique Displays',
+    website = 'https://www.uniquedisplays.co.nz',
+    notes = replace(notes, 'TLC', 'Unique Displays'),
+    updated_at = now()
+where slug = 'tlc' and name in ('TLC Live', 'UniqueDisplays');
 
 -- Products point at their supplier. products.supplier (text) stays for the importers.
 alter table public.products

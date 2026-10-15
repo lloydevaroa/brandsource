@@ -84,7 +84,7 @@ function SupplierFields({ s }: { s?: Supplier }) {
       </label>
       <label className={label}>
         Badge text while a sample (customers see this)
-        <input name="public_label" placeholder="e.g. TLC sample" defaultValue={s?.public_label ?? ""} className={input} />
+        <input name="public_label" placeholder="e.g. Unique Displays sample" defaultValue={s?.public_label ?? ""} className={input} />
       </label>
       <label className={`${label} sm:col-span-2`}>
         Notes (internal)

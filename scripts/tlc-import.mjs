@@ -1,4 +1,4 @@
-// Imports the whole TLC Live product guide (Sept 2024) as HIDDEN products with
+// Imports the whole Unique Displays product guide (Sept 2024) as HIDDEN products with
 // no images. The team makes and uploads the images, then switches products on.
 //
 // Source: ../../tlc-catalogue/products.json (the vault folder next to this repo).
@@ -7,12 +7,12 @@
 // that don't exist yet: it never touches products that are already there, so it
 // can be re-run safely without re-hiding products or wiping uploaded images.
 //
-// Every product is tagged with the TLC supplier (supabase/suppliers.sql, run it
-// first). TLC's listing status there controls the "TLC sample" badge and can
+// Every product is tagged with the Unique Displays supplier (slug "tlc"; supabase/suppliers.sql, run it
+// first). Its listing status there controls the "Unique Displays sample" badge and can
 // withdraw the whole range at once. No prices (quote only).
 //
 // Usage: node --env-file=.env.local scripts/tlc-import.mjs [--dry-run | --remove]
-//   --remove  deletes every TLC product and any images stored for them
+//   --remove  deletes every Unique Displays product and any images stored for them
 
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
@@ -99,13 +99,13 @@ if (REMOVE) {
     const { data: files } = await db.storage.from(BUCKET).list(`${SUPPLIER}/${g.slug}`);
     if (files?.length) await db.storage.from(BUCKET).remove(files.map((f) => `${SUPPLIER}/${g.slug}/${f.name}`));
   }
-  console.log(`Removed ${gone?.length ?? 0} TLC products and their images.`);
+  console.log(`Removed ${gone?.length ?? 0} Unique Displays products and their images.`);
   process.exit(0);
 }
 
 const { data: supplier, error: supErr } = await db.from("suppliers").select("id, listing_status").eq("slug", SUPPLIER).maybeSingle();
 if (supErr || !supplier) {
-  throw new Error("TLC supplier not found. Run supabase/suppliers.sql in the Supabase SQL editor first.");
+  throw new Error("Unique Displays supplier (slug tlc) not found. Run supabase/suppliers.sql in the Supabase SQL editor first.");
 }
 
 // Create our new categories under Trade Show & Events; never overwrite existing ones.

@@ -29,7 +29,7 @@ export type CatalogProduct = {
   min_order_qty: number;
   example_image_urls: string[];
   product_details: ProductDetails | null;
-  /** Badge text while the supplier is only a sample listing (e.g. "TLC sample"), else null. */
+  /** Badge text while the supplier is only a sample listing (e.g. "Unique Displays sample"), else null. */
   sample_label: string | null;
   option_groups: {
     key: string; label: string; selection: "single" | "multi"; required: boolean;
