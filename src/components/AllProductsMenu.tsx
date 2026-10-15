@@ -16,6 +16,18 @@ export function AllProductsMenu() {
   const panelId = useId();
   const itemRef = useRef<HTMLLIElement>(null);
   const [open, setOpen] = useState(false);
+  // The bar wraps onto several rows, so the panel starts at the bottom of this
+  // item's row, not the bottom of the bar. Otherwise the pointer crosses the
+  // next row on its way down and that row's own dropdowns steal the hover.
+  // It overlaps the row by a couple of pixels so fractional row heights can't
+  // leave a hairline gap that the next row's links catch.
+  const [top, setTop] = useState(0);
+
+  function openPanel() {
+    const el = itemRef.current;
+    if (el) setTop(el.offsetTop + el.offsetHeight - 2);
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -38,14 +50,15 @@ export function AllProductsMenu() {
   return (
     <li
       ref={itemRef}
-      onMouseEnter={() => setOpen(true)}
+      onMouseEnter={openPanel}
       onMouseLeave={() => setOpen(false)}
+      className="flex self-stretch"
     >
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen(true)}
+        onClick={openPanel}
         className={`flex items-center gap-1.5 px-3 py-2.5 hover:text-zinc-900 ${
           open ? "text-zinc-900" : ""
         }`}
@@ -70,7 +83,8 @@ export function AllProductsMenu() {
       {open ? (
         <div
           id={panelId}
-          className="absolute inset-x-0 top-full z-30 border-t border-zinc-200 bg-white shadow-lg"
+          style={{ top }}
+          className="absolute inset-x-0 z-30 border-t border-zinc-200 bg-white shadow-lg"
         >
           <div className="mx-auto max-h-[70vh] max-w-6xl overflow-y-auto px-6 py-6">
             <div className="columns-2 gap-x-10 lg:columns-4">
