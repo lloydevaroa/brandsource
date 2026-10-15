@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
-import { Breadcrumb, CategoryTile, ProductCard } from "@/components/CategoryViews";
+import { Breadcrumb } from "@/components/CategoryViews";
+import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { HeroSlider } from "@/components/HeroSlider";
 import { getHeroSlides } from "@/lib/hero";
-import { getCategories, getChildren } from "@/lib/categories";
+import { getCategories, getChildren, getProductSpecs, type CategoryProduct } from "@/lib/categories";
+import { buildFilterModel } from "@/lib/category-filters";
 
 export const revalidate = 60;
 
@@ -30,6 +32,28 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   const slides = await getHeroSlides(slug);
 
+  // What the filter menu works over: this category's products, or with sub-categories, all of theirs.
+  const scope = children.length > 0 ? children : [category];
+  const productsBySlug = new Map<string, CategoryProduct>();
+  const categoriesOf = new Map<string, string[]>();
+  for (const c of scope) {
+    for (const p of c.products) {
+      if (!productsBySlug.has(p.slug)) productsBySlug.set(p.slug, p);
+      categoriesOf.set(p.slug, [...(categoriesOf.get(p.slug) ?? []), c.slug]);
+    }
+  }
+  const products = [...productsBySlug.values()];
+  const specs = await getProductSpecs(scope.map((c) => c.slug));
+  const model = buildFilterModel(
+    products.map((p) => ({
+      slug: p.slug,
+      unit_price: p.unit_price,
+      categories: children.length > 0 ? (categoriesOf.get(p.slug) ?? []) : [],
+      specs: specs.get(p.slug) ?? [],
+    })),
+    children.map((c) => ({ slug: c.slug, name: c.name })),
+  );
+
   const trail = [
     { label: "Home", href: "/" },
     ...(parent ? [{ label: parent.name, href: `/category/${parent.slug}` }] : []),
@@ -44,19 +68,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         <Breadcrumb trail={trail} />
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">{category.name}</h1>
 
-        {children.length > 0 ? (
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {children.map((c) => (
-              <CategoryTile key={c.slug} category={c} />
-            ))}
-          </ul>
-        ) : category.products.length > 0 ? (
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {category.products.map((p) => (
-              <ProductCard key={p.slug} product={p} />
-            ))}
-          </ul>
-        ) : null}
+        <CategoryBrowser
+          tiles={children.map((c) => ({ ...c, products: [] }))}
+          products={products}
+          groups={model.groups}
+          facts={model.facts}
+        />
 
         {siblings.length > 0 ? (
           <section className="mt-14 border-t border-zinc-200 pt-8">

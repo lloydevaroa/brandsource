@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import type { ProductSpec } from "@/lib/category-filters";
 import {
   SUPPLIER_EMBED,
   isMissingSupplierSchema,
@@ -123,6 +124,35 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 
 export const getChildren = (all: Category[], slug: string) =>
   all.filter((c) => c.parent_slug === slug);
+
+/**
+ * Supplier specification fields (Assembly, carry bag, lighting...) for the
+ * active products in the given categories, keyed by product slug. Feeds the
+ * category filter menu, which is an enhancement: on any failure it returns
+ * nothing and the page carries on without spec filters.
+ */
+export async function getProductSpecs(categorySlugs: string[]): Promise<Map<string, ProductSpec[]>> {
+  const out = new Map<string, ProductSpec[]>();
+  if (categorySlugs.length === 0) return out;
+  try {
+    const { data, error } = await createServiceSupabase()
+      .from("product_categories")
+      .select("categories!inner(slug), products!inner(slug, specs:product_details->specifications)")
+      .in("categories.slug", categorySlugs)
+      .eq("products.active", true);
+    if (error) return out;
+    for (const row of data as unknown as { products: { slug: string; specs: ProductSpec[] | null } }[]) {
+      if (!Array.isArray(row.products.specs)) continue;
+      const specs = row.products.specs.filter(
+        (s) => typeof s?.name === "string" && typeof s?.value === "string",
+      );
+      if (specs.length > 0) out.set(row.products.slug, specs);
+    }
+  } catch {
+    return new Map();
+  }
+  return out;
+}
 
 /** Products in a category, counting its subcategories (so a group shows its total). */
 export function countProducts(all: Category[], c: Category): number {
