@@ -1,17 +1,17 @@
 // Imports the whole Unique Displays product guide (Sept 2024) as HIDDEN products with
 // no images. The team makes and uploads the images, then switches products on.
 //
-// Source: ../../tlc-catalogue/products.json (the vault folder next to this repo).
+// Source: ../../unique-displays-catalogue/products.json (the vault folder next to this repo).
 // Every product is created inactive (active = false), so nothing shows on the
 // storefront until someone switches it on. The importer only ever INSERTS products
 // that don't exist yet: it never touches products that are already there, so it
 // can be re-run safely without re-hiding products or wiping uploaded images.
 //
-// Every product is tagged with the Unique Displays supplier (slug "tlc"; supabase/suppliers.sql, run it
+// Every product is tagged with the Unique Displays supplier (slug "unique-displays"; supabase/suppliers.sql, run it
 // first). Its listing status there controls the "Unique Displays sample" badge and can
 // withdraw the whole range at once. No prices (quote only).
 //
-// Usage: node --env-file=.env.local scripts/tlc-import.mjs [--dry-run | --remove]
+// Usage: node --env-file=.env.local scripts/unique-displays-import.mjs [--dry-run | --remove]
 //   --remove  deletes every Unique Displays product and any images stored for them
 
 import { readFile } from "node:fs/promises";
@@ -20,8 +20,8 @@ import { createClient } from "@supabase/supabase-js";
 const DRY = process.argv.includes("--dry-run");
 const REMOVE = process.argv.includes("--remove");
 const BUCKET = "product-images";
-const SUPPLIER = "tlc";
-const ROOT = new URL("../../tlc-catalogue/", import.meta.url);
+const SUPPLIER = "unique-displays";
+const ROOT = new URL("../../unique-displays-catalogue/", import.meta.url);
 
 // Categories named the way customers say them. Created if missing; renaming or
 // moving them later in the admin is safe, the importer never overwrites them.
@@ -51,7 +51,7 @@ function mapProduct(p) {
       short_description: p.short_description,
       active: false,
       supplier: SUPPLIER,
-      supplier_code: p.slug.replace(/^tlc-/, ""),
+      supplier_code: p.slug,
       min_order_qty: Number.isFinite(moq) && moq > 0 ? moq : 1,
       unit_price: null,
       example_image_urls: [],
@@ -105,7 +105,7 @@ if (REMOVE) {
 
 const { data: supplier, error: supErr } = await db.from("suppliers").select("id, listing_status").eq("slug", SUPPLIER).maybeSingle();
 if (supErr || !supplier) {
-  throw new Error("Unique Displays supplier (slug tlc) not found. Run supabase/suppliers.sql in the Supabase SQL editor first.");
+  throw new Error("Unique Displays supplier (slug unique-displays) not found. Run supabase/suppliers.sql in the Supabase SQL editor first.");
 }
 
 // Create our new categories under Trade Show & Events; never overwrite existing ones.

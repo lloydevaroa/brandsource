@@ -1,6 +1,6 @@
 -- Suppliers: add, edit and control the visibility of each supplier's products.
 -- Run once in the Supabase SQL editor (safe to re-run). Run before the storefront
--- code that reads suppliers is relied on, and before scripts/tlc-import.mjs.
+-- code that reads suppliers is relied on, and before scripts/unique-displays-import.mjs.
 --
 -- Every product points at a supplier (products.supplier_id). The supplier is an
 -- INTERNAL fact: it is never shown to customers (Trends' API terms forbid naming
@@ -33,27 +33,33 @@ where slug is null;
 
 create unique index if not exists suppliers_slug_key on public.suppliers (slug);
 
+-- This supplier was first loaded as "TLC Live" with the key 'tlc'. It is now Unique Displays
+-- (renamed 15 Oct 2026) with the key 'unique-displays'. This moves an existing database across
+-- before the seed below runs, so it never ends up with two rows. A fresh database skips it.
+-- Product slugs and stored image files were renamed separately, in the live database only.
+update public.suppliers set slug = 'unique-displays'
+where slug = 'tlc' and not exists (select 1 from public.suppliers where slug = 'unique-displays');
+update public.products set supplier = 'unique-displays' where supplier = 'tlc';
+
 insert into public.suppliers (name, slug, channel, website, notes)
 values ('Trends', 'trends', 'api', 'https://www.trends.co.nz', 'Catalogue and pricing via the Trends API. Never named on the storefront (API terms).')
 on conflict (slug) do nothing;
 
 insert into public.suppliers (name, slug, channel, website, notes, listing_status, public_label)
 values (
-  'Unique Displays', 'tlc', 'email_po', 'https://www.uniquedisplays.co.nz',
-  'Banners and stretch fabric displays from the September 2024 product guide. Shown as a sample until Unique Displays agrees to usage and hosting; then set to Live. If they decline, set to Withdrawn or run scripts/tlc-import.mjs --remove.',
+  'Unique Displays', 'unique-displays', 'email_po', 'https://www.uniquedisplays.co.nz',
+  'Banners and stretch fabric displays from the September 2024 product guide. Shown as a sample until Unique Displays agrees to usage and hosting; then set to Live. If they decline, set to Withdrawn or run scripts/unique-displays-import.mjs --remove.',
   'sample', 'Unique Displays sample'
 )
 on conflict (slug) do nothing;
 
--- This supplier was first loaded as "TLC Live" and is now Unique Displays (renamed 15 Oct 2026).
--- The slug stays 'tlc' because products and stored images are keyed on it. Only touches rows
--- still carrying an old name, so a name set by hand in the admin is left alone.
+-- Only touches a row still carrying an old name, so a name set by hand in the admin is left alone.
 update public.suppliers
 set name = 'Unique Displays',
     website = 'https://www.uniquedisplays.co.nz',
     notes = replace(notes, 'TLC', 'Unique Displays'),
     updated_at = now()
-where slug = 'tlc' and name in ('TLC Live', 'UniqueDisplays');
+where slug = 'unique-displays' and name in ('TLC Live', 'UniqueDisplays');
 
 -- Products point at their supplier. products.supplier (text) stays for the importers.
 alter table public.products
