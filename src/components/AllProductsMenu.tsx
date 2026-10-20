@@ -59,7 +59,7 @@ export function AllProductsMenu() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={openPanel}
-        className={`flex items-center gap-1.5 px-3 py-2.5 hover:text-zinc-900 ${
+        className={`flex items-center gap-1.5 px-2 py-2 hover:text-zinc-900 ${
           open ? "text-zinc-900" : ""
         }`}
       >
@@ -86,7 +86,7 @@ export function AllProductsMenu() {
           style={{ top }}
           className="absolute inset-x-0 z-30 border-t border-zinc-200 bg-white shadow-lg"
         >
-          <div className="mx-auto max-h-[70vh] max-w-6xl overflow-y-auto px-6 py-6">
+          <div className="mx-auto max-h-[70vh] max-w-[90rem] overflow-y-auto px-6 py-6">
             <div className="columns-2 gap-x-10 lg:columns-4">
               {groups.map((g) => (
                 <section key={g.letter} className="mb-6 break-inside-avoid">

@@ -17,7 +17,7 @@ export function SiteFooter() {
   return (
     <footer>
       <section className="border-y border-zinc-200 bg-brand-peach text-brand-charcoal">
-        <ul className="mx-auto grid max-w-6xl gap-6 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mx-auto grid max-w-[90rem] gap-6 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
           {VALUE_POINTS.map((v) => (
             <li key={v.title} className="flex items-start gap-3">
               <span className="mt-0.5 text-brand-charcoal" aria-hidden>
@@ -32,7 +32,7 @@ export function SiteFooter() {
         </ul>
       </section>
       <div className="bg-brand-charcoal py-10 text-xs text-zinc-400">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-[90rem] px-6">
           <Image
             src="/brand/BrandSource-Reversed.svg"
             alt="BRANDSource"

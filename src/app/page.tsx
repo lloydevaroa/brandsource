@@ -17,7 +17,7 @@ export default async function Home() {
 
       <main>
         <HeroSlider slides={slides} />
-        <section id="products" className="mx-auto max-w-6xl px-6 pb-14 pt-12">
+        <section id="products" className="mx-auto max-w-[90rem] px-6 pb-14 pt-12">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">

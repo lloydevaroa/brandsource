@@ -40,7 +40,7 @@ export default async function SearchPage({
   return (
     <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-6 py-10">
+      <main className="mx-auto max-w-[90rem] px-6 py-10">
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Search" }]} />
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">
           {q ? <>Results for &ldquo;{q}&rdquo;</> : "Search our range"}
