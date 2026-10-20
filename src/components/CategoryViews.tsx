@@ -38,7 +38,7 @@ export function CategoryTile({ category }: { category: Category }) {
               alt=""
               fill
               className="object-contain"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 17vw"
             />
           ) : null}
         </div>
@@ -60,7 +60,7 @@ export function ProductCard({ product }: { product: CategoryProduct }) {
             alt={product.name}
             fill
             className="object-contain"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 25vw, 17vw"
           />
         ) : null}
         {product.sample_label ? <SampleBadge label={product.sample_label} className="absolute left-3 top-3" /> : null}

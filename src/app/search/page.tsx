@@ -64,7 +64,7 @@ export default async function SearchPage({
               {total} {total === 1 ? "result" : "results"}
             </p>
             {categories.length > 0 ? (
-              <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+              <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                 {categories.map((c) => (
                   <CategoryTile key={c.slug} category={c} />
                 ))}
