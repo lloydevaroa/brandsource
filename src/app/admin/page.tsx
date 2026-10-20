@@ -166,6 +166,9 @@ export default async function AdminPage() {
             <Link href="/admin/suppliers" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Suppliers
             </Link>
+            <Link href="/admin/master-data" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Master data
+            </Link>
             <Link href="/admin/errors" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Errors
             </Link>
