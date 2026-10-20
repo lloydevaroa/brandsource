@@ -168,7 +168,7 @@ export function CategoryBrowser({
 
       {showProducts ? (
         matches.length > 0 ? (
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {matches.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}
@@ -182,7 +182,7 @@ export function CategoryBrowser({
           </div>
         )
       ) : (
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {tiles.map((c) => (
             <CategoryTile key={c.slug} category={c} />
           ))}

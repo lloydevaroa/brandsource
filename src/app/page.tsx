@@ -38,7 +38,7 @@ export default async function Home() {
             Configure online, upload artwork, approve a human proof, then we
             print with NZ partners.
           </p>
-          <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {tiles.map((c) => (
               <CategoryTile key={c.slug} category={c} />
             ))}
