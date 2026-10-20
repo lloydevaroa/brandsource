@@ -47,8 +47,14 @@ const db = createClient(url, key, { auth: { persistSession: false } });
 
 const { data: products, error } = await db.from("products").select("id, name, unit_price").eq("supplier", "trends");
 if (error) throw error;
-const { data: breaks, error: bErr } = await db.from("product_price_breaks").select("product_id, min_qty, unit_cost");
-if (bErr) throw bErr;
+// Supabase caps a select at 1000 rows, so page through every price break.
+const breaks = [];
+for (let from = 0; ; from += 1000) {
+  const { data, error: bErr } = await db.from("product_price_breaks").select("product_id, min_qty, unit_cost").order("product_id").order("min_qty").range(from, from + 999);
+  if (bErr) throw bErr;
+  breaks.push(...data);
+  if (data.length < 1000) break;
+}
 
 const lowest = new Map();
 for (const b of breaks) {

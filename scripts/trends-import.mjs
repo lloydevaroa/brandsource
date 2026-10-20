@@ -83,6 +83,13 @@ const NEW_CATEGORIES = [
   { slug: "umbrellas", name: "Umbrellas", sort_order: 200 },
   { slug: "cooler-bags", name: "Cooler Bags", sort_order: 210 },
   { slug: "drinkware", name: "Drinkware", sort_order: 220 },
+  { slug: "backpacks-and-belt-bags", name: "Backpacks & Belt Bags", sort_order: 230 },
+  { slug: "blankets-and-cushions", name: "Blankets & Cushions", sort_order: 240 },
+  { slug: "towels", name: "Towels", sort_order: 250 },
+  { slug: "socks-and-apparel", name: "Socks & Apparel", sort_order: 260 },
+  { slug: "phone-and-desk-accessories", name: "Phone & Desk Accessories", sort_order: 270 },
+  { slug: "plush-toys-and-novelties", name: "Plush Toys & Novelties", sort_order: 280 },
+  { slug: "sports-balls", name: "Sports Balls", sort_order: 290 },
 ];
 
 // Trends files all its signage and display products under one category (7-7), so
@@ -100,6 +107,15 @@ const NAME_RULES = [
   [/playing cards/i, ["cards"]],
   [/ice bucket/i, ["event-accessories"]],
   [/clipboard/i, ["clipboards"]],
+  [/belt bag|travel bag|crossbody|sling|running belt|backpack/i, ["backpacks-and-belt-bags"]],
+  [/blanket|cushion/i, ["blankets-and-cushions"]],
+  [/towel/i, ["towels"]],
+  [/socks|jumper/i, ["socks-and-apparel"]],
+  [/phone wallet|pencil case|drawing set/i, ["phone-and-desk-accessories"]],
+  [/plush|rubber duck/i, ["plush-toys-and-novelties"]],
+  [/(rugby|league|afl|soccer|touch) ball|netball|volleyball/i, ["sports-balls"]],
+  [/straw/i, ["drinkware"]],
+  [/serving tray|lunch box/i, ["event-accessories"]],
 ];
 
 function categorySlugs(p) {
