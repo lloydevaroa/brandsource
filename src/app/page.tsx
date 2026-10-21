@@ -34,7 +34,7 @@ export default async function Home() {
               View all categories <span aria-hidden>&rarr;</span>
             </Link>
           </div>
-          <p className="mt-3 max-w-xl text-zinc-600">
+          <p className="mt-3 max-w-3xl text-balance text-zinc-600">
             Configure online, upload artwork, approve a human proof, then we
             print with NZ partners.
           </p>
