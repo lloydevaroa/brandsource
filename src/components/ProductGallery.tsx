@@ -8,7 +8,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
   if (!images.length) return null;
 
   return (
-    <div className="mx-auto mt-6 max-w-xl">
+    <div className="mx-auto w-full max-w-xl lg:sticky lg:top-6 lg:max-w-none lg:self-start">
       <div className="relative aspect-square overflow-hidden rounded-xl border border-zinc-200 bg-white">
         <Image
           key={images[active]}
@@ -16,7 +16,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           alt={name}
           fill
           className="object-contain"
-          sizes="(max-width: 768px) 100vw, 576px"
+          sizes="(max-width: 1024px) 100vw, 50vw"
           priority={active === 0}
         />
       </div>

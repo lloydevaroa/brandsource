@@ -410,7 +410,7 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
   return (
     <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
-      <div className="mx-auto max-w-6xl px-6 [&>*]:max-w-3xl py-10">
+      <div className="mx-auto max-w-[90rem] px-6 [&>*]:max-w-3xl py-10">
         <Link href="/category/trade-show-and-events" className="text-sm text-zinc-500 hover:text-zinc-900">
           ← Trade Show products
         </Link>

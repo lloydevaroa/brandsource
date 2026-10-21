@@ -29,27 +29,31 @@ export default async function ProductPage({
   return (
     <div className="min-h-screen bg-white text-brand-charcoal">
       <SiteHeader />
-      <div className="mx-auto max-w-[90rem] px-6 [&>*]:max-w-3xl py-10">
+      <div className="mx-auto max-w-[90rem] px-6 py-10">
         <Link
           href={category ? `/category/${category.slug}` : "/category/trade-show-and-events"}
           className="text-sm text-zinc-500 hover:text-zinc-900"
         >
           ← {category ? category.name : "Trade Show & Events"}
         </Link>
-        <ProductGallery images={product.example_image_urls} name={product.name} />
-        {product.sample_label ? <SampleBadge label={product.sample_label} className="mt-6" /> : null}
-        <h1 className={`${product.sample_label ? "mt-2" : "mt-6"} text-3xl font-semibold tracking-tight`}>
-          {product.name}
-        </h1>
-        <p className="mt-2 text-zinc-600">{product.short_description}</p>
-        <p className="mt-2 text-sm text-zinc-500">
-          {product.unit_price == null ? "Get a quote" : `Flat pricing · $${product.unit_price.toFixed(2)} NZD`}
-          {product.min_order_qty > 1 ? ` · MOQ ${product.min_order_qty}` : ""}
-        </p>
+        <div className="mt-6 lg:grid lg:grid-cols-2 lg:gap-12">
+          <ProductGallery images={product.example_image_urls} name={product.name} />
+          <div className="lg:[&>:first-child]:mt-0">
+            {product.sample_label ? <SampleBadge label={product.sample_label} className="mt-6" /> : null}
+            <h1 className={`${product.sample_label ? "mt-2" : "mt-6"} text-3xl font-semibold tracking-tight`}>
+              {product.name}
+            </h1>
+            <p className="mt-2 text-zinc-600">{product.short_description}</p>
+            <p className="mt-2 text-sm text-zinc-500">
+              {product.unit_price == null ? "Get a quote" : `Flat pricing · $${product.unit_price.toFixed(2)} NZD`}
+              {product.min_order_qty > 1 ? ` · MOQ ${product.min_order_qty}` : ""}
+            </p>
 
-        <ProductConfigurator product={product} />
+            <ProductConfigurator product={product} />
 
-        {product.product_details ? <ProductDetailsSections d={product.product_details} /> : null}
+            {product.product_details ? <ProductDetailsSections d={product.product_details} /> : null}
+          </div>
+        </div>
       </div>
     </div>
   );
