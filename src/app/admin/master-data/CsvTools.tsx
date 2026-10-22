@@ -199,7 +199,7 @@ export function CsvTools({
                 <p className="font-semibold text-zinc-900">1. Get a file to start from</p>
                 <p className="mt-1 text-zinc-600">
                   The example shows the format with a few real products. Their values are unchanged, so uploading it as it is changes nothing.
-                  The export has every product in the current view ({shown.length}) with the supplier&apos;s value beside yours.
+                  The export has every product in the current view ({shown.length}) with the supplier&apos;s value beside yours. Pro tip - just import products that are to be updated
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3">
                   <button type="button" onClick={downloadExample} disabled={rows.length === 0} className={btn}>
