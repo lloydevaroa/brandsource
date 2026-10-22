@@ -23,7 +23,20 @@ export function CategoryBrowser({
   facts: Record<string, string[]>;
 }) {
   const panelId = useId();
-  const [open, setOpen] = useState(false);
+  // The filter panel starts open on large screens and closed on small ones; each remembers its own toggle.
+  const [openMobile, setOpenMobile] = useState(false);
+  const [openDesktop, setOpenDesktop] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const open = isDesktop ? openDesktop : openMobile;
+  const toggleOpen = () => (isDesktop ? setOpenDesktop : setOpenMobile)((o) => !o);
   const [selected, setSelected] = useState<string[]>([]);
 
   const validKeys = useMemo(
@@ -72,14 +85,15 @@ export function CategoryBrowser({
   const showProducts = filtering || tiles.length === 0;
 
   const hasFilters = groups.length > 0;
-  const gridCols = hasFilters
+  const gridCols = hasFilters && openDesktop
     ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     : "sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+
 
   return (
     <div
       className={
-        hasFilters
+        hasFilters && openDesktop
           ? "lg:mt-6 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-10"
           : ""
       }
@@ -91,8 +105,8 @@ export function CategoryBrowser({
               type="button"
               aria-expanded={open}
               aria-controls={panelId}
-              onClick={() => setOpen((o) => !o)}
-              className={`inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-bold uppercase tracking-wide lg:hidden ${
+              onClick={toggleOpen}
+              className={`inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-bold uppercase tracking-wide ${
                 open || filtering
                   ? "border-brand-charcoal bg-brand-charcoal text-white"
                   : "border-zinc-300 text-brand-charcoal hover:border-brand-charcoal"
@@ -138,7 +152,7 @@ export function CategoryBrowser({
           {hasFilters ? (
         <div
           id={panelId}
-          className={`mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:content-start lg:grid-cols-1 lg:border-t lg:border-zinc-200 lg:pt-3 ${open ? "" : "hidden lg:grid"}`}
+          className={`mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:content-start lg:grid-cols-1 lg:border-t lg:border-zinc-200 lg:pt-3 ${openMobile ? "" : "hidden"} ${openDesktop ? "lg:grid" : "lg:hidden"}`}
         >
               {groups.map((g) => {
                 const long = g.options.length > 8; // a long list gets two columns instead of a tall panel
