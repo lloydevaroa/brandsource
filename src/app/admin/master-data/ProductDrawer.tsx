@@ -140,6 +140,17 @@ function DrawerBody({
     : row.categories;
 
   const discountTiers = tiers.filter((t) => t.discount_percent > 0).sort((a, b) => a.discount_percent - b.discount_percent);
+  const supplierMarkup = supplierRrp !== null && row.cost ? Math.round(((supplierRrp - row.cost) / row.cost) * 100) : null;
+  const revertLabel: Record<OverrideField, string> = {
+    description: "Revert to supplier description",
+    categories: "Revert to supplier categories",
+    rrp:
+      supplierRrp === null
+        ? "Revert to supplier price"
+        : supplierMarkup === null
+          ? `Revert to ${money(supplierRrp)}`
+          : `Revert to ${supplierMarkup}% markup (${money(supplierRrp)})`,
+  };
   const draftMarkup = rrpValid && row.cost ? (rrpNumber - row.cost) / row.cost : null;
 
   const topLevel = categories.filter((c) => !c.parent_slug && c.active);
@@ -182,7 +193,7 @@ function DrawerBody({
             onClick={() => run(() => revertToSupplier(row.slug, field))}
             className="cursor-pointer text-sm font-medium text-orange-600 hover:underline disabled:opacity-50"
           >
-            Revert to supplier value
+            {revertLabel[field]}
           </button>
         ) : null}
       </section>
