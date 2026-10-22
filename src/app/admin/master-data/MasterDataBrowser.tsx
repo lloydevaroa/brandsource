@@ -73,7 +73,7 @@ export function MasterDataBrowser({
   noEditTables: boolean;
 }) {
   const [state, setState] = useState<MasterState>(initial);
-  const [showTiers, setShowTiers] = useState(true);
+  const [showTiers, setShowTiers] = useState(false);
   const [showDescription, setShowDescription] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [toast, setToast] = useState<(SaveResult & { id: number }) | null>(null);
