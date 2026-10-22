@@ -14,6 +14,7 @@
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import { NEW_CATEGORIES, mapProduct, slugify } from "./lib/trends-map.mjs";
+import { categoriesMerge, categoriesSame, overridesFor, reconcile, sendReviewDigest } from "./lib/overrides.mjs";
 
 const DRY = process.argv.includes("--dry-run");
 const codesArg = process.argv.indexOf("--codes");
@@ -85,6 +86,8 @@ async function copyTemplate(code, link) {
   return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+const reviewChanges = [];
+
 for (const { row, colours, images, details, templateSrc, categories } of items) {
   const urls = [];
   for (const img of images) urls.push(await copyImage(row.supplier_code, img));
@@ -97,10 +100,19 @@ for (const { row, colours, images, details, templateSrc, categories } of items) 
     }
   }
 
+  // Fields the team has edited on the Master data page are left alone; the supplier's new value is recorded for review.
+  const { data: known } = await db.from("products").select("id").eq("supplier", "trends").eq("supplier_code", row.supplier_code).maybeSingle();
+  const overrides = known ? await overridesFor(db, known.id) : new Map();
+  const payload = { ...row };
+  if (overrides.has("description")) {
+    await reconcile(db, reviewChanges, { productId: known.id, label: row.name, field: "description", override: overrides.get("description"), supplierNow: row.short_description });
+    delete payload.short_description;
+  }
+
   const { data: product, error } = await db
     .from("products")
     .upsert(
-      { ...row, ...(supplierId ? { supplier_id: supplierId } : {}), example_image_urls: urls, product_details: details },
+      { ...payload, ...(supplierId ? { supplier_id: supplierId } : {}), example_image_urls: urls, product_details: details },
       { onConflict: "supplier,supplier_code" },
     )
     .select("id")
@@ -108,7 +120,17 @@ for (const { row, colours, images, details, templateSrc, categories } of items) 
   if (error) throw error;
 
   // Insert only (never delete), so categories assigned by hand survive a re-sync.
-  if (categories.length) {
+  if (overrides.has("categories")) {
+    await reconcile(db, reviewChanges, {
+      productId: product.id,
+      label: row.name,
+      field: "categories",
+      override: overrides.get("categories"),
+      supplierNow: [...categories].sort(),
+      isSame: categoriesSame,
+      merge: categoriesMerge,
+    });
+  } else if (categories.length) {
     const { data: cats, error: catErr } = await db.from("categories").select("id, slug").in("slug", categories);
     if (catErr) throw catErr;
     const { error: linkErr } = await db
@@ -133,3 +155,4 @@ for (const { row, colours, images, details, templateSrc, categories } of items) 
   console.log(`Imported ${row.slug} (${urls.length} images, ${colours.length} colours)`);
 }
 console.log(`\nDone: ${items.length} products.`);
+await sendReviewDigest(db, reviewChanges);

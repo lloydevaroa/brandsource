@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buildFilterModel,
   factKey,
@@ -8,7 +8,9 @@ import {
   matchesSelection,
 } from "@/lib/category-filters";
 import { applyTierDiscount } from "@/lib/pricing";
-import type { MasterCategory, MasterRow } from "@/lib/master-data";
+import type { MasterCategory, MasterRow, OverrideField } from "@/lib/master-data";
+import type { SaveResult } from "./actions";
+import { ProductDrawer } from "./ProductDrawer";
 
 type Tier = { name: string; discount_percent: number };
 
@@ -18,6 +20,8 @@ export type MasterState = {
   sup: string;
   av: string;
   vis: string;
+  /** "edited" or "review": only products staff have edited, or whose supplier value has changed since. */
+  ed: string;
   sort: SortKey;
   dir: "asc" | "desc";
   f: string[];
@@ -58,6 +62,7 @@ export function MasterDataBrowser({
   suppliers,
   initial,
   noCostTables,
+  noEditTables,
 }: {
   rows: MasterRow[];
   categories: MasterCategory[];
@@ -65,10 +70,20 @@ export function MasterDataBrowser({
   suppliers: { slug: string; name: string }[];
   initial: MasterState;
   noCostTables: boolean;
+  noEditTables: boolean;
 }) {
   const [state, setState] = useState<MasterState>(initial);
   const [showTiers, setShowTiers] = useState(true);
   const [showDescription, setShowDescription] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [toast, setToast] = useState<(SaveResult & { id: number }) | null>(null);
+
+  // The confirmation stays up long enough to read; errors stay until dismissed.
+  useEffect(() => {
+    if (!toast?.ok) return;
+    const t = setTimeout(() => setToast(null), 7000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // Tiers other than Retail, best discount last so the columns read Bronze to Platinum.
   const discountTiers = useMemo(
@@ -93,6 +108,7 @@ export function MasterDataBrowser({
     if (next.sup) p.set("sup", next.sup);
     if (next.av) p.set("av", next.av);
     if (next.vis) p.set("vis", next.vis);
+    if (next.ed) p.set("ed", next.ed);
     if (next.sort !== "name" || next.dir !== "asc") {
       p.set("sort", next.sort);
       p.set("dir", next.dir);
@@ -133,7 +149,11 @@ export function MasterDataBrowser({
     (!needle || r.name.toLowerCase().includes(needle) || r.slug.toLowerCase().includes(needle)) &&
     (!state.sup || r.supplierSlug === state.sup) &&
     (!state.av || r.availability === state.av) &&
-    (!state.vis || (state.vis === "live" ? r.visibility !== "hidden" : r.visibility === state.vis));
+    (!state.vis || (state.vis === "live" ? r.visibility !== "hidden" : r.visibility === state.vis)) &&
+    (!state.ed ||
+      (state.ed === "review"
+        ? Object.values(r.overrides).some((o) => o?.needsReview)
+        : Object.keys(r.overrides).length > 0));
 
   const shown = useMemo(() => {
     const list = (state.cat ? scope : rows).filter(topBarMatch).filter((r) => matchesSelection(model.facts[r.slug], selected));
@@ -173,7 +193,26 @@ export function MasterDataBrowser({
   const toggle = (key: string) =>
     update({ f: selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key] });
 
-  const filtering = Boolean(state.q || state.cat || state.sup || state.av || state.vis || selected.length);
+  const editedCount = useMemo(() => rows.filter((r) => Object.keys(r.overrides).length > 0).length, [rows]);
+  const reviewCount = useMemo(() => rows.filter((r) => Object.values(r.overrides).some((o) => o?.needsReview)).length, [rows]);
+  const editingRow = editing ? (rows.find((r) => r.slug === editing) ?? null) : null;
+
+  /** Marks a cell the team has edited, or that needs a look because the supplier changed it since. */
+  const flag = (r: MasterRow, field: OverrideField) => {
+    const o = r.overrides[field];
+    if (!o) return null;
+    return o.needsReview ? (
+      <span title={o.reviewNote ?? "The supplier changed this since it was edited"} className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+        Review
+      </span>
+    ) : (
+      <span title={`Edited${o.editedBy ? ` by ${o.editedBy}` : ""}. The supplier value is kept.`} aria-label="Edited" className="ml-1 text-violet-600">
+        ●
+      </span>
+    );
+  };
+
+  const filtering = Boolean(state.q || state.cat || state.sup || state.av || state.vis || state.ed || selected.length);
 
   function sortBy(key: SortKey) {
     update(state.sort === key ? { dir: state.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: "asc" });
@@ -229,6 +268,11 @@ export function MasterDataBrowser({
             <option value="sample">Sample badge only</option>
             <option value="hidden">Hidden from website</option>
           </select>
+          <select value={state.ed} onChange={(e) => update({ ed: e.target.value })} aria-label="Edits" className={control}>
+            <option value="">Edited or not</option>
+            <option value="edited">Edited by the team{editedCount ? ` (${editedCount})` : ""}</option>
+            <option value="review">Needs review{reviewCount ? ` (${reviewCount})` : ""}</option>
+          </select>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
             <input type="checkbox" checked={showDescription} onChange={(e) => setShowDescription(e.target.checked)} />
             Description
@@ -240,7 +284,7 @@ export function MasterDataBrowser({
           {filtering ? (
             <button
               type="button"
-              onClick={() => update({ q: "", cat: "", sup: "", av: "", vis: "", f: [] })}
+              onClick={() => update({ q: "", cat: "", sup: "", av: "", vis: "", ed: "", f: [] })}
               className="cursor-pointer text-sm font-medium text-orange-600 hover:underline"
             >
               Clear all
@@ -352,7 +396,7 @@ export function MasterDataBrowser({
                 {shown.map((r) => {
                   const mk = markupOf(r);
                   return (
-                    <tr key={r.slug} className="align-top hover:bg-zinc-50">
+                    <tr key={r.slug} onClick={() => setEditing(r.slug)} className="cursor-pointer align-top hover:bg-zinc-50">
                       <td className="px-3 py-2">
                         {r.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -362,14 +406,25 @@ export function MasterDataBrowser({
                         )}
                       </td>
                       <td className="min-w-48 px-3 py-2">
-                        <a href={`/products/${r.slug}`} className="font-medium text-zinc-900 hover:underline">
+                        <a href={`/products/${r.slug}`} onClick={(e) => e.stopPropagation()} className="font-medium text-zinc-900 hover:underline">
                           {r.name}
                         </a>
                         <p className="text-xs text-zinc-400">{r.slug}</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditing(r.slug);
+                          }}
+                          className="mt-1 cursor-pointer text-xs font-medium text-orange-600 hover:underline"
+                        >
+                          Edit
+                        </button>
                       </td>
                       {showDescription ? (
                         <td className="min-w-64 max-w-sm px-3 py-2 text-xs text-zinc-600">
                           {r.description || <span className="text-zinc-400">No description</span>}
+                          {flag(r, "description")}
                         </td>
                       ) : null}
                       <td className="whitespace-nowrap px-3 py-2 text-zinc-700">{r.supplier}</td>
@@ -379,6 +434,7 @@ export function MasterDataBrowser({
                         ) : (
                           <span className="text-amber-700">None</span>
                         )}
+                        {flag(r, "categories")}
                       </td>
                       <td className="px-3 py-2">
                         <span
@@ -392,7 +448,10 @@ export function MasterDataBrowser({
                       <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums" title={r.costQty ? `At ${r.costQty}+ units, ex GST` : undefined}>
                         {money(r.cost)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{money(r.rrp)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                        {money(r.rrp)}
+                        {flag(r, "rrp")}
+                      </td>
                       <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-zinc-600">
                         {mk === null ? "—" : `${Math.round(mk * 100)}%`}
                       </td>
@@ -425,6 +484,33 @@ export function MasterDataBrowser({
           </p>
         </div>
       </div>
+
+      {editingRow ? (
+        <ProductDrawer
+          row={editingRow}
+          categories={categories}
+          tiers={tiers}
+          canEdit={!noEditTables}
+          onClose={() => setEditing(null)}
+          onResult={(r) => setToast({ ...r, id: Date.now() })}
+        />
+      ) : null}
+
+      {/* Confirms every save, revert and failure, whether or not the drawer is open */}
+      {toast ? (
+        <div
+          role={toast.ok ? "status" : "alert"}
+          className={`fixed bottom-6 left-1/2 z-[60] flex w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-lg ${
+            toast.ok ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-red-300 bg-red-50 text-red-900"
+          }`}
+        >
+          <span aria-hidden>{toast.ok ? "✓" : "!"}</span>
+          <p className="flex-1">{toast.message}</p>
+          <button type="button" onClick={() => setToast(null)} className="cursor-pointer font-medium underline">
+            Dismiss
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

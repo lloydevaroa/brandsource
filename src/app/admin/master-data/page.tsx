@@ -35,6 +35,7 @@ export default async function MasterDataPage({ searchParams }: { searchParams: P
     sup: one(params.sup),
     av: one(params.av),
     vis: one(params.vis),
+    ed: one(params.ed) === "edited" || one(params.ed) === "review" ? one(params.ed) : "",
     sort: (SORTS as readonly string[]).includes(sort) ? (sort as MasterState["sort"]) : "name",
     dir: one(params.dir) === "desc" ? "desc" : "asc",
     f,
@@ -48,9 +49,11 @@ export default async function MasterDataPage({ searchParams }: { searchParams: P
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">Master data</h1>
         <p className="mt-2 max-w-3xl text-sm text-zinc-500">
-          Every product in one place for the management team to sort and check: category, supplier, availability,
-          cost, selling price and the rate tier prices. This page is view only. Supplier cost is internal and never
-          shown to customers. Pick a category to get that category&apos;s own filters down the left.
+          Every product in one place for the management team to sort, check and edit: category, supplier,
+          availability, cost, selling price and the rate tier prices. Click a product to edit its description,
+          categories or RRP. Edits go live straight away and are logged, and for Trends products the supplier&apos;s
+          own value is shown beside yours so you can revert. Supplier cost is internal and never shown to customers.
+          Pick a category to get that category&apos;s own filters down the left.
         </p>
         <MasterDataBrowser
           rows={data.rows}
@@ -59,6 +62,7 @@ export default async function MasterDataPage({ searchParams }: { searchParams: P
           suppliers={data.suppliers}
           initial={initial}
           noCostTables={data.noCostTables}
+          noEditTables={data.noEditTables}
         />
       </div>
     </div>

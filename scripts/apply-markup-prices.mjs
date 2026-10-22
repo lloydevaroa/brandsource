@@ -17,6 +17,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { cents, roundUp } from "./lib/trends-map.mjs";
+import { reconcile, sendReviewDigest } from "./lib/overrides.mjs";
 
 const DRY = process.argv.includes("--dry-run");
 const arg = (name, dflt) => (process.argv.find((a) => a.startsWith(`--${name}=`)) ?? `--${name}=${dflt}`).split("=")[1];
@@ -41,6 +42,16 @@ for (let from = 0; ; from += 1000) {
   if (data.length < 1000) break;
 }
 
+// Prices the team edited on the Master data page are never touched; the price this script would
+// set is recorded against the edit, and flagged for review if it differs from what it recorded.
+const rrpOverrides = new Map();
+{
+  const { data, error: oErr } = await db.from("product_overrides").select("id, product_id, supplier_value").eq("field", "rrp");
+  if (oErr && !/product_overrides|schema cache|does not exist/i.test(oErr.message)) throw oErr;
+  for (const o of data ?? []) rrpOverrides.set(o.product_id, o);
+}
+const reviewChanges = [];
+
 const lowest = new Map();
 for (const b of breaks) {
   const cur = lowest.get(b.product_id);
@@ -54,6 +65,12 @@ for (const p of products) {
   const raw = cents(Number(b.unit_cost) * (1 + markup / 100));
   const price = roundUp(raw);
   const current = p.unit_price == null ? null : Number(p.unit_price);
+  const edited = rrpOverrides.get(p.id);
+  if (edited) {
+    if (!DRY) await reconcile(db, reviewChanges, { productId: p.id, label: p.name, field: "rrp", override: edited, supplierNow: price });
+    kept++;
+    continue;
+  }
   const earlierRaw = fromMarkup == null ? null : cents(Number(b.unit_cost) * (1 + fromMarkup / 100));
   const mine = current == null || current === raw || (earlierRaw != null && (current === earlierRaw || current === roundUp(earlierRaw)));
   if (!mine || current === price) { kept++; continue; } // hand-set, or already at this price
@@ -66,3 +83,4 @@ for (const p of products) {
   set++;
 }
 console.log(`\n${DRY ? "Dry run: would set" : "Set"} ${set} prices at +${markup}% rounded up; ${kept} left as they are (hand-set or already rounded), ${none} with no cost data.`);
+if (!DRY) await sendReviewDigest(db, reviewChanges);

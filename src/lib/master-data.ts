@@ -2,9 +2,24 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { getRateTiers, type RateTier } from "@/lib/rate-tiers";
 import type { ProductSpec } from "@/lib/category-filters";
 
+export type OverrideField = "description" | "rrp" | "categories";
+
+/** A staff edit on a supplier product: what the supplier sends is kept beside the live value. */
+export type FieldOverride = {
+  /** Text, a number, or category slugs; null when the supplier has no value to compare. */
+  supplierValue: string | number | string[] | null;
+  editedAt: string;
+  editedBy: string | null;
+  needsReview: boolean;
+  reviewNote: string | null;
+};
+
 /** One product as the team sees it on the master data page. Server only: carries supplier cost. */
 export type MasterRow = {
   slug: string;
+  /** True for products imported from the Trends API, which have a supplier value to compare against. */
+  isTrends: boolean;
+  overrides: Partial<Record<OverrideField, FieldOverride>>;
   name: string;
   image: string | null;
   /** The short description customers see under the product name. */
@@ -38,6 +53,8 @@ export type MasterData = {
   suppliers: { slug: string; name: string }[];
   /** True when the supplier cost tables are missing, so the cost column would be empty. */
   noCostTables: boolean;
+  /** True when supabase/product-overrides.sql has not been run, so editing is switched off. */
+  noEditTables: boolean;
 };
 
 type Result<T> = { data: T[] | null; error: { message: string } | null };
@@ -60,6 +77,7 @@ type ProductRow = {
   slug: string;
   name: string;
   short_description: string | null;
+  supplier: string | null;
   active: boolean;
   unit_price: number | string | null;
   min_order_qty: number;
@@ -70,6 +88,15 @@ type ProductRow = {
 };
 type SupplierRow = { id: string; name: string; slug: string | null; listing_status: string; active: boolean };
 type CategoryRow = { id: string; slug: string; name: string; parent_id: string | null; active: boolean };
+type OverrideRow = {
+  product_id: string;
+  field: OverrideField;
+  supplier_value: string | number | string[] | null;
+  edited_by: string | null;
+  edited_at: string;
+  needs_review: boolean;
+  review_note: string | null;
+};
 type LinkRow = { product_id: string; category_id: string };
 type PricingRow = { product_id: string; price_type: string };
 type BreakRow = { product_id: string; min_qty: number; unit_cost: number | string };
@@ -77,12 +104,12 @@ type BreakRow = { product_id: string; min_qty: number; unit_cost: number | strin
 export async function getMasterData(): Promise<MasterData> {
   const supabase = createServiceSupabase();
 
-  const [products, suppliers, categories, links, pricing, breaks, tiers] = await Promise.all([
+  const [products, suppliers, categories, links, pricing, breaks, tiers, overrides, profiles] = await Promise.all([
     fetchAll<ProductRow>((from, to) =>
       supabase
         .from("products")
         .select(
-          "id, slug, name, short_description, active, unit_price, min_order_qty, example_image_urls, supplier_id, supplier_updated_at, specs:product_details->specifications",
+          "id, slug, name, short_description, supplier, active, unit_price, min_order_qty, example_image_urls, supplier_id, supplier_updated_at, specs:product_details->specifications",
         )
         .order("name", { ascending: true })
         .range(from, to) as unknown as PromiseLike<Result<ProductRow>>,
@@ -107,6 +134,13 @@ export async function getMasterData(): Promise<MasterData> {
         .range(from, to) as unknown as PromiseLike<Result<BreakRow>>,
     ),
     getRateTiers().catch(() => [] as RateTier[]),
+    fetchAll<OverrideRow>((from, to) =>
+      supabase
+        .from("product_overrides")
+        .select("product_id, field, supplier_value, edited_by, edited_at, needs_review, review_note")
+        .range(from, to) as unknown as PromiseLike<Result<OverrideRow>>,
+    ),
+    supabase.from("profiles").select("id, full_name, email").in("role", ["admin", "manager"]),
   ]);
 
   if (products.error) throw new Error(`Could not load products: ${products.error.message}`);
@@ -116,6 +150,27 @@ export async function getMasterData(): Promise<MasterData> {
 
   // The cost tables come from supabase/supplier-pricing.sql; carry on without them if it has not been run.
   const noCostTables = Boolean(pricing.error || breaks.error);
+
+  // The override table comes from supabase/product-overrides.sql; the page is read-only until it has been run.
+  const noEditTables = Boolean(overrides.error);
+  const staffName = new Map(
+    ((profiles.data ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => [
+      p.id,
+      p.full_name || p.email || "Staff",
+    ]),
+  );
+  const overridesOf = new Map<string, MasterRow["overrides"]>();
+  for (const o of overrides.data ?? []) {
+    const cur = overridesOf.get(o.product_id) ?? {};
+    cur[o.field] = {
+      supplierValue: o.supplier_value,
+      editedAt: o.edited_at,
+      editedBy: o.edited_by ? (staffName.get(o.edited_by) ?? "Staff") : null,
+      needsReview: o.needs_review,
+      reviewNote: o.review_note,
+    };
+    overridesOf.set(o.product_id, cur);
+  }
 
   const supplierById = new Map((suppliers.data as SupplierRow[]).map((s) => [s.id, s]));
   const catRows = categories.data as CategoryRow[];
@@ -163,6 +218,8 @@ export async function getMasterData(): Promise<MasterData> {
 
     return {
       slug: p.slug,
+      isTrends: p.supplier === "trends",
+      overrides: overridesOf.get(p.id) ?? {},
       name: p.name,
       description: p.short_description ?? "",
       image: images[0] ?? null,
@@ -199,5 +256,6 @@ export async function getMasterData(): Promise<MasterData> {
     tiers,
     suppliers: supplierList,
     noCostTables,
+    noEditTables,
   };
 }
