@@ -67,13 +67,24 @@ export function MasterDataBrowser({
   noCostTables: boolean;
 }) {
   const [state, setState] = useState<MasterState>(initial);
-  const [showTiers, setShowTiers] = useState(true);
+  // Tiers whose price column is hidden, so a tier added later shows by default.
+  const [hiddenTiers, setHiddenTiers] = useState<Set<string>>(new Set());
+  const [showDescription, setShowDescription] = useState(true);
 
   // Tiers other than Retail, best discount last so the columns read Bronze to Platinum.
   const discountTiers = useMemo(
     () => tiers.filter((t) => t.discount_percent > 0).sort((a, b) => a.discount_percent - b.discount_percent),
     [tiers],
   );
+
+  const visibleTiers = useMemo(() => discountTiers.filter((t) => !hiddenTiers.has(t.name)), [discountTiers, hiddenTiers]);
+  const toggleTier = (name: string) =>
+    setHiddenTiers((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
 
   const topLevel = useMemo(() => categories.filter((c) => !c.parent_slug && c.active), [categories]);
   const nameOf = useMemo(() => new Map(categories.map((c) => [c.slug, c.name])), [categories]);
@@ -228,10 +239,20 @@ export function MasterDataBrowser({
             <option value="sample">Sample badge only</option>
             <option value="hidden">Hidden from website</option>
           </select>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
-            <input type="checkbox" checked={showTiers} onChange={(e) => setShowTiers(e.target.checked)} />
-            Tier prices
-          </label>
+          <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600">
+            <legend className="sr-only">Columns</legend>
+            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Columns</span>
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={showDescription} onChange={(e) => setShowDescription(e.target.checked)} />
+              Description
+            </label>
+            {discountTiers.map((t) => (
+              <label key={t.name} className="flex cursor-pointer items-center gap-1.5">
+                <input type="checkbox" checked={!hiddenTiers.has(t.name)} onChange={() => toggleTier(t.name)} />
+                {t.name}
+              </label>
+            ))}
+          </fieldset>
           {filtering ? (
             <button
               type="button"
@@ -326,6 +347,7 @@ export function MasterDataBrowser({
                 <tr>
                   <th className={th} aria-label="Image" />
                   {sortable("name", "Product")}
+                  {showDescription ? <th className={th}>Description</th> : null}
                   {sortable("supplier", "Supplier")}
                   <th className={th}>Categories</th>
                   {sortable("availability", "Availability")}
@@ -333,14 +355,12 @@ export function MasterDataBrowser({
                   {sortable("cost", "Cost", "text-right")}
                   {sortable("rrp", "RRP", "text-right")}
                   {sortable("markup", "Markup", "text-right")}
-                  {showTiers
-                    ? discountTiers.map((t) => (
-                        <th key={t.name} className={`${th} text-right`}>
-                          {t.name}
-                          <span className="block font-normal text-zinc-400">{t.discount_percent}% off</span>
-                        </th>
-                      ))
-                    : null}
+                  {visibleTiers.map((t) => (
+                    <th key={t.name} className={`${th} text-right`}>
+                      {t.name}
+                      <span className="block font-normal text-zinc-400">{t.discount_percent}% off</span>
+                    </th>
+                  ))}
                   {sortable("visibility", "Website")}
                 </tr>
               </thead>
@@ -357,12 +377,17 @@ export function MasterDataBrowser({
                           <div className="h-10 w-10 rounded bg-zinc-100" />
                         )}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="min-w-48 px-3 py-2">
                         <a href={`/products/${r.slug}`} className="font-medium text-zinc-900 hover:underline">
                           {r.name}
                         </a>
                         <p className="text-xs text-zinc-400">{r.slug}</p>
                       </td>
+                      {showDescription ? (
+                        <td className="min-w-64 max-w-sm px-3 py-2 text-xs text-zinc-600">
+                          {r.description || <span className="text-zinc-400">No description</span>}
+                        </td>
+                      ) : null}
                       <td className="whitespace-nowrap px-3 py-2 text-zinc-700">{r.supplier}</td>
                       <td className="px-3 py-2 text-xs text-zinc-600">
                         {r.categories.length > 0 ? (
@@ -387,13 +412,11 @@ export function MasterDataBrowser({
                       <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-zinc-600">
                         {mk === null ? "—" : `${Math.round(mk * 100)}%`}
                       </td>
-                      {showTiers
-                        ? discountTiers.map((t) => (
-                            <td key={t.name} className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-zinc-600">
-                              {r.rrp === null ? "—" : money(applyTierDiscount(r.rrp, t.discount_percent))}
-                            </td>
-                          ))
-                        : null}
+                      {visibleTiers.map((t) => (
+                        <td key={t.name} className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-zinc-600">
+                          {r.rrp === null ? "—" : money(applyTierDiscount(r.rrp, t.discount_percent))}
+                        </td>
+                      ))}
                       <td className="px-3 py-2">
                         <span
                           title={r.visibilityNote}

@@ -7,6 +7,8 @@ export type MasterRow = {
   slug: string;
   name: string;
   image: string | null;
+  /** The short description customers see under the product name. */
+  description: string;
   supplier: string;
   supplierSlug: string;
   /** Whether customers can see it, and if not why not. */
@@ -57,6 +59,7 @@ type ProductRow = {
   id: string;
   slug: string;
   name: string;
+  short_description: string | null;
   active: boolean;
   unit_price: number | string | null;
   min_order_qty: number;
@@ -79,7 +82,7 @@ export async function getMasterData(): Promise<MasterData> {
       supabase
         .from("products")
         .select(
-          "id, slug, name, active, unit_price, min_order_qty, example_image_urls, supplier_id, supplier_updated_at, specs:product_details->specifications",
+          "id, slug, name, short_description, active, unit_price, min_order_qty, example_image_urls, supplier_id, supplier_updated_at, specs:product_details->specifications",
         )
         .order("name", { ascending: true })
         .range(from, to) as unknown as PromiseLike<Result<ProductRow>>,
@@ -161,6 +164,7 @@ export async function getMasterData(): Promise<MasterData> {
     return {
       slug: p.slug,
       name: p.name,
+      description: p.short_description ?? "",
       image: images[0] ?? null,
       supplier: s?.name ?? "No supplier",
       supplierSlug: s?.slug ?? "none",
