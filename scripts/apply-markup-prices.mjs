@@ -16,6 +16,7 @@
 // Usage: node --env-file=.env.local scripts/apply-markup-prices.mjs [--markup=50] [--from-markup=60] [--dry-run]
 
 import { createClient } from "@supabase/supabase-js";
+import { cents, roundUp } from "./lib/trends-map.mjs";
 
 const DRY = process.argv.includes("--dry-run");
 const arg = (name, dflt) => (process.argv.find((a) => a.startsWith(`--${name}=`)) ?? `--${name}=${dflt}`).split("=")[1];
@@ -24,22 +25,6 @@ if (!Number.isFinite(markup) || markup < 0) throw new Error("Bad --markup");
 const fromArg = arg("from-markup", "");
 const fromMarkup = fromArg === "" ? null : Number(fromArg);
 if (fromMarkup !== null && !Number.isFinite(fromMarkup)) throw new Error("Bad --from-markup");
-
-const cents = (n) => Math.round(n * 100) / 100;
-
-// Up only, never down. Bands on the marked-up price (ex-GST):
-//   under $1        nearest $0.05          0.77  -> 0.80
-//   $1 to under $10 nearest $0.05          2.48  -> 2.50
-//   $10 to $100     next x.95              29.60 -> 29.95
-//   $100 to $1,000  next price ending 4.95 or 9.95   432.86 -> 434.95
-//   $1,000 and up   next whole price ending in 9     4456.58 -> 4459
-function roundUp(p) {
-  const x = cents(p);
-  if (x < 10) return cents(Math.ceil(x * 20 - 1e-9) / 20);
-  if (x < 100) return cents(Math.ceil(x - 0.95 - 1e-9) + 0.95);
-  if (x < 1000) return cents(Math.ceil((x + 0.05) / 5 - 1e-9) * 5 - 0.05);
-  return Math.ceil((x + 1) / 10 - 1e-9) * 10 - 1;
-}
 
 const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key } = process.env;
 if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local");

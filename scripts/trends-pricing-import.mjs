@@ -12,36 +12,9 @@
 
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
+import { mapPricing } from "./lib/trends-map.mjs";
 
 const DRY = process.argv.includes("--dry-run");
-
-const clean = (s) => String(s ?? "").replace(/\s+/g, " ").trim();
-
-function mapPricing(p) {
-  const pr = p.pricing?.[0];
-  if (!pr) return null;
-  return {
-    code: String(p.code),
-    name: p.name,
-    summary: {
-      price_type: clean(pr.type),
-      price_basis: clean(pr.primary_price_description),
-      orderable_below_moq: pr.less_than_moq === "Y",
-      pricing_comment: clean(pr.pricing_comment),
-      supplier_updated_at: p.last_updated ? new Date(p.last_updated.replace(" ", "T") + "Z").toISOString() : null,
-    },
-    breaks: (pr.prices ?? []).map((b) => ({ min_qty: b.quantity, unit_cost: b.price })),
-    extras: (pr.additional_costs ?? []).map((c) => ({
-      supplier_charge_id: c.id,
-      kind: c.type,
-      branding_option: clean(c.branding_option),
-      branding_area: clean(c.branding_area),
-      description: clean(c.description),
-      unit_cost: c.unit_price ?? 0,
-      setup_cost: c.setup_price ?? c.setup ?? 0,
-    })),
-  };
-}
 
 const raw = JSON.parse(await readFile(new URL("../trends-sample/products.json", import.meta.url)));
 const items = (Array.isArray(raw) ? raw : raw.products).map(mapPricing).filter(Boolean);
