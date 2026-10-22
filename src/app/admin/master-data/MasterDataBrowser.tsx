@@ -264,13 +264,9 @@ export function MasterDataBrowser({
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Filters for the chosen category, down the left */}
+        {state.cat ? (
         <aside className="w-full shrink-0 lg:w-64">
-          {!state.cat ? (
-            <p className="rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-sm text-zinc-500">
-              Pick a category above to get its own filters here: sub-categories, price bands and the supplier
-              specification fields that apply to that category.
-            </p>
-          ) : model.groups.length === 0 ? (
+          {model.groups.length === 0 ? (
             <p className="rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-sm text-zinc-500">
               {nameOf.get(state.cat)} has too few products to build filters from.
             </p>
@@ -315,6 +311,7 @@ export function MasterDataBrowser({
             </div>
           )}
         </aside>
+        ) : null}
 
         <div className="min-w-0 flex-1">
           {noCostTables ? (
