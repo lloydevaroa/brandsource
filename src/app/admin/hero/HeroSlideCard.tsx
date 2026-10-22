@@ -11,11 +11,23 @@ type Slide = {
   button_label: string | null;
   button_href: string | null;
   active: boolean;
+  show_on_home: boolean;
 };
 
 type Notice = { kind: "ok" | "error"; text: string } | null;
 
-export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boolean; last: boolean }) {
+export function HeroSlideCard({
+  slide,
+  first,
+  last,
+  canShowOnHome,
+}: {
+  slide: Slide;
+  first: boolean;
+  last: boolean;
+  /** Only category pages can feature a slide on the home page; the home page and sitewide default already show there. */
+  canShowOnHome: boolean;
+}) {
   const [saving, startSave] = useTransition();
   const [moving, startMove] = useTransition();
   const [deleting, startDelete] = useTransition();
@@ -103,11 +115,19 @@ export function HeroSlideCard({ slide, first, last }: { slide: Slide; first: boo
               className="w-full rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition hover:border-zinc-500 focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20"
             />
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <label className="flex items-center gap-2 text-sm text-zinc-700">
-              <input type="checkbox" name="active" defaultChecked={slide.active} />
-              Show on site
-            </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-2 text-sm text-zinc-700">
+                <input type="checkbox" name="active" defaultChecked={slide.active} />
+                Show on site
+              </label>
+              {canShowOnHome ? (
+                <label className="flex items-center gap-2 text-sm text-zinc-700">
+                  <input type="checkbox" name="show_on_home" defaultChecked={slide.show_on_home} />
+                  Also show on the home page
+                </label>
+              ) : null}
+            </div>
             <div className="flex items-center gap-3">
               {notice ? (
                 <span

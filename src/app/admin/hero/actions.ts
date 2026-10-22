@@ -72,6 +72,7 @@ export async function saveHeroSlide(formData: FormData): Promise<{ ok: boolean; 
       button_label: text("button_label"),
       button_href: href,
       active: formData.get("active") === "on",
+      show_on_home: formData.get("show_on_home") === "on",
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };

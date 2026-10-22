@@ -23,7 +23,7 @@ export default async function HeroAdminPage({
       .order("sort_order", { ascending: true }),
     supabase
       .from("hero_slides")
-      .select("id, page_key, image_url, headline, button_label, button_href, active")
+      .select("id, page_key, image_url, headline, button_label, button_href, active, show_on_home")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
   ]);
@@ -71,6 +71,8 @@ export default async function HeroAdminPage({
         <p className="mt-2 text-sm text-zinc-500">
           The big image at the top of the home page and each category page. Add more than one and
           they slide automatically. A page with none shows the sitewide default, and no hero if that is empty too.
+          On a category page, tick <strong>Also show on the home page</strong> to feature that image between the first and
+          second row of categories on the home page (on phones, after the first six categories).
         </p>
         <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
           <p className="font-medium text-zinc-900">Image size</p>
@@ -127,7 +129,13 @@ export default async function HeroAdminPage({
         <ul className="mt-6 space-y-4">
           {mine.length === 0 ? <li className="text-sm text-zinc-500">No images yet for this page.</li> : null}
           {mine.map((s, i) => (
-            <HeroSlideCard key={s.id} slide={s} first={i === 0} last={i === mine.length - 1} />
+            <HeroSlideCard
+              key={s.id}
+              slide={s}
+              first={i === 0}
+              last={i === mine.length - 1}
+              canShowOnHome={current.key !== "default" && current.key !== "home"}
+            />
           ))}
         </ul>
       </div>

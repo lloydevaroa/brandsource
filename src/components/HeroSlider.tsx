@@ -24,7 +24,8 @@ function Headline({ text }: { text: string }) {
   );
 }
 
-export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
+/** `inline` drops the page-width wrapper, for a band that sits inside a layout that already has one. */
+export function HeroSlider({ slides, inline = false }: { slides: HeroSlide[]; inline?: boolean }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef<number | null>(null);
@@ -48,7 +49,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   if (count === 0) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[90rem]">
+    <div className={inline ? "w-full" : "mx-auto w-full max-w-[90rem]"}>
       <section
         aria-roledescription="carousel"
         aria-label="Featured"

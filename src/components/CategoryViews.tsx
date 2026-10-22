@@ -23,9 +23,9 @@ export function Breadcrumb({ trail }: { trail: { label: string; href?: string }[
 }
 
 /** A subcategory tile. Empty categories are filtered out upstream in getCategories. */
-export function CategoryTile({ category }: { category: Category }) {
+export function CategoryTile({ category, className }: { category: Category; className?: string }) {
   return (
-    <li>
+    <li className={className}>
       <Link href={`/category/${category.slug}`} className="group block">
         <div
           className={`relative aspect-square overflow-hidden rounded-lg border border-zinc-200 ${
