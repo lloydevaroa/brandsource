@@ -65,14 +65,25 @@ export async function saveHeroSlide(formData: FormData): Promise<{ ok: boolean; 
   if (href && !/^(\/|https?:\/\/)/.test(href)) {
     return { ok: false, error: "Button link must start with / or https://" };
   }
-  const { error } = await createServiceSupabase()
+  const supabase = createServiceSupabase();
+  const showOnHome = formData.get("show_on_home") === "on";
+  // Only one slide is featured on the home page: ticking this one replaces whichever was ticked before.
+  if (showOnHome) {
+    const { error: clearError } = await supabase
+      .from("hero_slides")
+      .update({ show_on_home: false })
+      .eq("show_on_home", true)
+      .neq("id", id);
+    if (clearError) return { ok: false, error: clearError.message };
+  }
+  const { error } = await supabase
     .from("hero_slides")
     .update({
       headline: text("headline"),
       button_label: text("button_label"),
       button_href: href,
       active: formData.get("active") === "on",
-      show_on_home: formData.get("show_on_home") === "on",
+      show_on_home: showOnHome,
     })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };

@@ -123,8 +123,14 @@ export function HeroSlideCard({
               </label>
               {canShowOnHome ? (
                 <label className="flex items-center gap-2 text-sm text-zinc-700">
-                  <input type="checkbox" name="show_on_home" defaultChecked={slide.show_on_home} />
-                  Also show on the home page
+                  {/* key: the box is uncontrolled, so remount it when another slide's save clears this one */}
+                  <input
+                    key={String(slide.show_on_home)}
+                    type="checkbox"
+                    name="show_on_home"
+                    defaultChecked={slide.show_on_home}
+                  />
+                  Also show on the home page <span className="text-zinc-500">(one image only: ticking this replaces the current one)</span>
                 </label>
               ) : null}
             </div>

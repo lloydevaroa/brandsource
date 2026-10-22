@@ -72,7 +72,8 @@ export default async function HeroAdminPage({
           The big image at the top of the home page and each category page. Add more than one and
           they slide automatically. A page with none shows the sitewide default, and no hero if that is empty too.
           On a category page, tick <strong>Also show on the home page</strong> to feature that image between the first and
-          second row of categories on the home page (on phones, after the first six categories).
+          second row of categories on the home page (on phones, after the first six categories). Only one image can be
+          featured at a time, so ticking another replaces it.
         </p>
         <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
           <p className="font-medium text-zinc-900">Image size</p>

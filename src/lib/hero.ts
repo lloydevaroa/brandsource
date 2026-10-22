@@ -25,7 +25,7 @@ async function fetchSlides(pageKey: string): Promise<HeroSlide[]> {
 }
 
 /**
- * Category hero slides ticked "Also show on the home page", in the order staff set. They sit between the first and
+ * The category hero slide ticked "Also show on the home page" (only one can be), shown between the first and
  * second row of category tiles. Never throws: if the column isn't there yet, or the database is slow, there are none.
  */
 export const getHomeFeaturedSlides = cache(async (): Promise<HeroSlide[]> => {
@@ -35,8 +35,8 @@ export const getHomeFeaturedSlides = cache(async (): Promise<HeroSlide[]> => {
       .select("id, image_url, headline, button_label, button_href")
       .eq("show_on_home", true)
       .eq("active", true)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(1);
     return error ? [] : (data as HeroSlide[]);
   } catch {
     return [];
