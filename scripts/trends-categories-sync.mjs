@@ -50,7 +50,12 @@ const parents = new Map();
 for (const r of parseCsv(await readFile(CSV, "utf8"))) {
   if (!r.subcategory_number || !r.subcategory) continue; // e.g. "Indent" has no named subcategory
   if (!parents.has(r.category_number)) parents.set(r.category_number, { num: r.category_number, name: r.category, children: [] });
-  parents.get(r.category_number).children.push({ num: r.subcategory_number, name: r.subcategory });
+  // Trends gives two brands one number (103-36: Kadi, Bodum), and products carry only the number,
+  // so they share one category named after both.
+  const kids = parents.get(r.category_number).children;
+  const same = kids.find((c) => c.num === r.subcategory_number);
+  if (same) same.name += ` & ${r.subcategory}`;
+  else kids.push({ num: r.subcategory_number, name: r.subcategory });
 }
 
 const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key } = process.env;
