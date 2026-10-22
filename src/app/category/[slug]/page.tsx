@@ -6,12 +6,13 @@ import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { HeroSlider } from "@/components/HeroSlider";
 import { getHeroSlides } from "@/lib/hero";
 import { getCategories, getChildren, getProductSpecs, type CategoryProduct } from "@/lib/categories";
+import { staticParamsOrNone } from "@/lib/static-params";
 import { buildFilterModel } from "@/lib/category-filters";
 
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  return (await getCategories()).map((c) => ({ slug: c.slug }));
+  return staticParamsOrNone(async () => (await getCategories()).map((c) => ({ slug: c.slug })));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {

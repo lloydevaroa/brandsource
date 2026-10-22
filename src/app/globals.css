@@ -8,6 +8,7 @@
 @theme inline {
   /* Brand tokens from Joe's logo pack (brand-assets/README.txt): proposed working colours, not yet confirmed as official. */
   --color-brand-charcoal: #1b2024;
+  --color-brand-charcoal-soft: #272d32; /* nav bar under the header, a step lighter than charcoal */
   --color-brand-orange: #ff4b00;
   --color-brand-grey: #f5f5f5;
   --color-brand-peach: #fff1ea; /* soft peach: occasional highlight bands only; pages are white */

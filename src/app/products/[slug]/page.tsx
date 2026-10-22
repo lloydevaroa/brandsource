@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog } from "@/lib/catalog";
 import { categoryForProduct, getCategories } from "@/lib/categories";
+import { staticParamsOrNone } from "@/lib/static-params";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
@@ -11,7 +12,9 @@ import { SampleBadge } from "@/components/SampleBadge";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  return (await getCatalog()).filter((p) => p.example_image_urls.length > 0).map((p) => ({ slug: p.slug }));
+  return staticParamsOrNone(async () =>
+    (await getCatalog()).filter((p) => p.example_image_urls.length > 0).map((p) => ({ slug: p.slug })),
+  );
 }
 
 export default async function ProductPage({

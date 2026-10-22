@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Chevron } from "@/components/Chevron";
 import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
 
 /**
@@ -10,7 +11,7 @@ import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
  * outside click, or picking a product. The bar (`nav`) must be `relative`, as
  * the panel is positioned against it, not against this item.
  */
-export function AllProductsMenu() {
+export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string }) {
   const categories = useMenuCategories();
   const groups = useMemo(() => groupProductsAz(categories), [categories]);
   const panelId = useId();
@@ -59,32 +60,17 @@ export function AllProductsMenu() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={openPanel}
-        className={`flex items-center gap-1.5 px-2 py-2 hover:text-zinc-900 ${
-          open ? "text-zinc-900" : ""
-        }`}
+        className={`${itemClassName} ${open ? "text-brand-orange" : ""}`}
       >
         All products
-        <svg
-          aria-hidden
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          <path d="M2 3.5l3 3 3-3" />
-        </svg>
+        <Chevron open={open} />
       </button>
 
       {open ? (
         <div
           id={panelId}
           style={{ top }}
-          className="absolute inset-x-0 z-30 border-t border-zinc-200 bg-white shadow-lg"
+          className="absolute inset-x-0 z-30 border-t-2 border-brand-orange bg-white text-brand-charcoal shadow-lg"
         >
           <div className="mx-auto max-h-[70vh] max-w-[90rem] overflow-y-auto px-6 py-6">
             <div className="columns-2 gap-x-10 lg:columns-4">
