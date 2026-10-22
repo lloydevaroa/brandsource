@@ -48,11 +48,11 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   if (count === 0) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[90rem] sm:px-6 sm:pt-6">
+    <div className="w-full">
       <section
         aria-roledescription="carousel"
         aria-label="Featured"
-        className="relative w-full overflow-hidden bg-zinc-200 sm:rounded-lg"
+        className="relative w-full overflow-hidden bg-zinc-200"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
@@ -85,7 +85,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 alt={s.headline ?? ""}
                 fill
                 priority={i === 0}
-                sizes="(min-width: 1536px) 1392px, 100vw"
+                sizes="100vw"
                 className="object-cover"
               />
               {s.headline || s.button_label ? (
