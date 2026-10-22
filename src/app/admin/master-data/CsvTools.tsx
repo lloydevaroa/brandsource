@@ -17,8 +17,8 @@ const HEADERS = [
   "categories",
   "supplier_rrp",
   "rrp",
-  "notes",
 ];
+// Only the example file carries a notes column, with the rules written out beside real rows.
 const EDITABLE = ["description", "categories", "rrp"] as const;
 const MAX_APPLY = 300;
 const MAX_SHOWN = 100;
@@ -67,7 +67,7 @@ export function CsvTools({
     return name && nameCount.get(name.toLowerCase()) === 1 ? name : slug;
   };
 
-  const sheetRow = (r: MasterRow, notes = ""): string[] => {
+  const sheetRow = (r: MasterRow, notes?: string): string[] => {
     const supDesc = r.overrides.description ? ((r.overrides.description.supplierValue as string | null) ?? "") : r.isTrends ? r.description : "";
     const supCats = r.overrides.categories ? ((r.overrides.categories.supplierValue as string[] | null) ?? []) : r.isTrends ? r.categories : [];
     const supRrp = r.overrides.rrp ? (r.overrides.rrp.supplierValue as number | null) : r.isTrends ? r.rrp : null;
@@ -82,7 +82,7 @@ export function CsvTools({
       r.categories.map(catToken).join(" | "),
       supRrp === null ? "" : supRrp.toFixed(2),
       r.rrp === null ? "" : r.rrp.toFixed(2),
-      notes,
+      ...(notes === undefined ? [] : [notes]),
     ];
   };
 
@@ -98,7 +98,7 @@ export function CsvTools({
       "rrp is the price ex GST, e.g. 12.95.",
       "Keep the slug exactly as it is: it is how a row finds its product.",
     ];
-    download("master-data-example-format.csv", [HEADERS, ...picks.map((r, i) => sheetRow(r, notes[i] ?? ""))]);
+    download("master-data-example-format.csv", [[...HEADERS, "notes"], ...picks.map((r, i) => sheetRow(r, notes[i] ?? ""))]);
   }
 
   const exportView = () =>
