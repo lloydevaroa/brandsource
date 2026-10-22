@@ -51,7 +51,7 @@ export function HeroUploader({ pageKey }: { pageKey: string }) {
         className="block text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white file:transition hover:file:bg-zinc-600 hover:file:shadow-md active:file:scale-95 disabled:opacity-60"
       />
       <p className="mt-2 text-xs text-zinc-500">
-        {busy ? "Uploading…" : "JPG, PNG or WEBP, up to 10MB each. Wide images (about 2400 × 1000) work best."}
+        {busy ? "Uploading…" : "JPG, PNG or WEBP, up to 10MB each. Best size: 2800 pixels wide by 1200 pixels high."}
       </p>
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>

@@ -61,6 +61,28 @@ export default async function HeroAdminPage({
           The big image at the top of the home page and each category page. Add more than one and
           they slide automatically. A page with none shows the sitewide default, and no hero if that is empty too.
         </p>
+        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+          <p className="font-medium text-zinc-900">Image size</p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-5">
+            <li>
+              <strong>Make the image 2800 pixels wide by 1200 pixels high.</strong> That is the right shape for the space on
+              the site and stays sharp on high resolution screens. The smallest we suggest is 1400 wide by 600 high.
+            </li>
+            <li>
+              <strong>On phones the sides are trimmed.</strong> Only the middle 75% of the width shows (the middle 2100
+              pixels of a 2800 pixel image). Keep the product and any words inside that middle part, with about 12% clear
+              at the left edge and 12% at the right edge.
+            </li>
+            <li>
+              If you add a headline and button, they sit on the left under a dark fade. Keep the left 35% of the image
+              (about 1000 pixels) calm, with nothing important in it.
+            </li>
+            <li>
+              The image is never stretched. If it is a different size it is trimmed to fit. Keep the file under 1 MB if you
+              can (JPG or WEBP), because every image counts towards storage.
+            </li>
+          </ul>
+        </div>
 
         <ul className="mt-6 flex flex-wrap gap-2">
           {pages.map((p) => (
