@@ -3,6 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "../staff-guard";
 import { HeroUploader } from "./HeroUploader";
 import { HeroSlideCard } from "./HeroSlideCard";
+import { PagePicker } from "./PagePicker";
 
 export default async function HeroAdminPage({
   searchParams,
@@ -17,7 +18,7 @@ export default async function HeroAdminPage({
   const [cats, slides] = await Promise.all([
     supabase
       .from("categories")
-      .select("slug, name, parent_id")
+      .select("id, slug, name, parent_id")
       .eq("active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -40,14 +41,24 @@ export default async function HeroAdminPage({
     );
   }
 
-  const pages = [
+  const catById = new Map((cats.data ?? []).map((c) => [c.id, c]));
+  const fixed = [
     { key: "default", label: "Sitewide default" },
     { key: "home", label: "Home page" },
-    ...(cats.data ?? []).filter((c) => c.parent_id !== null).map((c) => ({ key: c.slug, label: c.name })),
   ];
+  const categoryPages = (cats.data ?? [])
+    .filter((c) => c.parent_id !== null)
+    .map((c) => ({ key: c.slug, label: c.name, group: catById.get(c.parent_id)?.name ?? null }));
+  const pages = [...fixed, ...categoryPages];
   const current = pages.find((p) => p.key === page) ?? pages[0];
   const counts = new Map<string, number>();
   for (const s of slides.data ?? []) counts.set(s.page_key, (counts.get(s.page_key) ?? 0) + 1);
+  // Pills: the two fixed pages, any category that already has images, and the one being edited.
+  const pills = [
+    ...fixed,
+    ...categoryPages.filter((p) => counts.get(p.key) || p.key === current.key),
+  ];
+  const options = categoryPages.map((p) => ({ ...p, count: counts.get(p.key) ?? 0 }));
   const mine = (slides.data ?? []).filter((s) => s.page_key === current.key);
 
   return (
@@ -85,7 +96,7 @@ export default async function HeroAdminPage({
         </div>
 
         <ul className="mt-6 flex flex-wrap gap-2">
-          {pages.map((p) => (
+          {pills.map((p) => (
             <li key={p.key}>
               <Link
                 href={`/admin/hero?page=${p.key}`}
@@ -101,6 +112,10 @@ export default async function HeroAdminPage({
             </li>
           ))}
         </ul>
+
+        <div className="mt-4">
+          <PagePicker options={options} />
+        </div>
 
         <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
           <h2 className="font-medium">Add images to: {current.label}</h2>
