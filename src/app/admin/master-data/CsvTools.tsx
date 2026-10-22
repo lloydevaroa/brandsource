@@ -6,20 +6,28 @@ import type { MasterCategory, MasterRow, OverrideField } from "@/lib/master-data
 import type { CsvRow, PlanItem } from "@/lib/product-csv";
 import { applyCsvEdits, previewCsvEdits, type SaveResult } from "./actions";
 
+const EDITABLE = ["description", "categories", "rrp"] as const;
 const HEADERS = [
   "slug",
   "name",
   "supplier",
-  "cost",
-  "supplier_description",
-  "description",
-  "supplier_categories",
-  "categories",
-  "supplier_rrp",
+  "cost (read only)",
+  "supplier_description (read only)",
+  "website_description",
+  "supplier_categories (read only)",
+  "Categories (separated by | )",
+  "supplier_rrp (read only)",
   "rrp",
 ];
+// Headers are matched on their name alone: capitals and anything in brackets are ignored, and the
+// old "description" name still works for files saved before the rename.
+const HEADER_ALIASES: Record<(typeof EDITABLE)[number] | "slug", string[]> = {
+  slug: ["slug"],
+  description: ["website_description", "description"],
+  categories: ["categories"],
+  rrp: ["rrp"],
+};
 // Only the example file carries a notes column, with the rules written out beside real rows.
-const EDITABLE = ["description", "categories", "rrp"] as const;
 const MAX_APPLY = 300;
 const MAX_SHOWN = 100;
 
@@ -91,7 +99,7 @@ export function CsvTools({
     const step = Math.max(1, Math.floor(rows.length / 8));
     const picks = Array.from({ length: Math.min(8, rows.length) }, (_, i) => rows[i * step]);
     const notes = [
-      "Only the description, categories and rrp columns are read. The other columns are there for reference and are ignored.",
+      "Only website_description, Categories and rrp are read. Columns marked (read only) are for reference: the supplier's own data is never changed by an upload.",
       "Change a cell to change that product. Leave it as it is, or empty, for no change.",
       "Separate categories with | and use the category name, e.g. Bags | Tote Bags.",
       "Type [supplier] in a cell to put the supplier's value back (Trends products).",
@@ -118,10 +126,13 @@ export function CsvTools({
     setFileName(file.name);
     const table = parseCsv(await file.text()).filter((r) => r.some((c) => c.trim() !== ""));
     if (table.length < 2) return setProblem("That file has no product rows. Start from the example format.");
-    const head = table[0].map((h) => h.trim().toLowerCase());
-    const col = (name: string) => head.indexOf(name);
+    const head = table[0].map((h) => h.trim().toLowerCase().replace(/\s*\(.*\)\s*$/, ""));
+    const col = (name: keyof typeof HEADER_ALIASES) => {
+      const i = HEADER_ALIASES[name].map((a) => head.indexOf(a)).find((x) => x !== -1);
+      return i ?? -1;
+    };
     if (col("slug") === -1) return setProblem('There is no "slug" column. Start from the example format or an export.');
-    if (!EDITABLE.some((c) => col(c) !== -1)) return setProblem("There is no description, categories or rrp column to read.");
+    if (!EDITABLE.some((c) => col(c) !== -1)) return setProblem("There is no website_description, Categories or rrp column to read.");
 
     const out: CsvRow[] = table.slice(1).map((cells, i) => {
       const get = (name: (typeof EDITABLE)[number]) => {
@@ -202,7 +213,7 @@ export function CsvTools({
               <li>
                 <p className="font-semibold text-zinc-900">2. Edit it in Excel or Google Sheets</p>
                 <ul className="mt-1 list-disc space-y-0.5 pl-5 text-zinc-600">
-                  <li>Only <strong>description</strong>, <strong>categories</strong> and <strong>rrp</strong> are read. Keep the <strong>slug</strong> as it is.</li>
+                  <li>Only <strong>website_description</strong>, <strong>Categories</strong> and <strong>rrp</strong> are read. Columns marked (read only) are the supplier&apos;s own data and are never changed. Keep the <strong>slug</strong> as it is.</li>
                   <li>Empty or unchanged cell: no change. Separate categories with <code>|</code>.</li>
                   <li>Type <code>[supplier]</code> in a cell to go back to the supplier&apos;s value.</li>
                 </ul>
