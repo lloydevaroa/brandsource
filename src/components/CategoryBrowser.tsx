@@ -71,17 +71,28 @@ export function CategoryBrowser({
 
   const showProducts = filtering || tiles.length === 0;
 
+  const hasFilters = groups.length > 0;
+  const gridCols = hasFilters
+    ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    : "sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+
   return (
-    <>
-      {groups.length > 0 ? (
-        <div className="mt-6 border-y border-zinc-200 py-3">
+    <div
+      className={
+        hasFilters
+          ? "lg:mt-6 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-10"
+          : ""
+      }
+    >
+      {hasFilters ? (
+        <div className="mt-6 border-y border-zinc-200 py-3 lg:col-start-2 lg:row-start-1 lg:mt-0">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               aria-expanded={open}
               aria-controls={panelId}
               onClick={() => setOpen((o) => !o)}
-              className={`inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-bold uppercase tracking-wide ${
+              className={`inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-bold uppercase tracking-wide lg:hidden ${
                 open || filtering
                   ? "border-brand-charcoal bg-brand-charcoal text-white"
                   : "border-zinc-300 text-brand-charcoal hover:border-brand-charcoal"
@@ -121,16 +132,22 @@ export function CategoryBrowser({
             </p>
           </div>
 
-          {open ? (
-            <div id={panelId} className="mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+        </div>
+      ) : null}
+
+          {hasFilters ? (
+        <div
+          id={panelId}
+          className={`mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:content-start lg:grid-cols-1 lg:border-t lg:border-zinc-200 lg:pt-3 ${open ? "" : "hidden lg:grid"}`}
+        >
               {groups.map((g) => {
                 const long = g.options.length > 8; // a long list gets two columns instead of a tall panel
                 return (
-                <fieldset key={g.id} className={`min-w-0 ${long ? "sm:col-span-2" : ""}`}>
+                <fieldset key={g.id} className={`min-w-0 ${long ? "sm:col-span-2 lg:col-span-1" : ""}`}>
                   <legend className="w-full border-b border-zinc-200 pb-1 text-xs font-bold uppercase tracking-wide text-zinc-500">
                     {g.label}
                   </legend>
-                  <ul className={`mt-2 ${long ? "sm:columns-2 sm:gap-x-8" : ""}`}>
+                  <ul className={`mt-2 ${long ? "sm:columns-2 sm:gap-x-8 lg:columns-1" : ""}`}>
                     {g.options.map((o) => {
                       const key = factKey(g.id, o.id);
                       const checked = selected.includes(key);
@@ -163,12 +180,10 @@ export function CategoryBrowser({
               })}
             </div>
           ) : null}
-        </div>
-      ) : null}
-
+      <div className="lg:col-start-2 lg:row-start-2">
       {showProducts ? (
         matches.length > 0 ? (
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          <ul className={`mt-8 grid gap-4 ${gridCols}`}>
             {matches.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}
@@ -182,12 +197,13 @@ export function CategoryBrowser({
           </div>
         )
       ) : (
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+        <ul className={`mt-8 grid gap-4 ${gridCols}`}>
           {tiles.map((c) => (
             <CategoryTile key={c.slug} category={c} />
           ))}
         </ul>
       )}
-    </>
+      </div>
+    </div>
   );
 }
