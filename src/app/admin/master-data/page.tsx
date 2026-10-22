@@ -4,6 +4,8 @@ import { requireStaffProfile } from "../staff-guard";
 import { MasterDataBrowser, type MasterState } from "./MasterDataBrowser";
 
 export const dynamic = "force-dynamic";
+// A CSV upload can touch a few hundred products in one go.
+export const maxDuration = 60;
 
 const SORTS = ["name", "supplier", "availability", "moq", "cost", "rrp", "markup", "visibility"] as const;
 

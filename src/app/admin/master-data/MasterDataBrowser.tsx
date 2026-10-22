@@ -10,6 +10,7 @@ import {
 import { applyTierDiscount } from "@/lib/pricing";
 import type { MasterCategory, MasterRow, OverrideField } from "@/lib/master-data";
 import type { SaveResult } from "./actions";
+import { CsvTools } from "./CsvTools";
 import { ProductDrawer } from "./ProductDrawer";
 
 type Tier = { name: string; discount_percent: number };
@@ -290,9 +291,18 @@ export function MasterDataBrowser({
               Clear all
             </button>
           ) : null}
-          <p aria-live="polite" className="ml-auto text-sm text-zinc-500">
+          <div className="ml-auto flex items-center gap-4">
+          <CsvTools
+            rows={rows}
+            shown={shown}
+            categories={categories}
+            canEdit={!noEditTables}
+            onResult={(r) => setToast({ ...r, id: Date.now() })}
+          />
+          <p aria-live="polite" className="text-sm text-zinc-500">
             {filtering ? `${shown.length} of ${rows.length} products` : `${rows.length} products`}
           </p>
+          </div>
         </div>
 
         <ul className="mt-4 flex flex-wrap gap-2">
