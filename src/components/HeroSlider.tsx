@@ -48,7 +48,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   if (count === 0) return null;
 
   return (
-    <div className="w-full">
+    <div className="mx-auto w-full max-w-[90rem]">
       <section
         aria-roledescription="carousel"
         aria-label="Featured"
@@ -85,7 +85,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 alt={s.headline ?? ""}
                 fill
                 priority={i === 0}
-                sizes="100vw"
+                sizes="(min-width: 1440px) 1440px, 100vw"
                 className="object-cover"
               />
               {s.headline || s.button_label ? (
