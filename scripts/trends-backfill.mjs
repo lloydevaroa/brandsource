@@ -20,9 +20,15 @@
 //
 // Usage: node --env-file=.env.local scripts/trends-backfill.mjs [--limit 225] [--dry-run] [--codes 100109,100110]
 // Needs TRENDS_API_TOKEN (or username and password) and the Supabase keys in .env.local.
-// Trends Data is confidential: nothing here writes it to disk.
+// Trends Data is confidential: nothing here writes it to disk, apart from the skipped list below
+// (code, name and the unrecognised charge types only, in the gitignored trends-sample/ folder).
+//
+// Products with an extra-charge type our product_extra_costs table doesn't allow (only DO, DS
+// and OE exist) are set aside, not imported, and recorded in trends-sample/skipped-extra-costs.json
+// so later runs leave them alone. They are a decision for Joe and the team (see the build brief).
 
 import { createClient } from "@supabase/supabase-js";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { NEW_CATEGORIES, SELL_MARKUP_PCT, cents, mapPricing, mapProduct, roundUp } from "./lib/trends-map.mjs";
 
@@ -37,6 +43,8 @@ const BUCKET = "product-images";
 const API_GAP_MS = 1500;
 const IMAGE_GAP_MS = 600;
 const MAX_IN_A_ROW = 3;
+const KNOWN_EXTRA_KINDS = new Set(["DO", "DS", "OE"]); // supabase/supplier-pricing.sql check constraint
+const SKIPPED_FILE = new URL("../trends-sample/skipped-extra-costs.json", import.meta.url);
 
 const { TRENDS_API_TOKEN: token, TRENDS_API_USERNAME: user, TRENDS_API_PASSWORD: pass } = process.env;
 const auth = token ? `Bearer ${token}` : `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
@@ -74,6 +82,8 @@ async function all(table, cols, filter = (q) => q) {
 
 const sellable = (p) => p.active === "Active" && ["Normal", "New"].includes(p.status);
 
+const skipped = await readFile(SKIPPED_FILE, "utf8").then(JSON.parse, () => ({}));
+
 // What we already hold, so the run only takes products we have never imported.
 const products = await all("products", "id, slug, supplier_code, supplier", (q) => q);
 const have = new Set(products.filter((p) => p.supplier === "trends").map((p) => p.supplier_code));
@@ -96,7 +106,7 @@ for (let page = 1, pages = 1; page <= pages && picked.length < LIMIT; page++) {
   total = j.total_items;
   pagesRead++;
   for (const p of j.data) {
-    if (have.has(String(p.code)) || (ONLY && !ONLY.has(String(p.code)))) continue;
+    if (have.has(String(p.code)) || String(p.code) in skipped || (ONLY && !ONLY.has(String(p.code)))) continue;
     if (!sellable(p)) { notSellable++; continue; }
     if (picked.length < LIMIT) picked.push(p);
   }
@@ -112,7 +122,7 @@ for (const { code } of picked) {
   detailed.push(Array.isArray(one) ? one[0] : one);
 }
 
-const items = detailed.map((p) => {
+const mapped = detailed.map((p) => {
   const m = mapProduct(p);
   let slug = m.row.slug;
   if (usedSlugs.has(slug)) slug = `${slug}-${m.row.supplier_code}`;
@@ -125,6 +135,16 @@ const items = detailed.map((p) => {
   const price = lowest ? roundUp(cents(Number(lowest.unit_cost) * (1 + SELL_MARKUP_PCT / 100))) : null;
   return { ...m, row: { ...m.row, slug }, categoryIds: [...new Set([...mirrored, ...legacy])], unmapped, pricing, price };
 });
+
+// Set aside products with a charge type we have no place for, rather than fail on them.
+const unknownKinds = (i) => [...new Set((i.pricing?.extras ?? []).map((e) => e.kind).filter((k) => !KNOWN_EXTRA_KINDS.has(k)))];
+const items = mapped.filter((i) => !unknownKinds(i).length);
+const setAside = mapped.filter((i) => unknownKinds(i).length);
+for (const i of setAside) skipped[i.row.supplier_code] = { name: i.row.name, kinds: unknownKinds(i), found: new Date().toISOString().slice(0, 10) };
+if (setAside.length) {
+  console.log(`Set aside ${setAside.length} with an extra-charge type we don't store: ${setAside.map((i) => `${i.row.supplier_code} ${i.row.name} (${unknownKinds(i).join("/")})`).join("; ")}`);
+  if (!DRY) { await mkdir(new URL("../trends-sample/", import.meta.url), { recursive: true }); await writeFile(SKIPPED_FILE, JSON.stringify(skipped, null, 2)); }
+}
 
 if (DRY) {
   const unmapped = new Map();
@@ -218,5 +238,5 @@ for (const i of items) {
   }
 }
 const mins = Math.round((Date.now() - started) / 60000);
-console.log(`\n${stopped ? `STOPPED EARLY: ${stopped}. Run it again later; it picks up where it left off.\n` : ""}Done: ${done} imported (all hidden), ${failed} failed, ${mins} min. About ${Math.max(0, total - have.size - done)} products left in Trends not yet held here.`);
+console.log(`\n${stopped ? `STOPPED EARLY: ${stopped}. Run it again later; it picks up where it left off.\n` : ""}Done: ${done} imported (all hidden), ${failed} failed, ${mins} min. About ${Math.max(0, total - have.size - done - Object.keys(skipped).length)} products left in Trends not yet held here, plus ${Object.keys(skipped).length} set aside (extra-charge type to decide on).`);
 if (stopped) process.exit(2);
