@@ -8,6 +8,7 @@ import { ProductDetailsSections } from "@/components/ProductDetailsSections";
 import { ProductConfigurator } from "@/components/ProductConfigurator";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SampleBadge } from "@/components/SampleBadge";
+import { SimilarProducts, similarProducts } from "@/components/SimilarProducts";
 
 export const revalidate = 60;
 
@@ -46,6 +47,14 @@ export default async function ProductPage({
             <h1 className={`${product.sample_label ? "mt-2" : "mt-6"} text-3xl font-semibold tracking-tight`}>
               {product.name}
             </h1>
+            {category ? (
+              <p className="mt-2 text-sm text-zinc-500">
+                Category:{" "}
+                <Link href={`/category/${category.slug}`} className="font-bold text-brand-charcoal hover:underline">
+                  {category.name}
+                </Link>
+              </p>
+            ) : null}
             <p className="mt-2 text-zinc-600">{product.short_description}</p>
             <p className="mt-2 text-sm text-zinc-500">
               {product.unit_price == null ? "Get a quote" : `Flat pricing · $${product.unit_price.toFixed(2)} NZD`}
@@ -57,6 +66,7 @@ export default async function ProductPage({
             {product.product_details ? <ProductDetailsSections d={product.product_details} /> : null}
           </div>
         </div>
+        {category ? <SimilarProducts category={category} products={similarProducts(category, product)} /> : null}
       </div>
     </div>
   );
