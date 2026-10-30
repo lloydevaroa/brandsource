@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
-import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
+import { useMenuCategories } from "@/lib/menu-categories";
 
 /**
- * "All products" item for the desktop category bar: opens a full-width A to Z
- * panel of every product. Opens on hover or click; closes on Escape, an
+ * "All products" item for the desktop category bar: opens a full-width panel
+ * of every product, grouped by category (in the bar's order). Opens on hover or click; closes on Escape, an
  * outside click, or picking a product. The bar (`nav`) must be `relative`, as
  * the panel is positioned against it, not against this item.
  */
 export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string }) {
   const categories = useMenuCategories();
-  const groups = useMemo(() => groupProductsAz(categories), [categories]);
   const panelId = useId();
   const itemRef = useRef<HTMLLIElement>(null);
   const [open, setOpen] = useState(false);
@@ -46,7 +45,7 @@ export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string
     };
   }, [open]);
 
-  if (groups.length === 0) return null;
+  if (categories.length === 0) return null;
 
   return (
     <li
@@ -74,13 +73,19 @@ export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string
         >
           <div className="mx-auto max-h-[70vh] max-w-[90rem] overflow-y-auto px-6 py-6">
             <div className="columns-2 gap-x-10 lg:columns-4">
-              {groups.map((g) => (
-                <section key={g.letter} className="mb-6 break-inside-avoid">
-                  <h3 className="border-b border-zinc-200 pb-1 text-xs font-bold uppercase tracking-wide text-brand-orange">
-                    {g.letter}
+              {categories.map((c) => (
+                <section key={c.slug} className="mb-6">
+                  <h3 className="break-after-avoid border-b border-zinc-200 pb-1 text-xs font-bold uppercase tracking-wide text-brand-orange">
+                    <Link
+                      href={`/category/${c.slug}`}
+                      onClick={() => setOpen(false)}
+                      className="hover:underline"
+                    >
+                      {c.name}
+                    </Link>
                   </h3>
                   <ul className="mt-2">
-                    {g.products.map((p) => (
+                    {c.products.map((p) => (
                       <li key={p.slug}>
                         <Link
                           href={`/products/${p.slug}`}
