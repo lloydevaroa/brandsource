@@ -67,9 +67,9 @@ export function CategoryBrowser({
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
   }
 
-  /** Picking the active direction again goes back to the default order. */
-  function chooseSort(next: Sort) {
-    const value = sort === next ? null : next;
+  /** One button cycles default order, low to high, high to low, then back to default. */
+  function cycleSort() {
+    const value: Sort = sort === null ? "asc" : sort === "asc" ? "desc" : null;
     setSort(value);
     const params = new URLSearchParams(window.location.search);
     if (value) params.set("sort", value);
@@ -162,24 +162,20 @@ export function CategoryBrowser({
               </button>
             ) : null}
 
-            <div role="group" aria-label="Sort by price" className="ml-auto inline-flex items-center gap-2 text-sm">
-              <span className="text-zinc-500">Price</span>
-              <div className="inline-flex overflow-hidden rounded border border-zinc-300">
-                {([["asc", "Low to high"], ["desc", "High to low"]] as const).map(([dir, label]) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    aria-pressed={sort === dir}
-                    onClick={() => chooseSort(dir)}
-                    className={`px-3 py-1.5 font-medium ${
-                      sort === dir ? "bg-brand-charcoal text-white" : "text-zinc-700 hover:bg-zinc-100"
-                    } ${dir === "desc" ? "border-l border-zinc-300" : ""}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={cycleSort}
+              aria-label={`Sort by price: ${sort === "asc" ? "low to high" : sort === "desc" ? "high to low" : "off"}. Click to change.`}
+              className={`ml-auto inline-flex items-center gap-2 rounded border px-3 py-1.5 text-sm font-medium ${
+                sort ? "border-brand-charcoal bg-brand-charcoal text-white" : "border-zinc-300 text-zinc-700 hover:border-brand-charcoal"
+              }`}
+            >
+              {sort === "asc" ? "Price: Low to high" : sort === "desc" ? "Price: High to low" : "Sort by price"}
+              <svg aria-hidden width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 12V2M3 5l3-3 3 3" opacity={sort === "desc" ? 0.35 : 1} />
+                <path d="M3 9l3 3 3-3" opacity={sort === "asc" ? 0.35 : 1} />
+              </svg>
+            </button>
 
             <p aria-live="polite" className="text-sm text-zinc-500">
               {filtering
