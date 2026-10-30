@@ -10,7 +10,10 @@ import { CategoryTile, ProductCard } from "@/components/CategoryViews";
  * sub-category tiles (nothing filtered, category has children) or the product
  * grid. Choosing a filter switches to the matching products. Selections live
  * in the URL (`?f=group~option`, repeated) so a filtered view can be shared.
+ * A price sort (`?sort=asc|desc`) sits beside the filters and also lists products.
  */
+type Sort = "asc" | "desc" | null;
+
 export function CategoryBrowser({
   tiles,
   products,
@@ -38,6 +41,7 @@ export function CategoryBrowser({
   const open = isDesktop ? openDesktop : openMobile;
   const toggleOpen = () => (isDesktop ? setOpenDesktop : setOpenMobile)((o) => !o);
   const [selected, setSelected] = useState<string[]>([]);
+  const [sort, setSort] = useState<Sort>(null);
 
   const validKeys = useMemo(
     () => new Set(groups.flatMap((g) => g.options.map((o) => factKey(g.id, o.id)))),
@@ -50,6 +54,8 @@ export function CategoryBrowser({
       .getAll("f")
       .filter((k) => validKeys.has(k));
     if (fromUrl.length > 0) setSelected(fromUrl);
+    const sortFromUrl = new URLSearchParams(window.location.search).get("sort");
+    if (sortFromUrl === "asc" || sortFromUrl === "desc") setSort(sortFromUrl);
   }, [validKeys]);
 
   function commit(next: string[]) {
@@ -61,14 +67,31 @@ export function CategoryBrowser({
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
   }
 
+  /** Picking the active direction again goes back to the default order. */
+  function chooseSort(next: Sort) {
+    const value = sort === next ? null : next;
+    setSort(value);
+    const params = new URLSearchParams(window.location.search);
+    if (value) params.set("sort", value);
+    else params.delete("sort");
+    const qs = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+  }
+
   const toggle = (key: string) =>
     commit(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]);
 
   const filtering = selected.length > 0;
-  const matches = useMemo(
-    () => products.filter((p) => matchesSelection(facts[p.slug], selected)),
-    [products, facts, selected],
-  );
+  const matches = useMemo(() => {
+    const list = products.filter((p) => matchesSelection(facts[p.slug], selected));
+    if (!sort) return list;
+    // Products without a price go last in either direction.
+    return [...list].sort((a, b) => {
+      if (a.unit_price == null) return b.unit_price == null ? 0 : 1;
+      if (b.unit_price == null) return -1;
+      return sort === "asc" ? a.unit_price - b.unit_price : b.unit_price - a.unit_price;
+    });
+  }, [products, facts, selected, sort]);
 
   /** How many products an option would give, with every other group's choices applied. */
   function countFor(groupId: string, key: string): number {
@@ -82,7 +105,7 @@ export function CategoryBrowser({
     return group && option ? [{ key, group: group.label, option: option.label }] : [];
   });
 
-  const showProducts = filtering || tiles.length === 0;
+  const showProducts = filtering || sort !== null || tiles.length === 0;
 
   const hasFilters = groups.length > 0;
   const gridCols = hasFilters && openDesktop
@@ -139,7 +162,26 @@ export function CategoryBrowser({
               </button>
             ) : null}
 
-            <p aria-live="polite" className="ml-auto text-sm text-zinc-500">
+            <div role="group" aria-label="Sort by price" className="ml-auto inline-flex items-center gap-2 text-sm">
+              <span className="text-zinc-500">Price</span>
+              <div className="inline-flex overflow-hidden rounded border border-zinc-300">
+                {([["asc", "Low to high"], ["desc", "High to low"]] as const).map(([dir, label]) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    aria-pressed={sort === dir}
+                    onClick={() => chooseSort(dir)}
+                    className={`px-3 py-1.5 font-medium ${
+                      sort === dir ? "bg-brand-charcoal text-white" : "text-zinc-700 hover:bg-zinc-100"
+                    } ${dir === "desc" ? "border-l border-zinc-300" : ""}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p aria-live="polite" className="text-sm text-zinc-500">
               {filtering
                 ? `Showing ${matches.length} of ${products.length} products`
                 : `${products.length} products`}
