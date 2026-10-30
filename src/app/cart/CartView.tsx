@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "next/navigation";
@@ -60,6 +61,9 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
   const [uploadError, setUploadError] = useState<string | null>(null);
   const summary = configurationSummary(catalog, item);
   const price = unitPrice(catalog, item, tier?.discountPercent);
+  const product = catalog.find((p) => p.slug === item.productSlug);
+  const image = product?.example_image_urls[0];
+  const templateUrl = product?.product_details?.template_url ?? null;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -86,76 +90,110 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
   }
 
   return (
-    <li className="rounded-xl border border-zinc-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <Link href={`/products/${item.productSlug}`} className="font-medium hover:underline">
-            {item.productName}
-          </Link>
-          {summary.length > 0 ? (
-            <p className="mt-1 text-sm text-zinc-500">
-              {summary.map((s) => `${s.label}: ${s.value}`).join(" · ")}
-            </p>
-          ) : null}
-          {price !== null ? (
-            <p className="mt-1 text-sm font-medium text-zinc-700">
-              {formatNZD(price)} each · {formatNZD(price * item.quantity)} total
-            </p>
-          ) : null}
+    <li className="flex gap-5 rounded-xl border border-zinc-200 bg-white p-5">
+      <Link
+        href={`/products/${item.productSlug}`}
+        className="relative hidden h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-white min-[420px]:block sm:h-28 sm:w-28"
+        aria-label={item.productName}
+      >
+        {image ? (
+          <Image src={image} alt="" fill sizes="112px" className="object-contain" />
+        ) : (
+          <span className="absolute inset-0 bg-zinc-100" />
+        )}
+      </Link>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Link href={`/products/${item.productSlug}`} className="font-medium hover:underline">
+              {item.productName}
+            </Link>
+            {summary.length > 0 ? (
+              <p className="mt-1 text-sm text-zinc-500">
+                {summary.map((s) => `${s.label}: ${s.value}`).join(" · ")}
+              </p>
+            ) : null}
+            {price !== null ? (
+              <p className="mt-1 text-sm font-medium text-zinc-700">
+                {formatNZD(price)} each · {formatNZD(price * item.quantity)} total
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => removeItem(item.id)}
+            className="text-sm text-zinc-400 hover:text-red-600"
+          >
+            Remove
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => removeItem(item.id)}
-          className="text-sm text-zinc-400 hover:text-red-600"
-        >
-          Remove
-        </button>
-      </div>
 
-      <div className="mt-4 flex items-center gap-3">
-        <label htmlFor={`qty-${item.id}`} className="text-sm font-medium">
-          Quantity
-        </label>
-        <input
-          id={`qty-${item.id}`}
-          type="number"
-          min={1}
-          value={item.quantity}
-          onChange={(e) => updateQuantity(item.id, Number(e.target.value) || 1)}
-          className="w-24 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
-        />
-      </div>
-
-      <div className="mt-4">
-        <p className="text-sm font-medium">Artwork</p>
-        {item.artwork.length > 0 ? (
-          <ul className="mt-2 space-y-1">
-            {item.artwork.map((a) => (
-              <li key={a.path} className="flex items-center gap-2 text-sm text-zinc-600">
-                <span>{a.filename}</span>
-                <button
-                  type="button"
-                  onClick={() => removeArtwork(item.id, a.path)}
-                  className="text-xs text-zinc-400 hover:text-red-600"
-                >
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <div className="mt-2">
+        <div className="mt-4 flex items-center gap-3">
+          <label htmlFor={`qty-${item.id}`} className="text-sm font-medium">
+            Quantity
+          </label>
           <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.svg,.pdf,.ai,.eps"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="text-sm"
+            id={`qty-${item.id}`}
+            type="number"
+            min={1}
+            value={item.quantity}
+            onChange={(e) => updateQuantity(item.id, Number(e.target.value) || 1)}
+            className="w-24 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm"
           />
-          {uploading ? <span className="ml-2 text-sm text-zinc-500">Uploading…</span> : null}
         </div>
-        {uploadError ? <p className="mt-1 text-sm text-red-600">{uploadError}</p> : null}
+
+        <div className="mt-5 border-t border-zinc-100 pt-4">
+          <p className="text-sm font-medium">Your artwork</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {templateUrl ? (
+              <a
+                href={templateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded border border-brand-charcoal px-4 py-2 text-sm font-bold uppercase tracking-wide text-brand-charcoal hover:bg-brand-charcoal hover:text-white"
+              >
+                Download design template
+              </a>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded bg-brand-orange px-4 py-2 text-sm font-bold uppercase tracking-wide text-white hover:bg-[#e64300] disabled:opacity-60"
+            >
+              {uploading ? "Uploading…" : item.artwork.length > 0 ? "Upload another file" : "Upload artwork"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.svg,.pdf,.ai,.eps"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="hidden"
+            />
+          </div>
+          {item.artwork.length > 0 ? (
+            <ul className="mt-3 space-y-1">
+              {item.artwork.map((a) => (
+                <li key={a.path} className="flex items-center gap-2 text-sm text-zinc-700">
+                  <span aria-hidden className="text-emerald-600">✓</span>
+                  <span className="truncate">{a.filename}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeArtwork(item.id, a.path)}
+                    className="text-xs text-zinc-400 hover:text-red-600"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs text-zinc-500">JPG, PNG, WebP, SVG, PDF, AI or EPS.</p>
+          )}
+          {uploadError ? <p className="mt-1 text-sm text-red-600">{uploadError}</p> : null}
+        </div>
       </div>
     </li>
   );
