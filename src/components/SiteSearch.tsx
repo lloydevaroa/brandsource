@@ -134,12 +134,12 @@ export function SiteSearch({ className = "" }: { className?: string }) {
                 pick(h);
               }}
               onMouseEnter={() => setCursor(i)}
-              className={`flex cursor-pointer items-center justify-between gap-3 px-4 py-2 text-sm ${
-                i === cursor ? "bg-zinc-100" : ""
+              className={`flex cursor-pointer items-center justify-between gap-3 border-l-4 px-4 py-2 text-sm text-brand-charcoal ${
+                i === cursor ? "border-brand-orange bg-brand-grey" : "border-transparent"
               }`}
             >
-              <span>{h.label}</span>
-              <span className="text-xs uppercase tracking-wide text-zinc-400">{h.kind}</span>
+              <span className={i === cursor ? "font-semibold" : ""}>{h.label}</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-[#5b6166]">{h.kind}</span>
             </li>
           ))}
         </ul>
