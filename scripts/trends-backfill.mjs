@@ -45,6 +45,7 @@ const IMAGE_GAP_MS = 600;
 const MAX_IN_A_ROW = 3;
 const KNOWN_EXTRA_KINDS = new Set(["DO", "DS", "OE"]); // supabase/supplier-pricing.sql check constraint
 const SKIPPED_FILE = new URL("../trends-sample/skipped-extra-costs.json", import.meta.url);
+const FAILED_FILE = new URL("../trends-sample/failed-imports.json", import.meta.url);
 
 const { TRENDS_API_TOKEN: token, TRENDS_API_USERNAME: user, TRENDS_API_PASSWORD: pass } = process.env;
 const auth = token ? `Bearer ${token}` : `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
@@ -83,6 +84,7 @@ async function all(table, cols, filter = (q) => q) {
 const sellable = (p) => p.active === "Active" && ["Normal", "New"].includes(p.status);
 
 const skipped = await readFile(SKIPPED_FILE, "utf8").then(JSON.parse, () => ({}));
+const failedBefore = await readFile(FAILED_FILE, "utf8").then(JSON.parse, () => ({}));
 
 // What we already hold, so the run only takes products we have never imported.
 const products = await all("products", "id, slug, supplier_code, supplier", (q) => q);
@@ -229,14 +231,19 @@ for (const i of items) {
     const n = await importOne(i);
     done++;
     inARow = 0;
+    delete failedBefore[i.row.supplier_code];
     console.log(`[${done}/${items.length}] ${i.row.slug} (${n} images, $${i.price ?? "no price"}, ${i.categoryIds.length} categories)`);
   } catch (e) {
     if (e instanceof Backoff) { stopped = e.message; break; }
     failed++;
     console.warn(`  FAILED ${i.row.slug} [${i.row.supplier_code}]: ${e.message}`);
+    const prev = failedBefore[i.row.supplier_code];
+    failedBefore[i.row.supplier_code] = { name: i.row.name, error: e.message, tries: (prev?.tries ?? 0) + 1, last: new Date().toISOString().slice(0, 10) };
     if (++inARow >= MAX_IN_A_ROW) { stopped = `${MAX_IN_A_ROW} products failed in a row`; break; }
   }
 }
+await mkdir(new URL("../trends-sample/", import.meta.url), { recursive: true });
+await writeFile(FAILED_FILE, JSON.stringify(failedBefore, null, 2)); // code, name, error only; feeds trends-unpublished-report.mjs
 const mins = Math.round((Date.now() - started) / 60000);
 console.log(`\n${stopped ? `STOPPED EARLY: ${stopped}. Run it again later; it picks up where it left off.\n` : ""}Done: ${done} imported (all hidden), ${failed} failed, ${mins} min. About ${Math.max(0, total - have.size - done - Object.keys(skipped).length)} products left in Trends not yet held here, plus ${Object.keys(skipped).length} set aside (extra-charge type to decide on).`);
 if (stopped) process.exit(2);

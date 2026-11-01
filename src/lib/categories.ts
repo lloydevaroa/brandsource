@@ -60,11 +60,23 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = createServiceSupabase();
 
   const productCols = "slug, name, short_description, unit_price, min_order_qty, example_image_urls, sort_order";
-  const loadLinks = (cols: string) =>
-    supabase
-      .from("product_categories")
-      .select(`category_id, products!inner ( ${cols} )`)
-      .eq("products.active", true);
+  // Supabase returns at most 1000 rows per request, so page through the links in a stable
+  // order; one unpaged query silently dropped every product past the 1000th link.
+  const loadLinks = async (cols: string) => {
+    const rows: unknown[] = [];
+    for (let from = 0; ; from += 1000) {
+      const page = await supabase
+        .from("product_categories")
+        .select(`category_id, product_id, products!inner ( ${cols} )`)
+        .eq("products.active", true)
+        .order("category_id")
+        .order("product_id")
+        .range(from, from + 999);
+      if (page.error) return { data: null, error: page.error };
+      rows.push(...page.data);
+      if (page.data.length < 1000) return { data: rows, error: null };
+    }
+  };
 
   const [cats, firstLinks] = await Promise.all([
     supabase
