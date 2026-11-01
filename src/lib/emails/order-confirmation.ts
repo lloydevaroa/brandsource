@@ -99,8 +99,10 @@ export function renderOrderConfirmation(data: OrderConfirmationData) {
   const html = renderEmailLayout({
     preheader: `We've got your order ${data.orderNumber}. Here's what happens next.`,
     eyebrow: "Order confirmed",
-    headlineStart: "Your order is",
-    headlineAccent: "in",
+    // The eyebrow already says "Order confirmed", so the headline is the next action.
+    ...(data.needsArtwork
+      ? { headlineStart: "Now send us your", headlineAccent: "artwork" }
+      : { headlineStart: "Next, look out for your", headlineAccent: "proof" }),
     bodyHtml,
   });
 
