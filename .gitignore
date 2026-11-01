@@ -44,3 +44,4 @@ next-env.d.ts
 
 # Trends API data is confidential under their API terms; never commit it
 /trends-sample/
+emails-preview/
