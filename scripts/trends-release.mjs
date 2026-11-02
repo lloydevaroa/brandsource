@@ -51,13 +51,16 @@ for (const r of todo) {
     const details = { ...(r.product_details ?? {}) };
     if (templateSrc && !details.template_url) {
       // A template the supplier won't serve shouldn't block the product.
-      const t = await fetch(encodeURI(templateSrc.startsWith("//") ? `https:${templateSrc}` : templateSrc));
-      if (t.ok) {
+      const t = await fetch(encodeURI(templateSrc.startsWith("//") ? `https:${templateSrc}` : templateSrc)).catch((e) => {
+        console.warn(`  (no branding template for ${r.slug}: ${e.cause?.code ?? e.message})`);
+        return null;
+      });
+      if (t?.ok) {
         const path = `trends/${r.supplier_code}/branding-template.pdf`;
         const { error: upErr } = await db.storage.from(BUCKET).upload(path, await t.arrayBuffer(), { contentType: "application/pdf", upsert: true });
         if (upErr) throw upErr;
         details.template_url = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-      } else console.warn(`  (no branding template for ${r.slug}: HTTP ${t.status})`);
+      } else if (t) console.warn(`  (no branding template for ${r.slug}: HTTP ${t.status})`);
     }
     if (!details.template_url) noTemplate++;
 
