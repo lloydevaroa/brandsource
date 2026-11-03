@@ -61,14 +61,24 @@ export const getCatalog = cache(async (includeInactive = false): Promise<Catalog
   const supabase = createServiceSupabase();
   const base =
     "slug, name, short_description, unit_price, min_order_qty, example_image_urls, product_details, option_groups ( key, label, selection, required, sort_order, option_choices ( key, label, price_delta, sort_order ) )";
-  const run = (cols: string) => {
-    let query = supabase
-      .from("products")
-      .select(cols)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
-    if (!includeInactive) query = query.eq("active", true);
-    return query;
+  // Supabase returns at most 1000 rows per request, so page through the products in a stable
+  // order; one unpaged query silently dropped every product past the 1000th (404 on its page).
+  const run = async (cols: string) => {
+    const rows: unknown[] = [];
+    for (let from = 0; ; from += 500) {
+      let query = supabase
+        .from("products")
+        .select(cols)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true })
+        .order("slug", { ascending: true })
+        .range(from, from + 499);
+      if (!includeInactive) query = query.eq("active", true);
+      const page = await query;
+      if (page.error) return { data: null, error: page.error };
+      rows.push(...(page.data as unknown[]));
+      if (page.data.length < 500) return { data: rows, error: null };
+    }
   };
 
   let { data, error } = await run(`${base}, ${SUPPLIER_EMBED}`);
