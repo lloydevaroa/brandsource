@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import type { ProductSpec } from "@/lib/category-filters";
 import {
   SUPPLIER_EMBED,
@@ -147,13 +148,21 @@ export async function getProductSpecs(categorySlugs: string[]): Promise<Map<stri
   const out = new Map<string, ProductSpec[]>();
   if (categorySlugs.length === 0) return out;
   try {
-    const { data, error } = await createServiceSupabase()
-      .from("product_categories")
-      .select("categories!inner(slug), products!inner(slug, specs:product_details->specifications)")
-      .in("categories.slug", categorySlugs)
-      .eq("products.active", true);
+    type SpecRow = { products: { slug: string; specs: ProductSpec[] | null } };
+    const supabase = createServiceSupabase();
+    // Paged: a big category group (e.g. a whole Trends range) has more than 1000 links.
+    const { data, error } = await fetchAll<SpecRow>((from, to) =>
+      supabase
+        .from("product_categories")
+        .select("categories!inner(slug), products!inner(slug, specs:product_details->specifications)")
+        .in("categories.slug", categorySlugs)
+        .eq("products.active", true)
+        .order("category_id")
+        .order("product_id")
+        .range(from, to) as unknown as PromiseLike<{ data: SpecRow[] | null; error: { message: string } | null }>,
+    );
     if (error) return out;
-    for (const row of data as unknown as { products: { slug: string; specs: ProductSpec[] | null } }[]) {
+    for (const row of data) {
       if (!Array.isArray(row.products.specs)) continue;
       const specs = row.products.specs.filter(
         (s) => typeof s?.name === "string" && typeof s?.value === "string",

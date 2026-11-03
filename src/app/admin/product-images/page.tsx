@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import { requireStaffProfile } from "../staff-guard";
 import { ProductImageCard } from "./ProductImageCard";
 import { BulkUploader } from "./BulkUploader";
@@ -21,10 +22,15 @@ export default async function ProductImagesPage({
   if ("guard" in staffResult) return staffResult.guard;
 
   const { supplier: supplierParam, q = "", empty } = await searchParams;
-  const { data, error } = await createServiceSupabase()
-    .from("products")
-    .select("slug, name, example_image_urls, supplier:suppliers ( name, slug )")
-    .order("name", { ascending: true });
+  const supabase = createServiceSupabase();
+  const { data, error } = await fetchAll<Row>((from, to) =>
+    supabase
+      .from("products")
+      .select("slug, name, example_image_urls, supplier:suppliers ( name, slug )")
+      .order("name", { ascending: true })
+      .order("slug", { ascending: true })
+      .range(from, to) as unknown as PromiseLike<{ data: Row[] | null; error: { message: string } | null }>,
+  );
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12">
@@ -34,7 +40,7 @@ export default async function ProductImagesPage({
     );
   }
 
-  const products = (data as unknown as Row[]).map((p) => {
+  const products = data.map((p) => {
     const s = Array.isArray(p.supplier) ? p.supplier[0] : p.supplier;
     return {
       slug: p.slug,

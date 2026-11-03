@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import { requireStaffProfile } from "../staff-guard";
 import { createSupplier, setSupplierListingStatus, updateSupplier } from "./actions";
 
@@ -105,7 +106,9 @@ export default async function SuppliersAdminPage() {
   const supabase = createServiceSupabase();
   const [sup, prods] = await Promise.all([
     supabase.from("suppliers").select("*").order("name", { ascending: true }),
-    supabase.from("products").select("name, active, supplier_id").order("name", { ascending: true }),
+    fetchAll<{ name: string; active: boolean; supplier_id: string | null }>((from, to) =>
+      supabase.from("products").select("name, active, supplier_id").order("name", { ascending: true }).order("slug", { ascending: true }).range(from, to),
+    ),
   ]);
 
   if (sup.error || prods.error) {
