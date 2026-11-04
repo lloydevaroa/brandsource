@@ -33,6 +33,14 @@ export function formatNzd(amount: number) {
   return new Intl.NumberFormat("en-NZ", { style: "currency", currency: "NZD" }).format(amount);
 }
 
+/** NZ GST. Catalogue prices are ex-GST, so the emails show the same three lines as a BRANDSource invoice. */
+export const GST_RATE = 0.15;
+
+export function gstBreakdown(subtotalExGst: number) {
+  const gst = Math.round(subtotalExGst * GST_RATE * 100) / 100;
+  return { subtotal: subtotalExGst, gst, total: Math.round((subtotalExGst + gst) * 100) / 100 };
+}
+
 export function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://brandsource.co.nz").replace(/\/$/, "");
 }

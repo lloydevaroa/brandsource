@@ -3,6 +3,7 @@ import {
   emailButton,
   escapeHtml,
   formatNzd,
+  gstBreakdown,
   renderEmailLayout,
   siteUrl,
 } from "./layout";
@@ -20,7 +21,11 @@ export type OrderConfirmationData = {
   /** Short reference shown to the customer. */
   orderNumber: string;
   orderDate: string;
+  /** Line prices are ex-GST. */
   lines: OrderConfirmationLine[];
+  subtotal: number;
+  gst: number;
+  /** Subtotal plus GST: what the customer paid. */
   total: number;
   /** True when any line has no artwork uploaded yet. */
   needsArtwork: boolean;
@@ -84,9 +89,19 @@ export function renderOrderConfirmation(data: OrderConfirmationData) {
     </table>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid ${c.charcoal};">
       ${rows}
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td style="padding:16px 0 0 0;font-family:${font};font-size:16px;line-height:22px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:${c.charcoal};">Total paid</td>
-        <td align="right" style="padding:16px 0 0 0;font-family:${font};font-size:20px;line-height:22px;font-weight:800;color:${c.charcoal};white-space:nowrap;">${formatNzd(data.total)}</td>
+        <td style="padding:16px 0 4px 0;font-family:${font};font-size:15px;line-height:22px;color:${c.midGrey};">Subtotal (excl. GST)</td>
+        <td align="right" style="padding:16px 0 4px 0;font-family:${font};font-size:15px;line-height:22px;font-weight:700;color:${c.charcoal};white-space:nowrap;">${formatNzd(data.subtotal)}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0 16px 0;font-family:${font};font-size:15px;line-height:22px;color:${c.midGrey};">GST (15%)</td>
+        <td align="right" style="padding:4px 0 16px 0;font-family:${font};font-size:15px;line-height:22px;font-weight:700;color:${c.charcoal};white-space:nowrap;">${formatNzd(data.gst)}</td>
+      </tr>
+      <tr>
+        <td style="padding:16px 0 0 0;border-top:2px solid ${c.charcoal};font-family:${font};font-size:16px;line-height:22px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:${c.charcoal};">Total paid (incl. GST)</td>
+        <td align="right" style="padding:16px 0 0 0;border-top:2px solid ${c.charcoal};font-family:${font};font-size:20px;line-height:22px;font-weight:800;color:${c.charcoal};white-space:nowrap;">${formatNzd(data.total)}</td>
       </tr>
     </table>
 
@@ -116,7 +131,9 @@ export function renderOrderConfirmation(data: OrderConfirmationData) {
       `- ${l.name}${l.summary ? ` (${l.summary})` : ""}`,
       `  Qty ${l.quantity} x ${formatNzd(l.unitPrice)} = ${formatNzd(l.quantity * l.unitPrice)}`,
     ]),
-    `Total paid: ${formatNzd(data.total)}`,
+    `Subtotal (excl. GST): ${formatNzd(data.subtotal)}`,
+    `GST (15%): ${formatNzd(data.gst)}`,
+    `Total paid (incl. GST): ${formatNzd(data.total)}`,
     "",
     "What happens next",
     ...steps.map(([title, body], i) => `${i + 1}. ${title}: ${body}`),
@@ -154,7 +171,7 @@ export function sampleOrderConfirmation(): OrderConfirmationData {
         unitPrice: 245,
       },
     ],
-    total: 623,
+    ...gstBreakdown(623),
     needsArtwork: true,
     orderUrl: `${siteUrl()}/account`,
   };

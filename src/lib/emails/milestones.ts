@@ -95,6 +95,7 @@ export function renderProofReady(data: ProofReadyData) {
   const bodyHtml = [
     p(`Hi ${escapeHtml(firstName(data.customerName))},`),
     p("Your proof is ready. This is how your order will look once it's made, so please check it carefully."),
+    p("It's attached to this email, and you'll also find it on your order page."),
     orderPanel(data),
     p("Look over the sizes, colours, spelling and positioning. Nothing is made until you approve it.", 24),
     `<div>${emailButton("Review your proof", data.orderUrl)}</div>`,
@@ -113,6 +114,8 @@ export function renderProofReady(data: ProofReadyData) {
     `Hi ${firstName(data.customerName)},`,
     "",
     "Your proof is ready. This is how your order will look once it's made, so please check it carefully.",
+    "",
+    "It's attached to this email, and you'll also find it on your order page.",
     "",
     ...textBlock(data),
     "",
