@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/fetch-all";
+import { ttlCache } from "@/lib/ttl-cache";
 import type { ProductSpec } from "@/lib/category-filters";
 import {
   SUPPLIER_EMBED,
@@ -57,7 +58,7 @@ type LinkRow = {
  * a category with no products (and no subcategory with products) is left out
  * entirely, and appears by itself once a product is assigned.
  */
-export const getCategories = cache(async (): Promise<Category[]> => {
+export const getCategories = cache(ttlCache(60_000, async (): Promise<Category[]> => {
   const supabase = createServiceSupabase();
 
   const productCols = "slug, name, short_description, unit_price, min_order_qty, example_image_urls, sort_order";
@@ -133,7 +134,7 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   const hasProducts = (c: Category): boolean =>
     c.products.length > 0 || built.some((k) => k.parent_slug === c.slug && k.products.length > 0);
   return built.filter(hasProducts);
-});
+}));
 
 export const getChildren = (all: Category[], slug: string) =>
   all.filter((c) => c.parent_slug === slug);

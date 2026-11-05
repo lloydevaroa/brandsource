@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { ttlCache } from "@/lib/ttl-cache";
 import {
   SUPPLIER_EMBED,
   isMissingSupplierSchema,
@@ -57,7 +58,7 @@ type Row = {
  * Storefront and checkout use the default (active products only); reports pass
  * includeInactive so historical orders still resolve their option labels.
  */
-export const getCatalog = cache(async (includeInactive = false): Promise<CatalogProduct[]> => {
+export const getCatalog = cache(ttlCache(60_000, async (includeInactive = false): Promise<CatalogProduct[]> => {
   const supabase = createServiceSupabase();
   const base =
     "slug, name, short_description, unit_price, min_order_qty, example_image_urls, product_details, option_groups ( key, label, selection, required, sort_order, option_choices ( key, label, price_delta, sort_order ) )";
@@ -113,4 +114,4 @@ export const getCatalog = cache(async (includeInactive = false): Promise<Catalog
           .map((c) => ({ key: c.key, label: c.label, price_delta: Number(c.price_delta) })),
       })),
   }));
-});
+}));
