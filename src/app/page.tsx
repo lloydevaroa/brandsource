@@ -6,7 +6,9 @@ import { HeroSlider } from "@/components/HeroSlider";
 import { getHeroSlides, getHomeFeaturedSlides } from "@/lib/hero";
 import { getCategories, getChildren } from "@/lib/categories";
 
-export const revalidate = 60;
+// Rendered on request, not at build time: building it needs the full category read, and a slow
+// database used to fail the whole deploy here. getCategories is cached for a minute per server.
+export const dynamic = "force-dynamic";
 
 /**
  * The featured band goes after the first row of category tiles. A row is 4 tiles at lg, 5 at xl and 6 at 2xl; below

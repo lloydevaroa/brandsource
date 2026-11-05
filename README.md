@@ -69,6 +69,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 2 Nov**
+- 5 Nov: The home page is now built when someone visits it, not while the site is being published, because publishing kept failing whenever the database was busy.
 - 5 Nov: Fixed the whole site, including the team dashboard, timing out and showing "We can't load this page right now". Every product and category page was re-reading the full 2,147-product catalogue from the database each minute, and a burst of visitors made hundreds of those reads at once, which swamped the small database. The catalogue and category list are now read once and shared for a minute, so a burst makes one read instead of hundreds.
 - 3 Nov: Team screens also stopped at 1,000 products: the Product images screen (search and bulk upload could not find anything past the 1,000th), the product counts on the Suppliers screen, and the category filters built from supplier specifications. All three now read every product. Found by checking where the team looks for products after the Waitomo Torch fault below.
 - 3 Nov: Fixed product pages showing "This page could not be found" for products past the 1,000th (the product lookup read the database in one go, which caps at 1,000 rows; it now reads in pages). Found when the Waitomo Torch page 404ed.
