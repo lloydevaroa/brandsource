@@ -69,6 +69,7 @@ Items marked **Joe** need his accounts or a decision. Full go-live order is unde
 ## What has happened (newest first)
 
 **Week of 2 Nov**
+- 5 Nov: Product and category pages now refresh once an hour instead of every minute. Every page refreshing at once was keeping the database overloaded, which is what stopped the team dashboard loading. Team changes can take up to an hour to show on the public pages, unless the change screen refreshes them itself.
 - 5 Nov: The home page is now built when someone visits it, not while the site is being published, because publishing kept failing whenever the database was busy.
 - 5 Nov: Fixed the whole site, including the team dashboard, timing out and showing "We can't load this page right now". Every product and category page was re-reading the full 2,147-product catalogue from the database each minute, and a burst of visitors made hundreds of those reads at once, which swamped the small database. The catalogue and category list are now read once and shared for a minute, so a burst makes one read instead of hundreds.
 - 3 Nov: Team screens also stopped at 1,000 products: the Product images screen (search and bulk upload could not find anything past the 1,000th), the product counts on the Suppliers screen, and the category filters built from supplier specifications. All three now read every product. Found by checking where the team looks for products after the Waitomo Torch fault below.

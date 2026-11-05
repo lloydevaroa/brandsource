@@ -9,7 +9,9 @@ import { getCategories, getChildren, getProductSpecs, type CategoryProduct } fro
 import { staticParamsOrNone } from "@/lib/static-params";
 import { buildFilterModel } from "@/lib/category-filters";
 
-export const revalidate = 60;
+// An hour, not a minute: every rebuild reads the whole catalogue, and a minute-long window had every product and
+// category page rebuilding at once, which kept the database overloaded. Team edits that need to show sooner call revalidatePath.
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   return staticParamsOrNone(async () => (await getCategories()).map((c) => ({ slug: c.slug })));
