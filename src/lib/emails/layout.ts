@@ -72,11 +72,13 @@ export type EmailLayoutInput = {
   headlineEnd?: string;
   /** Inner HTML for the white body. */
   bodyHtml: string;
+  /** Site address for the logo. Defaults to the configured site URL. */
+  baseUrl?: string;
 };
 
 export function renderEmailLayout(input: EmailLayoutInput) {
   const c = EMAIL_COLOURS;
-  const logo = `${siteUrl()}/brand/email/BrandSource-Reversed-email.png`;
+  const logo = `${(input.baseUrl ?? siteUrl()).replace(/\/$/, "")}/brand/email/BrandSource-Reversed-email.png`;
   const headline = [
     escapeHtml(input.headlineStart),
     `<span style="color:${c.orange};">${escapeHtml(input.headlineAccent)}</span>`,

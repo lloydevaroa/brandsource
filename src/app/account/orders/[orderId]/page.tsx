@@ -8,6 +8,7 @@ import { configurationSummary } from "@/lib/pricing";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { ArtworkUploader } from "./ArtworkUploader";
+import { StaffReminderButton } from "./StaffReminderButton";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,8 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
             We have artwork for every item. We&apos;ll check it and send you a proof to approve.
           </div>
         )}
+
+        {isStaff && waiting > 0 ? <StaffReminderButton orderId={order.id} /> : null}
 
         <ul className="mt-8 space-y-4">
           {lines.map((l) => (
