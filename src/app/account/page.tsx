@@ -109,7 +109,7 @@ export default async function AccountPage({
                   <span className="text-zinc-500">{statusLabel}</span>
                 </div>
                 <p className="mt-1 text-xs text-zinc-400">
-                  Submitted {new Date(order.created_at).toLocaleDateString("en-NZ")}
+                  Submitted {new Date(order.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" })}
                 </p>
               </Link>
               </li>

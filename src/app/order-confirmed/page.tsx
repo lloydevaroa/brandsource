@@ -73,7 +73,7 @@ export default async function OrderConfirmedPage({
             <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Payment received</p>
             <h1 className="mt-1 text-2xl font-semibold">Thanks, your order is in</h1>
             <p className="mt-2 text-sm text-emerald-900">
-              Order {orderReference(order.id)} · placed {new Date(order.created_at).toLocaleDateString("en-NZ")}
+              Order {orderReference(order.id)} · placed {new Date(order.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
         ) : (

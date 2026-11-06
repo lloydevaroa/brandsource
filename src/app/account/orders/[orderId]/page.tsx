@@ -60,7 +60,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Order {orderReference(order.id)}</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Placed {new Date(order.created_at).toLocaleDateString("en-NZ")}
+          Placed {new Date(order.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" })}
         </p>
 
         {waiting > 0 ? (
