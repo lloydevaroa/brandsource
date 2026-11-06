@@ -19,21 +19,22 @@ export default async function ClientsPage() {
       .order("name", { ascending: true });
   const managerEmbed = "account_manager:profiles!clients_account_manager_id_fkey ( full_name )";
 
-  const tiers = await getRateTiers();
-  let clientsResult = await clientQuery(`id, name, contact_email, rate_tier_id, ${managerEmbed}`);
-  // supabase/rate-tiers.sql not run yet: list clients without tiers.
-  if (clientsResult.error && isMissingTierSchema(clientsResult.error.message)) {
-    clientsResult = await clientQuery(`id, name, contact_email, ${managerEmbed}`);
-  }
-
-  const [{ data: clients, error }, { data: staff }] = await Promise.all([
-    Promise.resolve(clientsResult),
+  // The three reads are independent, so run them together (each is a round trip to the database).
+  const [tiers, firstClients, { data: staff }] = await Promise.all([
+    getRateTiers(),
+    clientQuery(`id, name, contact_email, rate_tier_id, ${managerEmbed}`),
     supabase
       .from("profiles")
       .select("id, full_name")
       .in("role", ["admin", "manager"])
       .order("full_name", { ascending: true }),
   ]);
+  let clientsResult = firstClients;
+  // supabase/rate-tiers.sql not run yet: list clients without tiers.
+  if (clientsResult.error && isMissingTierSchema(clientsResult.error.message)) {
+    clientsResult = await clientQuery(`id, name, contact_email, ${managerEmbed}`);
+  }
+  const { data: clients, error } = clientsResult;
 
   if (error) {
     return (

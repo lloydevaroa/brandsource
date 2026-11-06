@@ -9,12 +9,10 @@ import { artworkDisplayName } from "@/lib/artwork";
 import { newestFirst, type ProofStatus } from "@/lib/proofs";
 
 export default async function AdminPage() {
-  const staffResult = await requireStaffProfile("Team dashboard");
-  if ("guard" in staffResult) return staffResult.guard;
-  const { profile } = staffResult;
-  const firstName = profile.full_name?.split(" ")[0] ?? null;
-
   const supabase = createServiceSupabase();
+  // The board reads do not depend on who is asking, so they start now, alongside the staff check,
+  // instead of waiting a full round trip behind it. Nothing is shown unless the check passes.
+  const staffCheck = requireStaffProfile("Team dashboard");
 
   const subOrderSelect = (withChecklist: boolean) => `
         id,
@@ -47,19 +45,26 @@ export default async function AdminPage() {
     return supabase.from("sub_orders").select(subOrderSelect(false)).order("created_at", { ascending: true });
   };
 
-  const [{ data: subOrders, error }, { data: staff }, { count: noImageCount }] = await Promise.all([
-    loadSubOrders(),
-    supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("role", ["admin", "manager"])
-      .order("full_name", { ascending: true }),
-    supabase
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .eq("active", true)
-      .eq("example_image_urls", "{}"),
+  const [staffResult, boardReads] = await Promise.all([
+    staffCheck,
+    Promise.all([
+      loadSubOrders(),
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("role", ["admin", "manager"])
+        .order("full_name", { ascending: true }),
+      supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("active", true)
+        .eq("example_image_urls", "{}"),
+    ]),
   ]);
+  if ("guard" in staffResult) return staffResult.guard;
+  const { profile } = staffResult;
+  const firstName = profile.full_name?.split(" ")[0] ?? null;
+  const [{ data: subOrders, error }, { data: staff }, { count: noImageCount }] = boardReads;
 
   if (error) {
     return (

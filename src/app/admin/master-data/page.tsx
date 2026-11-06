@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getMasterData } from "@/lib/master-data";
 import { requireStaffProfile } from "../staff-guard";
 import { MasterDataBrowser, type MasterState } from "./MasterDataBrowser";
@@ -16,15 +17,44 @@ export default async function MasterDataPage({ searchParams }: { searchParams: P
   const staffResult = await requireStaffProfile("Master data");
   if ("guard" in staffResult) return staffResult.guard;
 
+  // The heading and intro appear straight away; the catalogue (every product, several seconds of
+  // reads) streams in behind a loading message.
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="mx-auto max-w-[1500px] px-6 py-10">
+        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">
+          ← Team dashboard
+        </Link>
+        <h1 className="mt-2 text-2xl font-semibold">Master data</h1>
+        <p className="mt-2 max-w-3xl text-sm text-zinc-500">
+          Every product in one place for the management team to sort, check and edit: category, supplier,
+          availability, cost, selling price and the rate tier prices. Click a product to edit its description,
+          categories or RRP. Edits go live straight away and are logged, and for Trends products the supplier&apos;s
+          own value is shown beside yours so you can revert. Supplier cost is internal and never shown to customers.
+          Pick a category to get that category&apos;s own filters down the left.
+        </p>
+        <Suspense
+          fallback={
+            <div role="status" className="mt-6 rounded-xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500">
+              <p className="font-medium text-zinc-700">Loading the catalogue, just a moment…</p>
+              <p className="mt-1">Reading every product, price and category. This usually takes a few seconds.</p>
+            </div>
+          }
+        >
+          <MasterDataContent searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+async function MasterDataContent({ searchParams }: { searchParams: Promise<Params> }) {
   let data;
   try {
     data = await getMasterData();
   } catch (e) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-2xl font-semibold">Master data</h1>
-        <p className="mt-2 text-red-600">{e instanceof Error ? e.message : "Could not load the catalogue."}</p>
-      </div>
+      <p className="mt-6 text-red-600">{e instanceof Error ? e.message : "Could not load the catalogue."}</p>
     );
   }
 
@@ -44,29 +74,14 @@ export default async function MasterDataPage({ searchParams }: { searchParams: P
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <div className="mx-auto max-w-[1500px] px-6 py-10">
-        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">
-          ← Team dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Master data</h1>
-        <p className="mt-2 max-w-3xl text-sm text-zinc-500">
-          Every product in one place for the management team to sort, check and edit: category, supplier,
-          availability, cost, selling price and the rate tier prices. Click a product to edit its description,
-          categories or RRP. Edits go live straight away and are logged, and for Trends products the supplier&apos;s
-          own value is shown beside yours so you can revert. Supplier cost is internal and never shown to customers.
-          Pick a category to get that category&apos;s own filters down the left.
-        </p>
-        <MasterDataBrowser
-          rows={data.rows}
-          categories={data.categories}
-          tiers={data.tiers.map((t) => ({ name: t.name, discount_percent: t.discount_percent }))}
-          suppliers={data.suppliers}
-          initial={initial}
-          noCostTables={data.noCostTables}
-          noEditTables={data.noEditTables}
-        />
-      </div>
-    </div>
+    <MasterDataBrowser
+      rows={data.rows}
+      categories={data.categories}
+      tiers={data.tiers.map((t) => ({ name: t.name, discount_percent: t.discount_percent }))}
+      suppliers={data.suppliers}
+      initial={initial}
+      noCostTables={data.noCostTables}
+      noEditTables={data.noEditTables}
+    />
   );
 }

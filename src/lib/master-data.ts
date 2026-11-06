@@ -59,15 +59,25 @@ export type MasterData = {
 
 type Result<T> = { data: T[] | null; error: { message: string } | null };
 
-/** PostgREST caps a response at 1000 rows by default; walk the table in pages. */
-async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Result<T>>): Promise<Result<T>> {
+/**
+ * PostgREST caps a response at 1000 rows by default, so walk the table in pages. Pages are requested
+ * a few at a time rather than one after another: each request costs a round trip to the database
+ * (about half a second from the web servers), and the price breaks alone take 16 pages.
+ */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Result<T>>, batch = 4): Promise<Result<T>> {
   const size = 1000;
   const out: T[] = [];
-  for (let from = 0; ; from += size) {
-    const { data, error } = await page(from, from + size - 1);
-    if (error) return { data: null, error };
-    out.push(...(data ?? []));
-    if (!data || data.length < size) break;
+  for (let start = 0; ; start += batch) {
+    const results = await Promise.all(
+      Array.from({ length: batch }, (_, i) => page((start + i) * size, (start + i + 1) * size - 1)),
+    );
+    for (const { data, error } of results) {
+      if (error) return { data: null, error };
+      out.push(...(data ?? []));
+    }
+    // Done once a page comes back short (or empty): later pages in the batch are then empty too.
+    const last = results[results.length - 1].data;
+    if (!last || last.length < size) break;
   }
   return { data: out, error: null };
 }
@@ -112,6 +122,7 @@ export async function getMasterData(): Promise<MasterData> {
           "id, slug, name, short_description, supplier, active, unit_price, min_order_qty, example_image_urls, supplier_id, supplier_updated_at, specs:product_details->specifications",
         )
         .order("name", { ascending: true })
+        .order("slug", { ascending: true })
         .range(from, to) as unknown as PromiseLike<Result<ProductRow>>,
     ),
     supabase.from("suppliers").select("id, name, slug, listing_status, active"),
@@ -120,7 +131,7 @@ export async function getMasterData(): Promise<MasterData> {
       supabase.from("product_categories").select("product_id, category_id").range(from, to) as unknown as PromiseLike<
         Result<LinkRow>
       >,
-    ),
+    5),
     fetchAll<PricingRow>((from, to) =>
       supabase.from("product_supplier_pricing").select("product_id, price_type").range(from, to) as unknown as PromiseLike<
         Result<PricingRow>
@@ -131,8 +142,9 @@ export async function getMasterData(): Promise<MasterData> {
         .from("product_price_breaks")
         .select("product_id, min_qty, unit_cost")
         .order("min_qty", { ascending: true })
+        .order("product_id", { ascending: true })
         .range(from, to) as unknown as PromiseLike<Result<BreakRow>>,
-    ),
+    8),
     getRateTiers().catch(() => [] as RateTier[]),
     fetchAll<OverrideRow>((from, to) =>
       supabase

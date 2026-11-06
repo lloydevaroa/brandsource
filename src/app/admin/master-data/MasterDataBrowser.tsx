@@ -54,6 +54,8 @@ const VISIBILITY_STYLE: Record<MasterRow["visibility"], string> = {
 const money = (n: number | null) => (n === null ? "—" : `$${n.toFixed(2)}`);
 const markupOf = (r: MasterRow) => (r.rrp !== null && r.cost ? (r.rrp - r.cost) / r.cost : null);
 
+const PAGE_ROWS = 100;
+
 const control = "rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm";
 
 export function MasterDataBrowser({
@@ -78,6 +80,8 @@ export function MasterDataBrowser({
   const [showDescription, setShowDescription] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [toast, setToast] = useState<(SaveResult & { id: number }) | null>(null);
+  // Drawing every product at once (2,700+ rows) is slow, so the table shows a page at a time.
+  const [visibleCount, setVisibleCount] = useState(PAGE_ROWS);
 
   // The confirmation stays up long enough to read; errors stay until dismissed.
   useEffect(() => {
@@ -103,6 +107,7 @@ export function MasterDataBrowser({
   function update(patch: Partial<MasterState>) {
     const next = { ...state, ...patch };
     setState(next);
+    setVisibleCount(PAGE_ROWS);
     const p = new URLSearchParams();
     if (next.q) p.set("q", next.q);
     if (next.cat) p.set("cat", next.cat);
@@ -403,7 +408,7 @@ export function MasterDataBrowser({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {shown.map((r) => {
+                {shown.slice(0, visibleCount).map((r) => {
                   const mk = markupOf(r);
                   return (
                     <tr key={r.slug} onClick={() => setEditing(r.slug)} className="cursor-pointer align-top hover:bg-zinc-50">
@@ -487,6 +492,19 @@ export function MasterDataBrowser({
               <p className="p-8 text-center text-sm text-zinc-500">No products match those filters.</p>
             ) : null}
           </div>
+          {shown.length > visibleCount ? (
+            <div className="mt-3 flex items-center justify-center gap-4 text-sm text-zinc-600">
+              <span>
+                Showing {visibleCount} of {shown.length}
+              </span>
+              <button type="button" onClick={() => setVisibleCount((n) => n + PAGE_ROWS)} className={`${chip(false)} font-medium`}>
+                Show 100 more
+              </button>
+              <button type="button" onClick={() => setVisibleCount(shown.length)} className="cursor-pointer font-medium text-orange-600 hover:underline">
+                Show all
+              </button>
+            </div>
+          ) : null}
           <p className="mt-3 text-xs text-zinc-500">
             Prices are ex GST. Cost is the supplier price at the lowest quantity break (hover for the quantity).
             Availability is how the supplier prices the item: Stock, or made to order (Indent). Live stock counts
