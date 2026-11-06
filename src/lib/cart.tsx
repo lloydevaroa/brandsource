@@ -25,6 +25,8 @@ export type CartItem = {
 
 type CartContextValue = {
   items: CartItem[];
+  /** True once the saved cart has been read from this browser. */
+  hydrated: boolean;
   addItem: (item: Omit<CartItem, "id" | "artwork">) => string;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -99,8 +101,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(() => setItems([]), []);
 
   const value = useMemo(
-    () => ({ items, addItem, removeItem, updateQuantity, addArtwork, removeArtwork, clear }),
-    [items, addItem, removeItem, updateQuantity, addArtwork, removeArtwork, clear]
+    () => ({ items, hydrated, addItem, removeItem, updateQuantity, addArtwork, removeArtwork, clear }),
+    [items, hydrated, addItem, removeItem, updateQuantity, addArtwork, removeArtwork, clear]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
