@@ -36,7 +36,14 @@ function UserIcon() {
   );
 }
 
-function CartLink({ itemCount, label }: { itemCount: number; label: string }) {
+/**
+ * The only part of the header that follows the cart. The rest of the header holds
+ * every category's product list, so it must not re-render each time an item is added.
+ */
+function CartLink() {
+  const { items } = useCart();
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const label = `Cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`;
   return (
     <Link href="/cart" aria-label={label} className="relative p-1 hover:text-brand-orange">
       <svg
@@ -65,14 +72,10 @@ function CartLink({ itemCount, label }: { itemCount: number; label: string }) {
 }
 
 export function SiteHeader() {
-  const { items } = useCart();
-  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const categories = useMenuCategories();
   const allProducts = useMemo(() => groupProductsAz(categories), [categories]);
-
-  const cartLabel = `Cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`;
 
   return (
     <header className="bg-brand-charcoal text-white">
@@ -111,11 +114,11 @@ export function SiteHeader() {
             </Link>
             <UserButton />
           </SignedIn>
-          <CartLink itemCount={itemCount} label={cartLabel} />
+          <CartLink />
         </nav>
 
         <div className="flex items-center gap-2 sm:hidden">
-          <CartLink itemCount={itemCount} label={cartLabel} />
+          <CartLink />
           <SignedIn>
             <UserButton />
           </SignedIn>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
 import { AllProductsMenu } from "@/components/AllProductsMenu";
@@ -13,7 +13,7 @@ const ITEM = "flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3 hover:text
  * row, then a "More" dropdown holding the rest. A hidden copy of the row is
  * measured to work out how many fit, so the visible row never wraps.
  */
-export function CategoryBar() {
+export const CategoryBar = memo(function CategoryBar() {
   const categories = useMenuCategories();
   const barRef = useRef<HTMLUListElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -135,4 +135,4 @@ export function CategoryBar() {
       </div>
     </nav>
   );
-}
+});
