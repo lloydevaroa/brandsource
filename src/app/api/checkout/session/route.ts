@@ -169,7 +169,7 @@ export async function POST(req: Request) {
       mode: "payment",
       line_items: lineItems,
       customer_email: profile.email ?? undefined,
-      success_url: `${origin}/account?paid=${order.id}`,
+      success_url: `${origin}/order-confirmed?order=${order.id}`,
       cancel_url: `${origin}/cart?canceled=${order.id}`,
       metadata: { order_id: order.id },
       payment_intent_data: { metadata: { order_id: order.id } },

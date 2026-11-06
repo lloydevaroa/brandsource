@@ -399,7 +399,7 @@ export function CartView({ catalog, tier, staff }: { catalog: CatalogProduct[]; 
 }
 
 function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; tier: CartTier; staff: StaffOrdering | null }) {
-  const { items, clear } = useCart();
+  const { items } = useCart();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
   const [submitting, setSubmitting] = useState(false);
@@ -436,7 +436,7 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
         setSubmitError(data.error ?? "Could not start checkout.");
         return;
       }
-      clear();
+      // The cart is cleared on the order-confirmed page, so cancelling at Stripe keeps it.
       window.location.href = data.url;
     } catch {
       setSubmitError("Could not start checkout — check your connection and try again.");
