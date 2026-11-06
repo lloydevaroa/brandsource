@@ -66,7 +66,7 @@ export function ProofReview({ orderId, proof }: { orderId: string; proof: ProofS
       ) : (
         <p className="mt-2 text-sm text-zinc-500">We couldn&apos;t load the proof just now. Refresh the page to try again.</p>
       )}
-      <p className="mt-1 text-xs text-zinc-500">Sent {longDate(proof.createdAt)}. Click it to open full size.</p>
+      <p className="mt-1 text-xs text-zinc-500">Sent {longDate(proof.sentAt ?? proof.createdAt)}. Click it to open full size.</p>
 
       {proof.status === "awaiting_approval" ? (
         <div className="mt-4">

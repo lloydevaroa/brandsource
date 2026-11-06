@@ -21,7 +21,7 @@ type Line = {
   configuration: Record<string, string | string[]> | null;
   products: Product | Product[] | null;
   artwork_files: { id: string; storage_path: string }[] | null;
-  proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string }[] | null;
+  proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string; sent_at: string | null }[] | null;
 };
 
 export default async function OrderPage({ params }: { params: Promise<{ orderId: string }> }) {
@@ -33,7 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, status, customer_id, created_at, order_lines(id, quantity, configuration, products(name, slug), artwork_files(id, storage_path), proofs(id, storage_path, status, customer_note, created_at))"
+      "id, status, customer_id, created_at, order_lines(id, quantity, configuration, products(name, slug), artwork_files(id, storage_path), proofs(id, storage_path, status, customer_note, created_at, sent_at))"
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -43,7 +43,8 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
   const catalog = await getCatalog();
   const rawLines = (order.order_lines ?? []) as unknown as Line[];
   // Only the newest proof for each item matters to the customer. Signed links, as the bucket is private.
-  const newestProofs = rawLines.map((l) => newestFirst(l.proofs ?? [])[0] ?? null);
+  // A proof only appears here once staff have sent it (sent_at is set).
+  const newestProofs = rawLines.map((l) => newestFirst(l.proofs ?? [])[0] ?? null).map((p) => (p?.sent_at ? p : null));
   const proofPaths = newestProofs.flatMap((p) => (p ? [p.storage_path] : []));
   const signedProofs = proofPaths.length
     ? await supabase.storage.from("artwork").createSignedUrls(proofPaths, 3600)
@@ -58,6 +59,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
           status: np.status as ProofStatus,
           note: np.customer_note,
           createdAt: np.created_at,
+          sentAt: np.sent_at,
           url: proofUrlByPath.get(np.storage_path) ?? null,
         }
       : null;

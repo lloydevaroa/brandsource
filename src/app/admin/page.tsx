@@ -28,7 +28,7 @@ export default async function AdminPage() {
           configuration,
           product:products ( name ),
           artwork_files ( id, storage_path ),
-          proofs ( id, storage_path, status, customer_note, created_at )
+          proofs ( id, storage_path, status, customer_note, created_at, sent_at )
         ),
         order:orders (
           id,
@@ -85,7 +85,7 @@ export default async function AdminPage() {
       configuration: unknown;
       product: { name: string } | null;
       artwork_files: { id: string; storage_path: string }[];
-      proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string }[];
+      proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string; sent_at: string | null }[];
     } | null;
     order: {
       id: string;
@@ -154,6 +154,7 @@ export default async function AdminPage() {
         status: p.status as ProofStatus,
         note: p.customer_note,
         createdAt: p.created_at,
+        sentAt: p.sent_at,
         url: artworkUrlByPath.get(p.storage_path) ?? null,
       })),
       artworkFiles: (row.order_line?.artwork_files ?? []).map((a) => ({

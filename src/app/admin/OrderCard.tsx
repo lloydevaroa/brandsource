@@ -60,6 +60,12 @@ export type OrderCardData = {
   items: ItemData[];
 };
 
+/** What the label logic needs to know about the newest proof: not yet sent, or its customer-facing status. */
+function proofState(proof: ProofSummary | undefined) {
+  if (!proof) return null;
+  return proof.sentAt ? proof.status : "not_sent";
+}
+
 const TONE_CLASS: Record<ItemStateTone, string> = {
   blocked: "bg-amber-100 text-amber-800",
   progress: "bg-sky-100 text-sky-800",
@@ -80,7 +86,7 @@ export function OrderCard({
   onClaim: (id: string, claimedBy: string | null) => Promise<void>;
 }) {
   const total = order.items.length;
-  const states = order.items.map((i) => itemState(i.status, i.checklist, i.artworkCount, i.proofs[0]?.status ?? null));
+  const states = order.items.map((i) => itemState(i.status, i.checklist, i.artworkCount, proofState(i.proofs[0])));
   const doneCount = states.filter((s) => s.tone === "done").length;
   const blockedCount = states.filter((s) => s.tone === "blocked").length;
   // Card orders (no PO) where an item still has no artwork: staff can chase the customer.
@@ -200,13 +206,17 @@ function ChaseArtworkButton({ orderId }: { orderId: string }) {
   );
 }
 
-/** Attach a proof for the customer to view and approve, and see the ones already sent. */
+/**
+ * Attach a proof, then press Email proof to customer when it is ready. Attaching only stores the file;
+ * the customer sees it, and is emailed, only after that button, the same as Email artwork reminder.
+ */
 function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [notify, setNotify] = useState(true);
+  const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState<{ name: string; percent: number } | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const latest = item.proofs[0] ?? null;
 
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -219,7 +229,6 @@ function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
       const form = new FormData();
       form.append("file", file);
       form.append("lineId", item.lineId);
-      form.append("notify", notify ? "1" : "0");
       const res = await uploadWithProgress(`/api/orders/${orderId}/proofs`, form, (percent) =>
         setProgress({ name: file.name, percent })
       );
@@ -230,12 +239,7 @@ function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
         });
         return;
       }
-      const emailNote = !notify
-        ? "Proof attached. The customer was not emailed."
-        : res.data.emailed
-          ? "Proof attached and the customer was emailed."
-          : `Proof attached, but the email failed: ${String(res.data.emailError ?? "unknown error")}`;
-      setMessage({ ok: !notify || res.data.emailed === true, text: emailNote });
+      setMessage({ ok: true, text: "Proof attached. The customer can't see it yet: press Email proof to customer when it is ready." });
       router.refresh();
     } catch {
       setMessage({ ok: false, text: "Upload failed. Check your connection and try again." });
@@ -245,6 +249,31 @@ function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
       input.value = "";
     }
   }
+
+  async function send(proofId: string) {
+    setSending(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/proofs/${proofId}/send`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      setMessage(
+        res.ok
+          ? { ok: true, text: `Proof emailed to ${data.sentTo}` }
+          : { ok: false, text: data.error ?? "Could not send the proof" }
+      );
+      if (res.ok) router.refresh();
+    } catch {
+      setMessage({ ok: false, text: "Could not send the proof. Check your connection." });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const sentDate = latest?.sentAt
+    ? new Date(latest.sentAt).toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+  const buttonClass =
+    "rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-60";
 
   return (
     <div>
@@ -262,22 +291,31 @@ function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
               )}{" "}
               <span className="text-zinc-400">
                 {i === 0 ? "(latest) " : ""}
-                {p.status === "approved" ? "approved" : p.status === "changes_requested" ? "changes requested" : "awaiting approval"}
+                {!p.sentAt
+                  ? "not sent"
+                  : p.status === "approved"
+                    ? "approved"
+                    : p.status === "changes_requested"
+                      ? "changes requested"
+                      : "awaiting approval"}
               </span>
             </li>
           ))}
         </ul>
       ) : null}
-      <label className="mb-2 flex items-center gap-2 text-xs text-zinc-700">
-        <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={busy} className="h-3.5 w-3.5 rounded border-zinc-300" />
-        Email the customer when it is attached
-      </label>
-      <label
-        className={`inline-block cursor-pointer rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:border-zinc-900 hover:text-zinc-900 ${busy ? "opacity-60" : ""}`}
-      >
-        {busy ? "Uploading…" : item.proofs.length > 0 ? "Attach a new proof" : "Attach proof"}
-        <input type="file" accept=".jpg,.jpeg,.png,.webp,.svg,.pdf" onChange={upload} disabled={busy} className="hidden" />
-      </label>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className={`cursor-pointer ${buttonClass} ${busy ? "opacity-60" : ""}`}>
+          {busy ? "Uploading…" : latest ? "Attach a new proof" : "Attach proof"}
+          <input type="file" accept=".jpg,.jpeg,.png,.webp,.svg,.pdf" onChange={upload} disabled={busy || sending} className="hidden" />
+        </label>
+        {latest && latest.status !== "approved" ? (
+          <button type="button" onClick={() => send(latest.id)} disabled={busy || sending} className={buttonClass}>
+            {sending ? "Sending…" : latest.sentAt ? "Email proof again" : "Email proof to customer"}
+          </button>
+        ) : null}
+      </div>
+      {sentDate ? <p className="mt-1 text-[11px] text-zinc-400">Latest proof emailed {sentDate}</p> : null}
       {progress ? <UploadProgress fileName={progress.name} percent={progress.percent} /> : null}
       {message ? <p className={`mt-1 text-[11px] ${message.ok ? "text-emerald-700" : "text-red-600"}`}>{message.text}</p> : null}
     </div>
@@ -316,7 +354,7 @@ function ItemRow({
     })
   );
   const column = boardColumn(optimistic.status);
-  const state = itemState(optimistic.status, optimistic.checklist, item.artworkCount, item.proofs[0]?.status ?? null);
+  const state = itemState(optimistic.status, optimistic.checklist, item.artworkCount, proofState(item.proofs[0]));
   const progress = checklistProgress(optimistic.checklist);
 
   const configSummary = Object.entries(item.configuration)
@@ -371,11 +409,13 @@ function ItemRow({
       {item.proofs[0] ? (
         <p className="mt-1 text-xs text-zinc-600">
           <span className="text-zinc-400">Proof:</span>{" "}
-          {item.proofs[0].status === "approved"
-            ? "approved by customer"
-            : item.proofs[0].status === "changes_requested"
-              ? "changes requested"
-              : "sent, awaiting approval"}
+          {!item.proofs[0].sentAt
+            ? "attached, not sent to the customer yet"
+            : item.proofs[0].status === "approved"
+              ? "approved by customer"
+              : item.proofs[0].status === "changes_requested"
+                ? "changes requested"
+                : "sent, awaiting approval"}
           {item.proofs[0].status === "changes_requested" && item.proofs[0].note ? (
             <span className="block italic text-amber-800">&ldquo;{item.proofs[0].note}&rdquo;</span>
           ) : null}

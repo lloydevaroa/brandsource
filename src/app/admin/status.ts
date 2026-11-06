@@ -95,6 +95,7 @@ export function itemState(
     return { label: artworkCount > 0 ? "Artwork to confirm" : "Needs artwork", tone: "blocked" };
   }
   if (!checklist.proof_approved) {
+    if (proofStatus === "not_sent") return { label: "Proof ready to send", tone: "blocked" };
     if (proofStatus === "awaiting_approval") return { label: "Proof with customer", tone: "progress" };
     if (proofStatus === "changes_requested") return { label: "Changes requested", tone: "blocked" };
     return { label: "Needs proof approval", tone: "blocked" };

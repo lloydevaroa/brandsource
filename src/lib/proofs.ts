@@ -6,6 +6,8 @@ export type ProofSummary = {
   status: ProofStatus;
   note: string | null;
   createdAt: string;
+  /** When the proof was released to the customer; null while it is only attached. */
+  sentAt: string | null;
   /** Temporary link to open the file (the bucket is private), or null if one could not be made. */
   url: string | null;
 };

@@ -29,11 +29,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ orderId
 
   const { data: proof } = await supabase
     .from("proofs")
-    .select("id, status, order_line_id, order_lines!inner(order_id)")
+    .select("id, status, sent_at, order_line_id, order_lines!inner(order_id)")
     .eq("id", proofId)
     .eq("order_lines.order_id", orderId)
     .maybeSingle();
-  if (!proof) return NextResponse.json({ error: "Proof not found." }, { status: 404 });
+  if (!proof || !proof.sent_at) return NextResponse.json({ error: "Proof not found." }, { status: 404 });
 
   // Only the newest proof for an item can be answered.
   const { data: newest } = await supabase

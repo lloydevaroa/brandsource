@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { artworkDisplayName, safeArtworkFilename, validateArtworkFile } from "@/lib/artwork";
-import { renderProofReady } from "@/lib/emails/milestones";
-import { orderReference } from "@/lib/emails/order-confirmation";
-import { getResend } from "@/lib/resend";
+import { safeArtworkFilename, validateArtworkFile } from "@/lib/artwork";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { COLUMN_STATUS, boardColumn, effectiveChecklist } from "@/app/admin/status";
 
 export const runtime = "nodejs";
 
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-
 /**
- * Staff only: attach a proof to one item of an order. It shows on the customer's order page for
- * them to approve, and (optionally) a "proof ready" email goes to them with the file attached.
+ * Staff only: attach a proof to one item of an order. Attaching only stores it. The customer does not
+ * see it, and is not emailed, until staff press Send to customer (see ./[proofId]/send).
  */
 export async function POST(req: Request, { params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
@@ -30,7 +25,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ orderId
   }
   const file = form.get("file");
   const lineId = form.get("lineId");
-  const notify = form.get("notify") === "1";
   if (!(file instanceof File)) return NextResponse.json({ error: "Missing file" }, { status: 400 });
   if (typeof lineId !== "string" || !lineId) return NextResponse.json({ error: "Missing lineId" }, { status: 400 });
 
@@ -42,14 +36,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ orderId
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, status, customer:profiles!orders_customer_id_fkey(full_name, email), order_lines(id, quantity, products(name))"
+      "id, status, order_lines(id)"
     )
     .eq("id", orderId)
     .maybeSingle();
   if (!order || order.status === "draft") return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-  type LineRow = { id: string; quantity: number; products: { name: string } | { name: string }[] | null };
-  const line = ((order.order_lines ?? []) as unknown as LineRow[]).find((l) => l.id === lineId);
+  const line = ((order.order_lines ?? []) as unknown as { id: string }[]).find((l) => l.id === lineId);
   if (!line) return NextResponse.json({ error: "That item isn't on this order." }, { status: 404 });
 
   const bytes = await file.arrayBuffer();
@@ -88,44 +81,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ orderId
       .eq("id", sub.id);
   }
 
-  let emailed = false;
-  let emailError: string | null = null;
-  if (notify) {
-    const customerRaw = order.customer as unknown as
-      | { full_name: string | null; email: string | null }
-      | { full_name: string | null; email: string | null }[]
-      | null;
-    const customer = Array.isArray(customerRaw) ? customerRaw[0] : customerRaw;
-    if (!customer?.email) {
-      emailError = "This order has no customer email on file.";
-    } else {
-      const baseUrl = new URL(req.url).origin;
-      const product = Array.isArray(line.products) ? line.products[0] : line.products;
-      const attach = file.size <= MAX_ATTACHMENT_BYTES;
-      const email = renderProofReady({
-        customerName: customer.full_name ?? "",
-        orderNumber: orderReference(order.id),
-        itemLabels: [`${line.quantity} x ${product?.name ?? "Product"}`],
-        orderUrl: `${baseUrl}/account/orders/${order.id}`,
-        baseUrl,
-        attached: attach,
-      });
-      try {
-        const { error } = await getResend().emails.send({
-          from: process.env.RESEND_FROM_EMAIL ?? "BRANDSource <onboarding@resend.dev>",
-          to: customer.email,
-          subject: email.subject,
-          html: email.html,
-          text: email.text,
-          ...(attach ? { attachments: [{ filename: artworkDisplayName(storagePath), content: Buffer.from(bytes) }] } : {}),
-        });
-        if (error) emailError = error.message;
-        else emailed = true;
-      } catch (err) {
-        emailError = err instanceof Error ? err.message : "unknown error";
-      }
-    }
-  }
-
-  return NextResponse.json({ id: proof.id, emailed, emailError });
+  return NextResponse.json({ id: proof.id });
 }
