@@ -36,9 +36,10 @@ export async function getRateTier(id: string | null | undefined): Promise<RateTi
  * (Retail) for anonymous visitors, customers with no linked client, and
  * clients with no tier set. Never throws: pricing must fall back to RRP.
  */
-export async function getViewerTier(): Promise<RateTier | null> {
+export async function getViewerTier(known?: { client_id: string | null } | null): Promise<RateTier | null> {
   try {
-    const profile = await syncCurrentProfile();
+    // Callers that already looked the profile up pass it in, saving a second round trip to Clerk.
+    const profile = known ?? (await syncCurrentProfile());
     if (!profile?.client_id) return null;
     const { data, error } = await createServiceSupabase()
       .from("clients")

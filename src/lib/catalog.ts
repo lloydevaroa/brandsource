@@ -58,7 +58,7 @@ type Row = {
  * Storefront and checkout use the default (active products only); reports pass
  * includeInactive so historical orders still resolve their option labels.
  */
-export const getCatalog = cache(ttlCache(60_000, async (includeInactive = false): Promise<CatalogProduct[]> => {
+async function loadCatalog(includeInactive: boolean, slugs?: string[]): Promise<CatalogProduct[]> {
   const supabase = createServiceSupabase();
   const base =
     "slug, name, short_description, unit_price, min_order_qty, example_image_urls, product_details, option_groups ( key, label, selection, required, sort_order, option_choices ( key, label, price_delta, sort_order ) )";
@@ -75,6 +75,7 @@ export const getCatalog = cache(ttlCache(60_000, async (includeInactive = false)
         .order("slug", { ascending: true })
         .range(from, from + 499);
       if (!includeInactive) query = query.eq("active", true);
+      if (slugs) query = query.in("slug", slugs);
       const page = await query;
       if (page.error) return { data: null, error: page.error };
       rows.push(...(page.data as unknown[]));
@@ -114,4 +115,14 @@ export const getCatalog = cache(ttlCache(60_000, async (includeInactive = false)
           .map((c) => ({ key: c.key, label: c.label, price_delta: Number(c.price_delta) })),
       })),
   }));
-}));
+}
+
+export const getCatalog = cache(ttlCache(60_000, (includeInactive: boolean = false) => loadCatalog(includeInactive)));
+
+/**
+ * Just the named products, same shape and rules as getCatalog. Checkout prices one or two
+ * items, so it must not read the whole catalogue (several seconds on a cold server).
+ */
+export function getCatalogForSlugs(slugs: string[]) {
+  return loadCatalog(false, [...new Set(slugs)]);
+}
