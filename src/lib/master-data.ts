@@ -111,7 +111,8 @@ type LinkRow = { product_id: string; category_id: string };
 type PricingRow = { product_id: string; price_type: string };
 type BreakRow = { product_id: string; min_qty: number; unit_cost: number | string };
 
-export async function getMasterData(): Promise<MasterData> {
+/** The original read: five separate lists joined here. Used until supabase/master-data-view.sql has been run. */
+async function getMasterDataFromTables(): Promise<MasterData> {
   const supabase = createServiceSupabase();
 
   const [products, suppliers, categories, links, pricing, breaks, tiers, overrides, profiles] = await Promise.all([
@@ -270,4 +271,154 @@ export async function getMasterData(): Promise<MasterData> {
     noCostTables,
     noEditTables,
   };
+}
+
+type ViewRow = {
+  slug: string;
+  name: string;
+  short_description: string | null;
+  supplier: string | null;
+  active: boolean;
+  unit_price: number | string | null;
+  min_order_qty: number;
+  first_image: string | null;
+  image_count: number;
+  supplier_updated_at: string | null;
+  specs: ProductSpec[] | null;
+  supplier_name: string | null;
+  supplier_slug: string | null;
+  supplier_listing_status: string | null;
+  supplier_active: boolean | null;
+  category_slugs: string[] | null;
+  price_type: string | null;
+  first_break_qty: number | null;
+  first_break_cost: number | string | null;
+  overrides: {
+    field: OverrideField;
+    supplier_value: string | number | string[] | null;
+    edited_by: string | null;
+    edited_at: string;
+    needs_review: boolean;
+    review_note: string | null;
+  }[];
+};
+
+/**
+ * The fast read: the database joins products, suppliers, categories, cost and edits into one row
+ * per product (supabase/master-data-view.sql), so this takes a few reads instead of about forty.
+ * Returns null when the view has not been created yet, and the caller falls back to the tables.
+ */
+async function getMasterDataFromView(): Promise<MasterData | null> {
+  const supabase = createServiceSupabase();
+
+  const [rowsResult, categories, tiers, profiles] = await Promise.all([
+    fetchAll<ViewRow>(
+      (from, to) =>
+        supabase
+          .from("master_data_rows")
+          .select(
+            "slug, name, short_description, supplier, active, unit_price, min_order_qty, first_image, image_count, supplier_updated_at, specs, supplier_name, supplier_slug, supplier_listing_status, supplier_active, category_slugs, price_type, first_break_qty, first_break_cost, overrides",
+          )
+          .order("name", { ascending: true })
+          .order("slug", { ascending: true })
+          .range(from, to) as unknown as PromiseLike<Result<ViewRow>>,
+      4,
+    ),
+    supabase.from("categories").select("id, slug, name, parent_id, active").order("sort_order", { ascending: true }),
+    getRateTiers().catch(() => [] as RateTier[]),
+    supabase.from("profiles").select("id, full_name, email").in("role", ["admin", "manager"]),
+  ]);
+
+  // View missing (or not readable): let the caller use the tables.
+  if (rowsResult.error) return null;
+  if (categories.error) throw new Error(`Could not load categories: ${categories.error.message}`);
+
+  const staffName = new Map(
+    ((profiles.data ?? []) as { id: string; full_name: string | null; email: string | null }[]).map((p) => [
+      p.id,
+      p.full_name || p.email || "Staff",
+    ]),
+  );
+
+  const catRows = categories.data as CategoryRow[];
+  const slugById = new Map(catRows.map((c) => [c.id, c.slug]));
+
+  const rows: MasterRow[] = (rowsResult.data ?? []).map((p) => {
+    const hasSupplier = p.supplier_name !== null;
+    let visibility: MasterRow["visibility"] = "live";
+    let visibilityNote = "Live on the website";
+    if (!p.active) {
+      visibility = "hidden";
+      visibilityNote = "Product is switched off";
+    } else if (hasSupplier && (!p.supplier_active || p.supplier_listing_status === "withdrawn")) {
+      visibility = "hidden";
+      visibilityNote = "Supplier is withdrawn or inactive";
+    } else if (p.image_count === 0) {
+      visibility = "hidden";
+      visibilityNote = "No image, so the website leaves it out";
+    } else if (p.supplier_listing_status === "sample") {
+      visibility = "sample";
+      visibilityNote = "Live with a sample badge until the supplier approves";
+    }
+
+    const type = p.price_type;
+    const availability: MasterRow["availability"] = !type ? "unknown" : /indent/i.test(type) ? "indent" : "stock";
+
+    const overrides: MasterRow["overrides"] = {};
+    for (const o of p.overrides ?? []) {
+      overrides[o.field] = {
+        supplierValue: o.supplier_value,
+        editedAt: o.edited_at,
+        editedBy: o.edited_by ? (staffName.get(o.edited_by) ?? "Staff") : null,
+        needsReview: o.needs_review,
+        reviewNote: o.review_note,
+      };
+    }
+
+    return {
+      slug: p.slug,
+      isTrends: p.supplier === "trends",
+      overrides,
+      name: p.name,
+      description: p.short_description ?? "",
+      image: p.first_image ?? null,
+      supplier: p.supplier_name ?? "No supplier",
+      supplierSlug: p.supplier_slug ?? "none",
+      visibility,
+      visibilityNote,
+      categories: p.category_slugs ?? [],
+      availability,
+      availabilityDetail: type ?? "",
+      moq: p.min_order_qty,
+      rrp: p.unit_price === null ? null : Number(p.unit_price),
+      cost: p.first_break_cost === null ? null : Number(p.first_break_cost),
+      costQty: p.first_break_qty ?? null,
+      specs: Array.isArray(p.specs)
+        ? p.specs.filter((x) => typeof x?.name === "string" && typeof x?.value === "string")
+        : [],
+      supplierUpdatedAt: p.supplier_updated_at,
+    };
+  });
+
+  const supplierList = [...new Map(rows.map((r) => [r.supplierSlug, r.supplier])).entries()]
+    .map(([slug, name]) => ({ slug, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    rows,
+    categories: catRows.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      parent_slug: c.parent_id ? (slugById.get(c.parent_id) ?? null) : null,
+      active: c.active,
+    })),
+    tiers,
+    suppliers: supplierList,
+    noCostTables: false,
+    noEditTables: false,
+  };
+}
+
+export async function getMasterData(): Promise<MasterData> {
+  return (await getMasterDataFromView()) ?? (await getMasterDataFromTables());
 }

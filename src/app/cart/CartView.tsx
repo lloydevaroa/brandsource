@@ -14,9 +14,9 @@ import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { createManagedOrder } from "@/app/admin/orders/new/actions";
 
 export type CartTier = { name: string; discountPercent: number } | null;
+export type StaffClient = { id: string; name: string; tierId: string };
 export type StaffOrdering = {
   tiers: { id: string; name: string; discountPercent: number }[];
-  clients: { id: string; name: string; tierId: string }[];
 };
 
 function unitPrice(catalog: CatalogProduct[], item: CartItem, discountPercent = 0) {
@@ -217,17 +217,36 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
  * The order uses the client's default tier; change it afterwards with Edit order on the dashboard.
  */
 function StaffPoOrder({
-  clients,
   tiers,
   onTierChange,
   onCreated,
 }: {
-  clients: StaffOrdering["clients"];
   tiers: StaffOrdering["tiers"];
   onTierChange: (tier: CartTier) => void;
   onCreated: (clientName: string) => void;
 }) {
   const { items, clear } = useCart();
+  // The client list (about 500) is fetched here rather than sent with every cart page.
+  const [clients, setClients] = useState<StaffClient[]>([]);
+  const [clientsStatus, setClientsStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [clientsAttempt, setClientsAttempt] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setClientsStatus("loading");
+    fetch("/api/staff/cart-clients")
+      .then((res) => (res.ok ? (res.json() as Promise<StaffClient[]>) : Promise.reject(new Error("clients"))))
+      .then((list) => {
+        if (cancelled) return;
+        setClients(list);
+        setClientsStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setClientsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientsAttempt]);
   const [clientId, setClientId] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [tierId, setTierId] = useState("");
@@ -251,7 +270,7 @@ function StaffPoOrder({
     const t = tiers.find((x) => x.id === id);
     onTierChange(t && t.discountPercent > 0 ? { name: t.name, discountPercent: t.discountPercent } : null);
   }
-  function chooseClient(c: StaffOrdering["clients"][number]) {
+  function chooseClient(c: StaffClient) {
     setClientId(c.id);
     setClientQuery(c.name);
     setMenuOpen(false);
@@ -333,7 +352,13 @@ function StaffPoOrder({
             aria-autocomplete="list"
             autoComplete="off"
             value={clientQuery}
-            placeholder="Type to search, or select from the list…"
+            placeholder={
+              clientsStatus === "loading"
+                ? "Loading clients, just a moment…"
+                : clientsStatus === "error"
+                  ? "Could not load clients"
+                  : "Type to search, or select from the list…"
+            }
             onChange={(e) => onClientInput(e.target.value)}
             onFocus={() => setMenuOpen(true)}
             onBlur={onClientBlur}
@@ -358,10 +383,19 @@ function StaffPoOrder({
               ))}
             </ul>
           ) : null}
-          {menuOpen && filteredClients.length === 0 ? (
+          {menuOpen && filteredClients.length === 0 && clientsStatus === "ready" ? (
             <p className="absolute z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-400 shadow-lg">
               No matching clients
             </p>
+          ) : null}
+          {clientsStatus === "error" ? (
+            <button
+              type="button"
+              onClick={() => setClientsAttempt((n) => n + 1)}
+              className="mt-1 text-xs text-red-600 underline underline-offset-2"
+            >
+              Could not load clients. Try again
+            </button>
           ) : null}
         </label>
         <label className="text-sm">
@@ -543,7 +577,7 @@ function CartPageInner({ tier, staff }: { tier: CartTier; staff: StaffOrdering |
               ))}
             </ul>
 
-            {staff ? <StaffPoOrder clients={staff.clients} tiers={staff.tiers} onTierChange={setStaffTier} onCreated={setCreatedFor} /> : null}
+            {staff ? <StaffPoOrder tiers={staff.tiers} onTierChange={setStaffTier} onCreated={setCreatedFor} /> : null}
 
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center justify-between text-sm">
