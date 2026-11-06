@@ -8,6 +8,8 @@ import { configurationSummary } from "@/lib/pricing";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { ArtworkUploader } from "./ArtworkUploader";
+import { ProofReview } from "./ProofReview";
+import { newestFirst, type ProofSummary, type ProofStatus } from "@/lib/proofs";
 import { StaffReminderButton } from "./StaffReminderButton";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,7 @@ type Line = {
   configuration: Record<string, string | string[]> | null;
   products: Product | Product[] | null;
   artwork_files: { id: string; storage_path: string }[] | null;
+  proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string }[] | null;
 };
 
 export default async function OrderPage({ params }: { params: Promise<{ orderId: string }> }) {
@@ -30,7 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, status, customer_id, created_at, order_lines(id, quantity, configuration, products(name, slug), artwork_files(id, storage_path))"
+      "id, status, customer_id, created_at, order_lines(id, quantity, configuration, products(name, slug), artwork_files(id, storage_path), proofs(id, storage_path, status, customer_note, created_at))"
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -38,7 +41,26 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
   if (!order || order.status === "draft" || (!isStaff && order.customer_id !== profile.id)) notFound();
 
   const catalog = await getCatalog();
-  const lines = ((order.order_lines ?? []) as unknown as Line[]).map((l) => {
+  const rawLines = (order.order_lines ?? []) as unknown as Line[];
+  // Only the newest proof for each item matters to the customer. Signed links, as the bucket is private.
+  const newestProofs = rawLines.map((l) => newestFirst(l.proofs ?? [])[0] ?? null);
+  const proofPaths = newestProofs.flatMap((p) => (p ? [p.storage_path] : []));
+  const signedProofs = proofPaths.length
+    ? await supabase.storage.from("artwork").createSignedUrls(proofPaths, 3600)
+    : { data: [] as { path: string | null; signedUrl: string }[] };
+  const proofUrlByPath = new Map((signedProofs.data ?? []).map((d) => [d.path ?? "", d.signedUrl]));
+  const lines = rawLines.map((l, i) => {
+    const np = newestProofs[i];
+    const proof: ProofSummary | null = np
+      ? {
+          id: np.id,
+          name: artworkDisplayName(np.storage_path),
+          status: np.status as ProofStatus,
+          note: np.customer_note,
+          createdAt: np.created_at,
+          url: proofUrlByPath.get(np.storage_path) ?? null,
+        }
+      : null;
     const product = Array.isArray(l.products) ? l.products[0] : l.products;
     const catalogProduct = catalog.find((p) => p.slug === product?.slug);
     return {
@@ -48,9 +70,11 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
       quantity: l.quantity,
       templateUrl: catalogProduct?.product_details?.template_url ?? null,
       files: (l.artwork_files ?? []).map((f) => ({ id: f.id, name: artworkDisplayName(f.storage_path) })),
+      proof,
     };
   });
   const waiting = lines.filter((l) => l.files.length === 0).length;
+  const proofsToApprove = lines.filter((l) => l.proof?.status === "awaiting_approval").length;
 
   return (
     <div className="min-h-screen bg-white text-brand-charcoal">
@@ -64,10 +88,19 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
           Placed {new Date(order.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "long", year: "numeric" })}
         </p>
 
-        {waiting > 0 ? (
+        {proofsToApprove > 0 ? (
+          <div className="mt-6 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+            {proofsToApprove === 1 ? "A proof is" : `${proofsToApprove} proofs are`} ready for you to check. Please approve{" "}
+            {proofsToApprove === 1 ? "it" : "them"} below, or ask for changes. Nothing is made until you do.
+          </div>
+        ) : waiting > 0 ? (
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             We need artwork for {waiting} of your {lines.length} item{lines.length === 1 ? "" : "s"}. Upload it below,
             against the product it is for. We proof each item before anything goes to production.
+          </div>
+        ) : lines.every((l) => l.proof?.status === "approved") ? (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            Every proof is approved. Thanks, we&apos;ll move your order on to production.
           </div>
         ) : (
           <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
@@ -97,6 +130,7 @@ export default async function OrderPage({ params }: { params: Promise<{ orderId:
               <div className="mt-4 border-t border-zinc-100 pt-4">
                 <ArtworkUploader orderId={order.id} lineId={l.id} files={l.files} templateUrl={l.templateUrl} />
               </div>
+              {l.proof ? <ProofReview orderId={order.id} proof={l.proof} /> : null}
             </li>
           ))}
         </ul>

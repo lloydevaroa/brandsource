@@ -18,9 +18,14 @@ export type MilestoneBase = {
   /** One short label per item, e.g. "2 x Pull-up Banner (Premium)". */
   itemLabels: string[];
   orderUrl: string;
+  /** Site address used for the logo. Defaults to the configured site URL. */
+  baseUrl?: string;
 };
 
-export type ProofReadyData = MilestoneBase;
+export type ProofReadyData = MilestoneBase & {
+  /** False when the proof file was too big to attach; the email then points to the order page only. */
+  attached?: boolean;
+};
 export type InProductionData = MilestoneBase & {
   /** Only shown when staff have a date to give. */
   estimatedDelivery?: string;
@@ -95,7 +100,11 @@ export function renderProofReady(data: ProofReadyData) {
   const bodyHtml = [
     p(`Hi ${escapeHtml(firstName(data.customerName))},`),
     p("Your proof is ready. This is how your order will look once it's made, so please check it carefully."),
-    p("It's attached to this email, and you'll also find it on your order page."),
+    p(
+      data.attached === false
+        ? "You'll find it on your order page."
+        : "It's attached to this email, and you'll also find it on your order page."
+    ),
     orderPanel(data),
     p("Look over the sizes, colours, spelling and positioning. Nothing is made until you approve it.", 24),
     `<div>${emailButton("Review your proof", data.orderUrl)}</div>`,
@@ -108,6 +117,7 @@ export function renderProofReady(data: ProofReadyData) {
     headlineStart: "Please check every",
     headlineAccent: "detail",
     bodyHtml,
+    baseUrl: data.baseUrl,
   });
 
   const text = [
@@ -115,7 +125,9 @@ export function renderProofReady(data: ProofReadyData) {
     "",
     "Your proof is ready. This is how your order will look once it's made, so please check it carefully.",
     "",
-    "It's attached to this email, and you'll also find it on your order page.",
+    data.attached === false
+      ? "You'll find it on your order page."
+      : "It's attached to this email, and you'll also find it on your order page.",
     "",
     ...textBlock(data),
     "",

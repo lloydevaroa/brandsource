@@ -82,7 +82,9 @@ export type ItemStateTone = "blocked" | "progress" | "done";
 export function itemState(
   status: string,
   checklist: Checklist,
-  artworkCount: number
+  artworkCount: number,
+  /** Status of the newest proof on a card order, if one has been sent to the customer. */
+  proofStatus?: string | null
 ): { label: string; tone: ItemStateTone } {
   if (status === "completed") return { label: "Completed", tone: "done" };
   if (checklist.dispatched) return { label: "Dispatched", tone: "done" };
@@ -92,7 +94,11 @@ export function itemState(
   if (!checklist.artwork_received) {
     return { label: artworkCount > 0 ? "Artwork to confirm" : "Needs artwork", tone: "blocked" };
   }
-  if (!checklist.proof_approved) return { label: "Needs proof approval", tone: "blocked" };
+  if (!checklist.proof_approved) {
+    if (proofStatus === "awaiting_approval") return { label: "Proof with customer", tone: "progress" };
+    if (proofStatus === "changes_requested") return { label: "Changes requested", tone: "blocked" };
+    return { label: "Needs proof approval", tone: "blocked" };
+  }
   return { label: "Ready to order", tone: "blocked" };
 }
 

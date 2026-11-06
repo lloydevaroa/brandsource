@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import type { SubOrderStatus } from "@/lib/types";
+import { UploadProgress } from "@/components/UploadProgress";
+import { uploadWithProgress } from "@/lib/upload-with-progress";
+import type { ProofSummary } from "@/lib/proofs";
 import {
   CHECKLIST_ITEMS,
   COLUMN_LABEL,
@@ -31,6 +35,10 @@ export type ItemData = {
   artworkCount: number;
   /** The files themselves, each with a temporary link to open it (null if a link could not be made). */
   artworkFiles: { id: string; name: string; url: string | null }[];
+  /** The order line this item is, needed to attach a proof to it. */
+  lineId: string | null;
+  /** Proofs sent to the customer for this item, newest first. */
+  proofs: ProofSummary[];
 };
 
 export type OrderCardData = {
@@ -72,7 +80,7 @@ export function OrderCard({
   onClaim: (id: string, claimedBy: string | null) => Promise<void>;
 }) {
   const total = order.items.length;
-  const states = order.items.map((i) => itemState(i.status, i.checklist, i.artworkCount));
+  const states = order.items.map((i) => itemState(i.status, i.checklist, i.artworkCount, i.proofs[0]?.status ?? null));
   const doneCount = states.filter((s) => s.tone === "done").length;
   const blockedCount = states.filter((s) => s.tone === "blocked").length;
   // Card orders (no PO) where an item still has no artwork: staff can chase the customer.
@@ -81,6 +89,9 @@ export function OrderCard({
     !!order.customerEmail &&
     order.poNumber === null &&
     order.items.some((i, idx) => i.artworkCount === 0 && states[idx].tone !== "done");
+
+  // Proofs are for card orders: the customer approves them on their order page.
+  const canProof = !!order.orderId && order.poNumber === null;
 
   return (
     <li className="rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-sm">
@@ -136,6 +147,7 @@ export function OrderCard({
           <ItemRow
             key={item.id}
             item={item}
+            orderId={canProof ? order.orderId : null}
             staff={staff}
             startOpen={total === 1}
             onUpdateStatus={onUpdateStatus}
@@ -188,8 +200,93 @@ function ChaseArtworkButton({ orderId }: { orderId: string }) {
   );
 }
 
+/** Attach a proof for the customer to view and approve, and see the ones already sent. */
+function ProofSection({ orderId, item }: { orderId: string; item: ItemData }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [notify, setNotify] = useState(true);
+  const [progress, setProgress] = useState<{ name: string; percent: number } | null>(null);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const input = e.target;
+    if (!file || !item.lineId) return;
+    setBusy(true);
+    setMessage(null);
+    setProgress({ name: file.name, percent: 0 });
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("lineId", item.lineId);
+      form.append("notify", notify ? "1" : "0");
+      const res = await uploadWithProgress(`/api/orders/${orderId}/proofs`, form, (percent) =>
+        setProgress({ name: file.name, percent })
+      );
+      if (!res.ok) {
+        setMessage({
+          ok: false,
+          text: res.status === 413 ? "That file is too large to upload here." : String(res.data.error ?? "Upload failed."),
+        });
+        return;
+      }
+      const emailNote = !notify
+        ? "Proof attached. The customer was not emailed."
+        : res.data.emailed
+          ? "Proof attached and the customer was emailed."
+          : `Proof attached, but the email failed: ${String(res.data.emailError ?? "unknown error")}`;
+      setMessage({ ok: !notify || res.data.emailed === true, text: emailNote });
+      router.refresh();
+    } catch {
+      setMessage({ ok: false, text: "Upload failed. Check your connection and try again." });
+    } finally {
+      setBusy(false);
+      setProgress(null);
+      input.value = "";
+    }
+  }
+
+  return (
+    <div>
+      <p className="mb-1 text-xs font-medium text-zinc-700">Proof for the customer</p>
+      {item.proofs.length > 0 ? (
+        <ul className="mb-2 space-y-0.5">
+          {item.proofs.map((p, i) => (
+            <li key={p.id} className="text-xs text-zinc-600">
+              {p.url ? (
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="break-all underline underline-offset-2 hover:text-brand-orange">
+                  {p.name}
+                </a>
+              ) : (
+                <span className="break-all">{p.name}</span>
+              )}{" "}
+              <span className="text-zinc-400">
+                {i === 0 ? "(latest) " : ""}
+                {p.status === "approved" ? "approved" : p.status === "changes_requested" ? "changes requested" : "awaiting approval"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <label className="mb-2 flex items-center gap-2 text-xs text-zinc-700">
+        <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={busy} className="h-3.5 w-3.5 rounded border-zinc-300" />
+        Email the customer when it is attached
+      </label>
+      <label
+        className={`inline-block cursor-pointer rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:border-zinc-900 hover:text-zinc-900 ${busy ? "opacity-60" : ""}`}
+      >
+        {busy ? "Uploading…" : item.proofs.length > 0 ? "Attach a new proof" : "Attach proof"}
+        <input type="file" accept=".jpg,.jpeg,.png,.webp,.svg,.pdf" onChange={upload} disabled={busy} className="hidden" />
+      </label>
+      {progress ? <UploadProgress fileName={progress.name} percent={progress.percent} /> : null}
+      {message ? <p className={`mt-1 text-[11px] ${message.ok ? "text-emerald-700" : "text-red-600"}`}>{message.text}</p> : null}
+    </div>
+  );
+}
+
 function ItemRow({
   item,
+  orderId,
   staff,
   startOpen,
   onUpdateStatus,
@@ -197,6 +294,8 @@ function ItemRow({
   onClaim,
 }: {
   item: ItemData;
+  /** Set when staff can attach proofs to this item (card orders). */
+  orderId: string | null;
   staff: StaffOption[];
   startOpen: boolean;
   onUpdateStatus: (id: string, status: SubOrderStatus) => Promise<void>;
@@ -217,7 +316,7 @@ function ItemRow({
     })
   );
   const column = boardColumn(optimistic.status);
-  const state = itemState(optimistic.status, optimistic.checklist, item.artworkCount);
+  const state = itemState(optimistic.status, optimistic.checklist, item.artworkCount, item.proofs[0]?.status ?? null);
   const progress = checklistProgress(optimistic.checklist);
 
   const configSummary = Object.entries(item.configuration)
@@ -248,33 +347,45 @@ function ItemRow({
           {open ? "Hide" : "Details"}
         </button>
       </p>
+      {item.artworkFiles.length > 0 ? (
+        <ul className="mt-1 space-y-0.5">
+          {item.artworkFiles.map((f) => (
+            <li key={f.id} className="flex items-start gap-1 text-xs">
+              <span className="shrink-0 text-zinc-400">Artwork:</span>
+              {f.url ? (
+                <a
+                  href={f.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all font-medium text-zinc-900 underline underline-offset-2 hover:text-brand-orange"
+                >
+                  {f.name}
+                </a>
+              ) : (
+                <span className="break-all text-zinc-500">{f.name} (refresh for link)</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {item.proofs[0] ? (
+        <p className="mt-1 text-xs text-zinc-600">
+          <span className="text-zinc-400">Proof:</span>{" "}
+          {item.proofs[0].status === "approved"
+            ? "approved by customer"
+            : item.proofs[0].status === "changes_requested"
+              ? "changes requested"
+              : "sent, awaiting approval"}
+          {item.proofs[0].status === "changes_requested" && item.proofs[0].note ? (
+            <span className="block italic text-amber-800">&ldquo;{item.proofs[0].note}&rdquo;</span>
+          ) : null}
+        </p>
+      ) : null}
 
       {open ? (
         <div className="mt-2 flex flex-col gap-2">
           {configSummary ? <p className="text-xs text-zinc-500">{configSummary}</p> : null}
-          {item.artworkFiles.length > 0 ? (
-            <div>
-              <p className="mb-1 text-xs font-medium text-zinc-700">Customer artwork</p>
-              <ul className="space-y-1">
-                {item.artworkFiles.map((f) => (
-                  <li key={f.id} className="text-xs">
-                    {f.url ? (
-                      <a
-                        href={f.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="break-all text-zinc-900 underline underline-offset-2 hover:text-brand-orange"
-                      >
-                        {f.name}
-                      </a>
-                    ) : (
-                      <span className="break-all text-zinc-500">{f.name} (link unavailable, refresh the page)</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          {orderId && item.lineId ? <ProofSection orderId={orderId} item={item} /> : null}
           <div>
             <p className="mb-1 text-xs font-medium text-zinc-700">Progress</p>
             <ul className="space-y-1">

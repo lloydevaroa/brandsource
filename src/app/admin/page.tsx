@@ -6,6 +6,7 @@ import { OrderCard, type OrderCardData } from "./OrderCard";
 import { COLUMN_ORDER, COLUMN_LABEL, effectiveChecklist, orderColumn } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
 import { artworkDisplayName } from "@/lib/artwork";
+import { newestFirst, type ProofStatus } from "@/lib/proofs";
 
 export default async function AdminPage() {
   const staffResult = await requireStaffProfile("Team dashboard");
@@ -26,7 +27,8 @@ export default async function AdminPage() {
           quantity,
           configuration,
           product:products ( name ),
-          artwork_files ( id, storage_path )
+          artwork_files ( id, storage_path ),
+          proofs ( id, storage_path, status, customer_note, created_at )
         ),
         order:orders (
           id,
@@ -78,10 +80,12 @@ export default async function AdminPage() {
     claimed_by: string | null;
     created_at: string;
     order_line: {
+      id: string;
       quantity: number;
       configuration: unknown;
       product: { name: string } | null;
       artwork_files: { id: string; storage_path: string }[];
+      proofs: { id: string; storage_path: string; status: string; customer_note: string | null; created_at: string }[];
     } | null;
     order: {
       id: string;
@@ -96,7 +100,14 @@ export default async function AdminPage() {
   const rows = (subOrders ?? []) as unknown as Row[];
 
   // Signed links (the artwork bucket is private) so staff can open each file from its item.
-  const artworkPaths = [...new Set(rows.flatMap((r) => (r.order_line?.artwork_files ?? []).map((a) => a.storage_path)))];
+  const artworkPaths = [
+    ...new Set(
+      rows.flatMap((r) => [
+        ...(r.order_line?.artwork_files ?? []).map((a) => a.storage_path),
+        ...(r.order_line?.proofs ?? []).map((p) => p.storage_path),
+      ])
+    ),
+  ];
   const signedArtwork = artworkPaths.length
     ? await supabase.storage.from("artwork").createSignedUrls(artworkPaths, 3600)
     : { data: [] as { path: string | null; signedUrl: string }[] };
@@ -136,6 +147,15 @@ export default async function AdminPage() {
       quantity: row.order_line?.quantity ?? 0,
       configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
       artworkCount: row.order_line?.artwork_files?.length ?? 0,
+      lineId: row.order_line?.id ?? null,
+      proofs: newestFirst(row.order_line?.proofs ?? []).map((p) => ({
+        id: p.id,
+        name: artworkDisplayName(p.storage_path),
+        status: p.status as ProofStatus,
+        note: p.customer_note,
+        createdAt: p.created_at,
+        url: artworkUrlByPath.get(p.storage_path) ?? null,
+      })),
       artworkFiles: (row.order_line?.artwork_files ?? []).map((a) => ({
         id: a.id,
         name: artworkDisplayName(a.storage_path),
