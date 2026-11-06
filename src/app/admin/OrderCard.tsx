@@ -73,6 +73,12 @@ export function OrderCard({
   const states = order.items.map((i) => itemState(i.status, i.checklist, i.artworkCount));
   const doneCount = states.filter((s) => s.tone === "done").length;
   const blockedCount = states.filter((s) => s.tone === "blocked").length;
+  // Card orders (no PO) where an item still has no artwork: staff can chase the customer.
+  const canChase =
+    !!order.orderId &&
+    !!order.customerEmail &&
+    order.poNumber === null &&
+    order.items.some((i, idx) => i.artworkCount === 0 && states[idx].tone !== "done");
 
   return (
     <li className="rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-sm">
@@ -121,6 +127,8 @@ export function OrderCard({
       </p>
       <p className="mt-0.5 text-xs text-zinc-400">Raised {new Date(order.createdAt).toLocaleDateString("en-NZ")}</p>
 
+      {canChase && order.orderId ? <ChaseArtworkButton orderId={order.orderId} /> : null}
+
       <ul className="mt-3 divide-y divide-zinc-100 border-t border-zinc-100">
         {order.items.map((item) => (
           <ItemRow
@@ -135,6 +143,46 @@ export function OrderCard({
         ))}
       </ul>
     </li>
+  );
+}
+
+/** Emails the customer a reminder for each product still missing artwork, with a link to upload it. */
+function ChaseArtworkButton({ orderId }: { orderId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/artwork-reminder`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      setMessage(
+        res.ok
+          ? { ok: true, text: `Reminder sent to ${data.sentTo}` }
+          : { ok: false, text: data.error ?? "Could not send the reminder" }
+      );
+    } catch {
+      setMessage({ ok: false, text: "Could not send the reminder. Check your connection." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={send}
+        disabled={busy}
+        className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-700 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-60"
+      >
+        {busy ? "Sending…" : "Email artwork reminder"}
+      </button>
+      {message ? (
+        <p className={`mt-1 text-[11px] ${message.ok ? "text-emerald-700" : "text-red-600"}`}>{message.text}</p>
+      ) : null}
+    </div>
   );
 }
 
