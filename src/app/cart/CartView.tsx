@@ -9,6 +9,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import type { CatalogProduct } from "@/lib/catalog";
 import { useCart, type CartItem } from "@/lib/cart";
 import { applyTierDiscount } from "@/lib/pricing";
+import { UploadProgress } from "@/components/UploadProgress";
+import { uploadWithProgress } from "@/lib/upload-with-progress";
 import { createManagedOrder } from "@/app/admin/orders/new/actions";
 
 export type CartTier = { name: string; discountPercent: number } | null;
@@ -59,6 +61,7 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ name: string; percent: number } | null>(null);
   const summary = configurationSummary(catalog, item);
   const price = unitPrice(catalog, item, tier?.discountPercent);
   const product = catalog.find((p) => p.slug === item.productSlug);
@@ -70,21 +73,30 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
     if (!file) return;
     setUploading(true);
     setUploadError(null);
+    setProgress({ name: file.name, percent: 0 });
     try {
       const form = new FormData();
       form.append("file", file);
       form.append("cartItemId", item.id);
-      const res = await fetch("/api/artwork/upload", { method: "POST", body: form });
-      const data = await res.json();
+      const res = await uploadWithProgress("/api/artwork/upload", form, (percent) =>
+        setProgress({ name: file.name, percent })
+      );
       if (!res.ok) {
-        setUploadError(data.error ?? "Upload failed");
+        setUploadError(
+          res.status === 413
+            ? "That file is too large to upload here."
+            : typeof res.data.error === "string"
+              ? res.data.error
+              : "Upload failed"
+        );
         return;
       }
-      addArtwork(item.id, { path: data.path, filename: data.filename });
+      addArtwork(item.id, { path: String(res.data.path), filename: String(res.data.filename) });
     } catch {
       setUploadError("Upload failed — check your connection and try again.");
     } finally {
       setUploading(false);
+      setProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -173,6 +185,7 @@ function CartLine({ item, catalog, tier }: { item: CartItem; catalog: CatalogPro
               className="hidden"
             />
           </div>
+          {progress ? <UploadProgress fileName={progress.name} percent={progress.percent} /> : null}
           {item.artwork.length > 0 ? (
             <ul className="mt-3 space-y-1">
               {item.artwork.map((a) => (
