@@ -13,6 +13,8 @@ const VALUE_POINTS = [
 ];
 
 const CONTACT_EMAIL = "orders@brandsource.co.nz";
+const CONTACT_PHONE = "09 377 4110";
+const CONTACT_PHONE_TEL = "+6493774110";
 const MAX_CATEGORIES = 8;
 const LINK = "hover:text-brand-orange focus-visible:text-brand-orange";
 
@@ -91,6 +93,11 @@ export function SiteFooter() {
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wide text-white">Contact</h2>
             <p className="mt-4 leading-relaxed">Talk to our NZ team about any order.</p>
+            <p className="mt-2">
+              <a href={`tel:${CONTACT_PHONE_TEL}`} className={LINK}>
+                {CONTACT_PHONE}
+              </a>
+            </p>
             <p className="mt-2">
               <a href={`mailto:${CONTACT_EMAIL}`} className={LINK}>
                 {CONTACT_EMAIL}
