@@ -93,7 +93,7 @@ export default async function OrderConfirmedPage({
             <span className="font-semibold text-brand-orange">1.</span>
             <span>
               {missingArtwork > 0
-                ? `${missingArtwork} item${missingArtwork === 1 ? " still needs" : "s still need"} artwork. We'll be in touch to get it from you.`
+                ? `${missingArtwork} item${missingArtwork === 1 ? " still needs" : "s still need"} artwork. Upload it any time from your order page.`
                 : "We check your artwork on every item."}
             </span>
           </li>
@@ -134,10 +134,10 @@ export default async function OrderConfirmedPage({
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/account"
+            href={`/account/orders/${order.id}`}
             className="rounded bg-brand-orange px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white hover:bg-[#e64300]"
           >
-            View your orders
+            {missingArtwork > 0 ? "Upload artwork" : "View your order"}
           </Link>
           <Link
             href="/category/trade-show-and-events"

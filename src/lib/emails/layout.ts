@@ -45,6 +45,11 @@ export function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://brandsource.co.nz").replace(/\/$/, "");
 }
 
+/** The customer's order page: upload artwork against each product, and later review proofs. */
+export function orderPageUrl(orderId: string) {
+  return `${siteUrl()}/account/orders/${orderId}`;
+}
+
 /** Bulletproof button: a table cell so the orange fill survives Outlook. */
 export function emailButton(label: string, href: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>

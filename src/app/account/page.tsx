@@ -97,9 +97,10 @@ export default async function AccountPage({
                   ? STATUS_LABEL[[...statuses][0]] ?? [...statuses][0]
                   : "In progress";
             return (
-              <li
-                key={order.id}
-                className="rounded-xl border border-zinc-200 bg-white p-4 text-sm"
+              <li key={order.id}>
+              <Link
+                href={`/account/orders/${order.id}`}
+                className="block rounded-xl border border-zinc-200 bg-white p-4 text-sm hover:border-zinc-400"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium">
@@ -110,6 +111,7 @@ export default async function AccountPage({
                 <p className="mt-1 text-xs text-zinc-400">
                   Submitted {new Date(order.created_at).toLocaleDateString("en-NZ")}
                 </p>
+              </Link>
               </li>
             );
           })}
