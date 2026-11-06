@@ -5,6 +5,7 @@ import { updateSubOrderStatus, setChecklistItem, claimSubOrder } from "./actions
 import { OrderCard, type OrderCardData } from "./OrderCard";
 import { COLUMN_ORDER, COLUMN_LABEL, effectiveChecklist, orderColumn } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
+import { artworkDisplayName } from "@/lib/artwork";
 
 export default async function AdminPage() {
   const staffResult = await requireStaffProfile("Team dashboard");
@@ -25,7 +26,7 @@ export default async function AdminPage() {
           quantity,
           configuration,
           product:products ( name ),
-          artwork_files ( id )
+          artwork_files ( id, storage_path )
         ),
         order:orders (
           id,
@@ -80,7 +81,7 @@ export default async function AdminPage() {
       quantity: number;
       configuration: unknown;
       product: { name: string } | null;
-      artwork_files: { id: string }[];
+      artwork_files: { id: string; storage_path: string }[];
     } | null;
     order: {
       id: string;
@@ -93,6 +94,13 @@ export default async function AdminPage() {
     } | null;
   };
   const rows = (subOrders ?? []) as unknown as Row[];
+
+  // Signed links (the artwork bucket is private) so staff can open each file from its item.
+  const artworkPaths = [...new Set(rows.flatMap((r) => (r.order_line?.artwork_files ?? []).map((a) => a.storage_path)))];
+  const signedArtwork = artworkPaths.length
+    ? await supabase.storage.from("artwork").createSignedUrls(artworkPaths, 3600)
+    : { data: [] as { path: string | null; signedUrl: string }[] };
+  const artworkUrlByPath = new Map((signedArtwork.data ?? []).map((d) => [d.path ?? "", d.signedUrl]));
 
   // One card per order, with its items listed inside, so the team sees an
   // order (and, later, a whole event) as one job rather than loose items.
@@ -128,6 +136,11 @@ export default async function AdminPage() {
       quantity: row.order_line?.quantity ?? 0,
       configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
       artworkCount: row.order_line?.artwork_files?.length ?? 0,
+      artworkFiles: (row.order_line?.artwork_files ?? []).map((a) => ({
+        id: a.id,
+        name: artworkDisplayName(a.storage_path),
+        url: artworkUrlByPath.get(a.storage_path) ?? null,
+      })),
     });
   }
   const orders = [...orderMap.values()];

@@ -29,6 +29,8 @@ export type ItemData = {
   quantity: number;
   configuration: Record<string, string | string[]>;
   artworkCount: number;
+  /** The files themselves, each with a temporary link to open it (null if a link could not be made). */
+  artworkFiles: { id: string; name: string; url: string | null }[];
 };
 
 export type OrderCardData = {
@@ -250,6 +252,29 @@ function ItemRow({
       {open ? (
         <div className="mt-2 flex flex-col gap-2">
           {configSummary ? <p className="text-xs text-zinc-500">{configSummary}</p> : null}
+          {item.artworkFiles.length > 0 ? (
+            <div>
+              <p className="mb-1 text-xs font-medium text-zinc-700">Customer artwork</p>
+              <ul className="space-y-1">
+                {item.artworkFiles.map((f) => (
+                  <li key={f.id} className="text-xs">
+                    {f.url ? (
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="break-all text-zinc-900 underline underline-offset-2 hover:text-brand-orange"
+                      >
+                        {f.name}
+                      </a>
+                    ) : (
+                      <span className="break-all text-zinc-500">{f.name} (link unavailable, refresh the page)</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div>
             <p className="mb-1 text-xs font-medium text-zinc-700">Progress</p>
             <ul className="space-y-1">
