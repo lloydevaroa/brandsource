@@ -2,8 +2,8 @@ import Link from "next/link";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffProfile } from "./staff-guard";
 import { updateSubOrderStatus, setChecklistItem, claimSubOrder } from "./actions";
-import { SubOrderCard, type SubOrderCardData } from "./SubOrderCard";
-import { COLUMN_ORDER, COLUMN_LABEL, boardColumn, effectiveChecklist } from "./status";
+import { OrderCard, type OrderCardData } from "./OrderCard";
+import { COLUMN_ORDER, COLUMN_LABEL, effectiveChecklist, orderColumn } from "./status";
 import type { SubOrderStatus } from "@/lib/types";
 
 export default async function AdminPage() {
@@ -94,31 +94,47 @@ export default async function AdminPage() {
   };
   const rows = (subOrders ?? []) as unknown as Row[];
 
-  const cards: SubOrderCardData[] = rows.map((row) => ({
-    id: row.id,
-    status: row.status as SubOrderStatus,
-    checklist: effectiveChecklist(row.status, row.checklist),
-    claimedBy: row.claimed_by,
-    createdAt: row.created_at,
-    productName: row.order_line?.product?.name ?? "Unknown product",
-    quantity: row.order_line?.quantity ?? 0,
-    configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
-    customerName: row.order?.customer?.full_name ?? row.order?.client?.name ?? null,
-    accountManager: row.order?.client?.account_manager?.full_name ?? null,
-    customerEmail: row.order?.customer?.email ?? null,
-    artworkCount: row.order_line?.artwork_files?.length ?? 0,
-    poNumber: row.order?.payment_method === "po" ? row.order?.po_number ?? "PO" : null,
-    orderId: row.order?.id ?? null,
-    // Null tier means Retail (the RRP).
-    tierName: row.order?.rate_tier?.name ?? "Retail",
-    tierDiscount: Number(row.order?.rate_tier?.discount_percent ?? 0),
-    // Only PO orders that haven't been invoiced to Xero can be edited.
-    editable: row.order?.payment_method === "po" && row.order?.status !== "invoiced",
-  }));
+  // One card per order, with its items listed inside, so the team sees an
+  // order (and, later, a whole event) as one job rather than loose items.
+  const orderMap = new Map<string, OrderCardData>();
+  for (const row of rows) {
+    const key = row.order?.id ?? row.id;
+    let card = orderMap.get(key);
+    if (!card) {
+      card = {
+        key,
+        orderId: row.order?.id ?? null,
+        customerName: row.order?.customer?.full_name ?? row.order?.client?.name ?? null,
+        customerEmail: row.order?.customer?.email ?? null,
+        accountManager: row.order?.client?.account_manager?.full_name ?? null,
+        poNumber: row.order?.payment_method === "po" ? row.order?.po_number ?? "PO" : null,
+        // Null tier means Retail (the RRP).
+        tierName: row.order?.rate_tier?.name ?? "Retail",
+        tierDiscount: Number(row.order?.rate_tier?.discount_percent ?? 0),
+        // Only PO orders that haven't been invoiced to Xero can be edited.
+        editable: row.order?.payment_method === "po" && row.order?.status !== "invoiced",
+        createdAt: row.created_at,
+        items: [],
+      };
+      orderMap.set(key, card);
+    }
+    if (row.created_at < card.createdAt) card.createdAt = row.created_at;
+    card.items.push({
+      id: row.id,
+      status: row.status as SubOrderStatus,
+      checklist: effectiveChecklist(row.status, row.checklist),
+      claimedBy: row.claimed_by,
+      productName: row.order_line?.product?.name ?? "Unknown product",
+      quantity: row.order_line?.quantity ?? 0,
+      configuration: (row.order_line?.configuration as Record<string, string | string[]>) ?? {},
+      artworkCount: row.order_line?.artwork_files?.length ?? 0,
+    });
+  }
+  const orders = [...orderMap.values()];
 
   const columns = COLUMN_ORDER.map((column) => ({
     column,
-    items: cards.filter((c) => boardColumn(c.status) === column),
+    items: orders.filter((o) => orderColumn(o.items.map((i) => i.status)) === column),
   }));
 
   return (
@@ -172,7 +188,7 @@ export default async function AdminPage() {
             <Link href="/admin/errors" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
               Errors
             </Link>
-            <p className="text-sm text-zinc-500">{cards.length} open order lines</p>
+            <p className="text-sm text-zinc-500">{orders.length} {orders.length === 1 ? "order" : "orders"} · {rows.length} {rows.length === 1 ? "item" : "items"}</p>
           </div>
         </div>
 
@@ -185,9 +201,9 @@ export default async function AdminPage() {
               </h2>
               <ul className="space-y-3">
                 {col.items.map((item) => (
-                  <SubOrderCard
-                    key={item.id}
-                    subOrder={item}
+                  <OrderCard
+                    key={item.key}
+                    order={item}
                     staff={staff ?? []}
                     onUpdateStatus={updateSubOrderStatus}
                     onToggle={setChecklistItem}

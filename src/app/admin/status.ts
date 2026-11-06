@@ -71,6 +71,39 @@ export function checklistProgress(checklist: Checklist) {
   return { done, total: CHECKLIST_ITEMS.length };
 }
 
+export type ItemStateTone = "blocked" | "progress" | "done";
+
+/**
+ * One-line "where is this item" label for the order card, worked out from the
+ * ticks. "blocked" means the team (or the client) has something to do before
+ * the item can move; "progress" means it is moving; "done" is dispatched or
+ * completed. Nothing is stored, so it always matches the tick-list.
+ */
+export function itemState(
+  status: string,
+  checklist: Checklist,
+  artworkCount: number
+): { label: string; tone: ItemStateTone } {
+  if (status === "completed") return { label: "Completed", tone: "done" };
+  if (checklist.dispatched) return { label: "Dispatched", tone: "done" };
+  if (checklist.in_production) return { label: "In production", tone: "progress" };
+  if (checklist.ordered_from_supplier) return { label: "Ordered from supplier", tone: "progress" };
+  if (!checklist.payment_received) return { label: "Needs payment", tone: "blocked" };
+  if (!checklist.artwork_received) {
+    return { label: artworkCount > 0 ? "Artwork to confirm" : "Needs artwork", tone: "blocked" };
+  }
+  if (!checklist.proof_approved) return { label: "Needs proof approval", tone: "blocked" };
+  return { label: "Ready to order", tone: "blocked" };
+}
+
+/** Which board column a whole order sits in, from where its items are. */
+export function orderColumn(itemStatuses: string[]): BoardColumn {
+  const cols = itemStatuses.map(boardColumn);
+  if (cols.length > 0 && cols.every((c) => c === "completed")) return "completed";
+  if (cols.length > 0 && cols.every((c) => c === "new_order")) return "new_order";
+  return "processing";
+}
+
 /**
  * Order-level roll-up from its items (coarser than the board).
  * "begun" = at least one item ordered from the supplier or further on;
