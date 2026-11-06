@@ -75,7 +75,7 @@ export function CategoryBar() {
               {c.products.length > 0 ? <Chevron /> : null}
             </Link>
             {c.products.length > 0 ? (
-              <ul className={`invisible absolute ${i >= shown.length - 2 ? "right-0" : "left-0"} top-full z-20 min-w-56 border-t-2 border-brand-orange bg-white py-2 text-brand-charcoal opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100`}>
+              <ul className={`invisible absolute ${i >= shown.length - 2 ? "right-0" : "left-0"} top-full z-20 max-h-[calc(100vh-12rem)] min-w-56 overflow-y-auto border-t-2 border-brand-orange bg-white py-2 text-brand-charcoal opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100`}>
                 {c.products.map((k) => (
                   <li key={k.slug}>
                     <Link
@@ -96,7 +96,7 @@ export function CategoryBar() {
               More
               <Chevron />
             </button>
-            <ul className="invisible absolute right-0 top-full z-20 min-w-56 border-t-2 border-brand-orange bg-white py-2 text-brand-charcoal opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+            <ul className="invisible absolute right-0 top-full z-20 max-h-[calc(100vh-12rem)] min-w-56 overflow-y-auto border-t-2 border-brand-orange bg-white py-2 text-brand-charcoal opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
               {hidden.map((c) => (
                 <li key={c.slug}>
                   <Link
