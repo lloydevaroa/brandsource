@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMenuCategories } from "@/lib/menu-categories";
+import { useEnsureMenuProducts, useMenuCategories } from "@/lib/menu-categories";
 import { matchesAll, searchRank, searchTokens } from "@/lib/search";
 
 type Hit = { href: string; label: string; kind: "Product" | "Category" };
@@ -12,6 +12,7 @@ export function SiteSearch({ className = "" }: { className?: string }) {
   const router = useRouter();
   const listId = useId();
   const categories = useMenuCategories();
+  const ensureProducts = useEnsureMenuProducts();
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(-1);
@@ -91,7 +92,10 @@ export function SiteSearch({ className = "" }: { className?: string }) {
           setOpen(true);
           setCursor(-1);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          ensureProducts();
+          setOpen(true);
+        }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         onKeyDown={onKeyDown}
         placeholder="Search our range"

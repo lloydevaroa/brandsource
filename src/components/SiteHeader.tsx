@@ -11,7 +11,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { useCart } from "@/lib/cart";
-import { groupProductsAz, useMenuCategories } from "@/lib/menu-categories";
+import { groupProductsAz, useEnsureMenuProducts, useMenuCategories } from "@/lib/menu-categories";
 import { CategoryBar } from "@/components/CategoryBar";
 import { SiteSearch } from "@/components/SiteSearch";
 
@@ -75,6 +75,7 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const categories = useMenuCategories();
+  const ensureProducts = useEnsureMenuProducts();
   const allProducts = useMemo(() => groupProductsAz(categories), [categories]);
 
   return (
@@ -124,7 +125,10 @@ export function SiteHeader() {
           </SignedIn>
           <button
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => {
+              ensureProducts();
+              setMenuOpen((v) => !v);
+            }}
             aria-expanded={menuOpen}
             aria-label="Toggle menu"
             className="rounded-md p-2 text-white hover:bg-white/10"
@@ -157,7 +161,7 @@ export function SiteHeader() {
       {menuOpen ? (
         <nav className="border-t border-white/10 bg-brand-charcoal-soft px-6 py-4 text-sm text-white/80 sm:hidden">
           <div className="flex flex-col gap-3">
-            {allProducts.length > 0 ? (
+            {categories.some((c) => c.hasProducts) ? (
               <div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-white">All products</span>
@@ -204,7 +208,7 @@ export function SiteHeader() {
                   >
                     {c.name}
                   </Link>
-                  {c.products.length > 0 ? (
+                  {c.hasProducts ? (
                     <button
                       type="button"
                       aria-expanded={openGroup === c.slug}

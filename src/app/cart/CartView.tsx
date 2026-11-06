@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -403,16 +403,58 @@ function StaffPoOrder({
   );
 }
 
-export function CartView({ catalog, tier, staff }: { catalog: CatalogProduct[]; tier: CartTier; staff: StaffOrdering | null }) {
+export function CartView({ tier, staff }: { tier: CartTier; staff: StaffOrdering | null }) {
   return (
     <Suspense fallback={null}>
-      <CartPageInner catalog={catalog} tier={tier} staff={staff} />
+      <CartPageInner tier={tier} staff={staff} />
     </Suspense>
   );
 }
 
-function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; tier: CartTier; staff: StaffOrdering | null }) {
-  const { items } = useCart();
+/**
+ * Catalogue entries for just the products in this cart, fetched after the page loads (the cart
+ * lives in the browser, so the server cannot know which ones). Only slugs not already held are fetched.
+ */
+function useCartCatalog(slugs: string[], enabled: boolean) {
+  const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
+  // Slugs already asked for, so a product that no longer exists does not leave the cart "calculating" forever.
+  const [asked, setAsked] = useState<string[]>([]);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const slugKey = slugs.join(",");
+
+  useEffect(() => {
+    if (!enabled) return;
+    const have = new Set(asked);
+    const missing = slugs.filter((s) => !have.has(s));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    setError(false);
+    fetch(`/api/cart/catalog?slugs=${encodeURIComponent(missing.join(","))}`)
+      .then((res) => (res.ok ? (res.json() as Promise<CatalogProduct[]>) : Promise.reject(new Error("catalog"))))
+      .then((rows) => {
+        if (cancelled) return;
+        setCatalog((prev) => [...prev.filter((p) => !rows.some((r) => r.slug === p.slug)), ...rows]);
+        setAsked((prev) => [...new Set([...prev, ...missing])]);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `asked` is read only to skip slugs already requested; re-running on it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slugKey, enabled, attempt]);
+
+  const ready = enabled && slugs.every((s) => asked.includes(s));
+  return { catalog, ready, error, retry: () => setAttempt((n) => n + 1) };
+}
+
+function CartPageInner({ tier, staff }: { tier: CartTier; staff: StaffOrdering | null }) {
+  const { items, hydrated } = useCart();
+  const slugs = useMemo(() => [...new Set(items.map((i) => i.productSlug))].sort(), [items]);
+  const { catalog, ready: catalogReady, error: catalogError, retry: retryCatalog } = useCartCatalog(slugs, hydrated);
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
   const [submitting, setSubmitting] = useState(false);
@@ -426,7 +468,8 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
     const price = unitPrice(catalog, item, activeTier?.discountPercent);
     return price === null ? sum : sum + price * item.quantity;
   }, 0);
-  const hasUnpriced = items.some((item) => unitPrice(catalog, item, activeTier?.discountPercent) === null);
+  // Not unpriced while prices are still loading: checkout stays off until they have arrived.
+  const hasUnpriced = !catalogReady || items.some((item) => unitPrice(catalog, item, activeTier?.discountPercent) === null);
 
   async function handleCheckout() {
     setSubmitting(true);
@@ -505,7 +548,7 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
             <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
               <div className="mb-4 flex items-center justify-between text-sm">
                 <span className="text-zinc-500">Subtotal</span>
-                <span className="font-semibold">{formatNZD(subtotal)}</span>
+                <span className="font-semibold">{catalogReady ? formatNZD(subtotal) : "Calculating…"}</span>
               </div>
               <SignedIn>
                 <button
@@ -526,6 +569,14 @@ function CartPageInner({ catalog, tier, staff }: { catalog: CatalogProduct[]; ti
                   </p>
                 ) : null}
                 {submitError ? <p className="mt-2 text-sm text-red-600">{submitError}</p> : null}
+                {catalogError ? (
+                  <p className="mt-2 text-sm text-red-600">
+                    Could not load prices.{" "}
+                    <button type="button" onClick={retryCatalog} className="underline underline-offset-2">
+                      Try again
+                    </button>
+                  </p>
+                ) : null}
               </SignedIn>
               <SignedOut>
                 <SignInButton mode="modal">

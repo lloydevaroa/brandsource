@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
-import { useMenuCategories } from "@/lib/menu-categories";
+import { useEnsureMenuProducts, useMenuCategories } from "@/lib/menu-categories";
 
 /**
  * "All products" item for the desktop category bar: opens a full-width panel
@@ -13,6 +13,7 @@ import { useMenuCategories } from "@/lib/menu-categories";
  */
 export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string }) {
   const categories = useMenuCategories();
+  const ensureProducts = useEnsureMenuProducts();
   const panelId = useId();
   const itemRef = useRef<HTMLLIElement>(null);
   const [open, setOpen] = useState(false);
@@ -26,6 +27,7 @@ export function AllProductsMenu({ itemClassName = "" }: { itemClassName?: string
   function openPanel() {
     const el = itemRef.current;
     if (el) setTop(el.offsetTop + el.offsetHeight - 2);
+    ensureProducts();
     setOpen(true);
   }
 

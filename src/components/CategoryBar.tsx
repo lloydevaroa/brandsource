@@ -4,7 +4,7 @@ import { memo, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
 import { AllProductsMenu } from "@/components/AllProductsMenu";
-import { useMenuCategories } from "@/lib/menu-categories";
+import { useEnsureMenuProducts, useMenuCategories } from "@/lib/menu-categories";
 
 const ITEM = "flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3 hover:text-brand-orange";
 
@@ -15,6 +15,7 @@ const ITEM = "flex items-center gap-1.5 whitespace-nowrap px-3.5 py-3 hover:text
  */
 export const CategoryBar = memo(function CategoryBar() {
   const categories = useMenuCategories();
+  const ensureProducts = useEnsureMenuProducts();
   const barRef = useRef<HTMLUListElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<number | null>(null);
@@ -61,6 +62,8 @@ export const CategoryBar = memo(function CategoryBar() {
   return (
     <nav
       aria-label="Product categories"
+      onMouseEnter={ensureProducts}
+      onFocus={ensureProducts}
       className="relative hidden border-t border-white/10 bg-brand-charcoal-soft text-[13px] font-semibold text-white sm:block"
     >
       <ul
@@ -72,7 +75,7 @@ export const CategoryBar = memo(function CategoryBar() {
           <li key={c.slug} className="group relative">
             <Link href={`/category/${c.slug}`} className={ITEM}>
               {c.name}
-              {c.products.length > 0 ? <Chevron /> : null}
+              {c.hasProducts ? <Chevron /> : null}
             </Link>
             {c.products.length > 0 ? (
               <ul className={`invisible absolute ${i >= shown.length - 2 ? "right-0" : "left-0"} top-full z-20 max-h-[calc(100vh-12rem)] min-w-56 overflow-y-auto border-t-2 border-brand-orange bg-white py-2 text-brand-charcoal opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100`}>
@@ -125,7 +128,7 @@ export const CategoryBar = memo(function CategoryBar() {
         {categories.map((c) => (
           <span key={c.slug} className={ITEM}>
             {c.name}
-            {c.products.length > 0 ? <Chevron /> : null}
+            {c.hasProducts ? <Chevron /> : null}
           </span>
         ))}
         <span className={ITEM}>

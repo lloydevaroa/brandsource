@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/fetch-all";
 import { ttlCache } from "@/lib/ttl-cache";
@@ -195,24 +196,57 @@ export function categoryForProduct(all: Category[], productSlug: string): Catego
  * category with no sub-categories), each with its products as the dropdown.
  * Categories with no products are left out.
  */
-export async function getMenuCategories(): Promise<
-  { slug: string; name: string; products: { slug: string; name: string }[] }[]
-> {
-  try {
-    const all = await getCategories();
-    const items: Category[] = [];
-    for (const top of all.filter((c) => !c.parent_slug)) {
-      const kids = getChildren(all, top.slug);
-      items.push(...(kids.length > 0 ? kids : [top]));
-    }
-    return items
-      .filter((c) => c.products.length > 0)
-      .map((c) => ({
-        slug: c.slug,
-        name: c.name,
-        products: c.products.map((p) => ({ slug: p.slug, name: p.name })),
-      }));
-  } catch {
-    return [];
+export type MenuIndex = {
+  /** Menu items in display order; productIds point into `products`. */
+  categories: { slug: string; name: string; productIds: number[] }[];
+  /** Every menu product once (a product can sit in several categories). */
+  products: { slug: string; name: string }[];
+};
+
+async function buildMenuIndex(): Promise<MenuIndex> {
+  const all = await getCategories();
+  const items: Category[] = [];
+  for (const top of all.filter((c) => !c.parent_slug)) {
+    const kids = getChildren(all, top.slug);
+    items.push(...(kids.length > 0 ? kids : [top]));
   }
+  const products: MenuIndex["products"] = [];
+  const idBySlug = new Map<string, number>();
+  const categories = items
+    .filter((c) => c.products.length > 0)
+    .map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      productIds: c.products.map((p) => {
+        let id = idBySlug.get(p.slug);
+        if (id === undefined) {
+          id = products.length;
+          products.push({ slug: p.slug, name: p.name });
+          idBySlug.set(p.slug, id);
+        }
+        return id;
+      }),
+    }));
+  return { categories, products };
+}
+
+/**
+ * The menu index, kept in Next's data cache for an hour so every server instance (and every
+ * page render) shares one read instead of each cold instance loading the whole category tree.
+ * A failed read is not cached.
+ */
+const cachedMenuIndex = unstable_cache(buildMenuIndex, ["menu-index-v1"], { revalidate: 3600 });
+
+export async function getMenuIndex(): Promise<MenuIndex> {
+  try {
+    return await cachedMenuIndex();
+  } catch {
+    return { categories: [], products: [] };
+  }
+}
+
+/** Layout payload: just the menu items, no product lists (those load after the page, see /api/menu-products). */
+export async function getMenuCategories(): Promise<{ slug: string; name: string; hasProducts: boolean }[]> {
+  const index = await getMenuIndex();
+  return index.categories.map((c) => ({ slug: c.slug, name: c.name, hasProducts: c.productIds.length > 0 }));
 }

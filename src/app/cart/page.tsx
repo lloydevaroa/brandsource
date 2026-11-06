@@ -1,4 +1,3 @@
-import { getCatalog } from "@/lib/catalog";
 import { getRateTiers, getViewerTier } from "@/lib/rate-tiers";
 import { syncCurrentProfile } from "@/lib/supabase/profile";
 import { createServiceSupabase } from "@/lib/supabase/server";
@@ -33,11 +32,5 @@ async function getStaffOrdering(): Promise<StaffOrdering | null> {
 
 export default async function CartPage() {
   const [tier, staff] = await Promise.all([getViewerTier(), getStaffOrdering()]);
-  return (
-    <CartView
-      catalog={await getCatalog()}
-      tier={tier ? { name: tier.name, discountPercent: tier.discount_percent } : null}
-      staff={staff}
-    />
-  );
+  return <CartView tier={tier ? { name: tier.name, discountPercent: tier.discount_percent } : null} staff={staff} />;
 }

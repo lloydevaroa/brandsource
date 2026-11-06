@@ -9,6 +9,9 @@ const isPublicRoute = createRouteMatcher([
   "/search",
   "/cart",
   "/api/artwork(.*)",
+  // Public read-only data for the menu and the cart page.
+  "/api/menu-products",
+  "/api/cart/catalog",
   // Stripe calls this server-to-server with no Clerk session; the route
   // verifies the Stripe signature itself.
   "/api/checkout/webhook",
